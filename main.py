@@ -201,7 +201,6 @@ async def tag(ctx):
     for role in ctx.author.roles:
         if str(role.color) == '#f1c40f':
             section = role.name
-    print(msg.split(' '))
     for i in msg.split(' '):
         if '@everyone' in i or '@here' in i:
             await ctx.send('You can\'t tag `@everyone` or `@here`')
@@ -213,7 +212,6 @@ async def tag(ctx):
                     if str(k.id) in j:
                         usertag = True
                 if not usertag:
-                    print('|' + j + '|')
                     if j and j[:2].upper() in section:
                         if j[3] == '0':
                             if section[3] == 'A' and (j[4] == '1' or j[4] == '2' or j[4] == '3'):
@@ -271,7 +269,7 @@ class Voltorb:
         )
         embed.set_author(name = str(self.member) + '\'s session', icon_url = self.member.avatar_url)
         embed.set_thumbnail(url = 'attachment://voltorb.gif')
-        embed.set_image(url = 'attachment://' + str(self.member) + 'png')
+        embed.set_image(url = 'attachment://' + str(self.member) + '.png')
         embed.add_field(name='Level:', value=str(self.level), inline=True)
         embed.add_field(name='Coins:', value=str(self.coins), inline=True)
         embed.add_field(name='Total Coins:', value=str(self.total), inline=True)
