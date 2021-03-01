@@ -7,6 +7,7 @@ from openpyxl.styles import Font, Color
 from openpyxl import Workbook
 from discord import Webhook, AsyncWebhookAdapter
 from voltorb import voltorb
+from io import BytesIO
 
 prefix = '%'
 
@@ -266,16 +267,19 @@ class Voltorb:
         self.channel = ctx.channel
         self.guild = ctx.guild
         self.member = ctx.author
-        self.vol.create(name=str(self.member))
         thumb = discord.File('voltorb.gif', filename='voltorb.gif')
-        board = discord.File('Voltorb Boards/' + str(self.member) + '.png', filename=str(self.member) + '.png')
+        board = self.vol.create(name=str(self.member))
+        with BytesIO() as image_binary:
+            board.save(image_binary, "PNG")
+            image_binary.seek(0)
+            board = discord.File(fp = image_binary, filename='board.png')
         embed = discord.Embed(
             title = 'Voltorb Flip',
             colour = self.member.top_role.color
         )
         embed.set_author(name = str(self.member) + '\'s session', icon_url = self.member.avatar_url)
         embed.set_thumbnail(url = 'attachment://voltorb.gif')
-        embed.set_image(url = 'attachment://' + str(self.member) + '.png')
+        embed.set_image(url = 'attachment://board.png')
         embed.add_field(name='Level:', value=str(self.level), inline=True)
         embed.add_field(name='Coins:', value=str(self.coins), inline=True)
         embed.add_field(name='Total Coins:', value=str(self.total), inline=True)
@@ -289,14 +293,14 @@ class Voltorb:
             await ctx.send('Type something after the command')
             return
         if 'row' in key[:3].lower() or 'col' in key[:3].lower():
-            coins = self.vol.edit_all(str(self.member), key[:3].lower(), key[4:].lower())
+            coins, board = self.vol.edit_all(str(self.member), key[:3].lower(), key[4:].lower())
         else:
             if key[0] not in self.row or int(key[1]) not in self.col:
                 await ctx.message.delete()
                 bruh = await ctx.send('That\'s an invalid tile')
                 await bruh.delete(delay=5)
                 return
-            coins = self.vol.edit(str(self.member), key)
+            coins, board = self.vol.edit(str(self.member), key)
         try:
             int(coins)
             if coins == -1:
@@ -312,7 +316,10 @@ class Voltorb:
             self.win = True
             self.total += self.coins*int(coins[:-1])
         thumb = discord.File('voltorb.gif', filename='voltorb.gif')
-        board = discord.File('Voltorb Boards/' + str(self.member) + '.png', filename=str(self.member) + '.png')
+        with BytesIO() as image_binary:
+            board.save(image_binary, "PNG")
+            image_binary.seek(0)
+            board = discord.File(fp = image_binary, filename='board.png')
         embed = discord.Embed(
             title = 'Voltorb Flip',
             colour = self.member.top_role.color
@@ -322,7 +329,7 @@ class Voltorb:
         embed.add_field(name='Level:', value=str(self.level), inline=True)
         embed.add_field(name='Coins:', value=str(self.coins), inline=True)
         embed.add_field(name='Total Coins:', value=str(self.total), inline=True)
-        embed.set_image(url = 'attachment://' + str(self.member) + '.png')
+        embed.set_image(url = 'attachment://board.png')
         await ctx.message.delete()
         await self.message.delete()
         self.message = await self.channel.send(files=[thumb, board], embed = embed)
@@ -352,10 +359,6 @@ class Voltorb:
         await self.message.delete()
         await self.run(ctx)
         self.win = False
-
-    async def quit(self, ctx):
-        self.vol.quit(ctx.author)
-        await self.message.delete()
 
 d = {}
 
@@ -509,7 +512,7 @@ async def advance(ctx):
 @client.command()
 async def quit(ctx):
     try:
-        await d[ctx.author.id].quit(ctx=ctx)
+        await d[ctx.author.id].message.delete()
         d.pop(ctx.author.id)
         await ctx.message.delete()
     except KeyError:
