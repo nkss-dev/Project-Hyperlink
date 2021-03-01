@@ -147,7 +147,7 @@ class voltorb:
         if not self.flip[pos[0]-1][pos[1]-1]:
             if self.board[pos[0]-1][pos[1]-1] == 0:
                 self.bg.paste(self.voltorb_tile, (pos[1]*360 - 350, pos[0]*360 - 350))
-                self.bg.save(name + '.png')
+                self.bg.save('Voltorb Boards/' + name + '.png')
                 return -1
             elif self.board[pos[0]-1][pos[1]-1] == 1:
                 self.bg.paste(self.tile_1, (pos[1]*360 - 350, pos[0]*360 - 350))
