@@ -1,4 +1,4 @@
-import discord, openpyxl, asyncio, aiohttp, threading
+import discord, openpyxl, asyncio, aiohttp, os
 from discord.utils import get
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
@@ -33,6 +33,8 @@ This is a recreatation of the Voltorb Flip game that appears in the Korean and W
 
 The numbers on the side and bottom of the game board denote the sum of the tiles and how many bombs are present in that row/column, respectively. Each tile you flip multiplies your collected coins by that value. Once you uncover all of the 2 and 3 tiles, all of the coins you gained this level will be added to your total and you'll go up one level to a max of 7. If you flip over a Voltorb, you lose all your coins from the current level and risk going down to a lower level.'''
 
+dm_message = '''Welcome to the NITKKR\'24 server! Before you can see/use all the channels that it has, you'll need to do a quick verification. The process of which is explained in the #welcome channel of the server. Please do not send the command to this dm as it will not be read, instead send it on the #commands channel on the server. If you have any issues with the command, @Priyanshu will help you out personally on the channel. But do try even if you didn't understand. Have fun!'''
+
 ft = Font(color = '0000FF00')
 ft_reset = Font(color = '00000000')
 
@@ -48,6 +50,7 @@ class bcolors:
 
 @client.event
 async def on_ready():
+    os.system('cls')
     print('Bot Online!\n')
 
 @client.event
@@ -55,6 +58,7 @@ async def on_member_join(member):
     guild = member.guild
     role = get(guild.roles, name = 'Not-Verified')
     await member.add_roles(role)
+    await member.send(dm_message)
     print(f'{member.name} has joined!')
     print(f'{role} was given to {member.name}!\n')
 
@@ -69,7 +73,8 @@ async def verify(ctx):
     wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
     try:
         flag = 0
-        section, subsection, roll_no, _ = content.split(' ')
+        section, roll_no = content.split(' ')
+        roll_no = int(roll_no)
         ws = wb[section]
         for i in range(3, 90):
             if roll_no == ws['B' + str(i)].value:
@@ -244,7 +249,8 @@ class Voltorb:
         self.level = 1
         self.coins = 0
         self.total = 0
-        self.bool = False
+        self.lose = False
+        self.win = False
         self.guild = discord.Guild
         self.channel = discord.TextChannel
         self.rip = discord.Message
@@ -291,11 +297,10 @@ class Voltorb:
                 await bruh.delete(delay=5)
                 return
             coins = self.vol.edit(str(self.member), key)
-        flag = False
         try:
             int(coins)
             if coins == -1:
-                self.rip = await ctx.send('Oh no! You hit a voltorb, ' + ctx.author.mention + ' and got 0 coins!\nType `%resume` to continue.')
+                self.lose = True
             elif self.coins == 0:
                 self.coins = coins
             elif not coins:
@@ -304,7 +309,7 @@ class Voltorb:
             else:
                 self.coins *= coins
         except ValueError:
-            flag = True
+            self.win = True
             self.total += self.coins*int(coins[:-1])
         thumb = discord.File('voltorb.gif', filename='voltorb.gif')
         board = discord.File('Voltorb Boards/' + str(self.member) + '.png', filename=str(self.member) + '.png')
@@ -321,8 +326,9 @@ class Voltorb:
         await ctx.message.delete()
         await self.message.delete()
         self.message = await self.channel.send(files=[thumb, board], embed = embed)
-        if flag:
-            self.bool = True
+        if self.lose:
+            self.rip = await ctx.send('Oh no! You hit a voltorb, ' + ctx.author.mention + ' and got 0 coins!\nType `%resume` to continue.')
+        if self.win:
             self.rip = await ctx.send('Game clear, ' + ctx.author.mention + '! You received ' + str(self.coins*int(coins[:-1])) + ' Coins! Type `' + prefix + 'advance` to advance to level ' + str(self.level + 1))
             self.coins = 0
 
@@ -335,6 +341,7 @@ class Voltorb:
             self.vol = voltorb()
             await self.message.delete()
             await self.run(ctx)
+            self.lose = False
         except TypeError:
             await ctx.send('You didn\'t lose your current match yet, ' + ctx.author.mention + '. If you would like to restart, type `' + prefix + 'restart`')
 
@@ -344,6 +351,7 @@ class Voltorb:
         self.vol = voltorb()
         await self.message.delete()
         await self.run(ctx)
+        self.win = False
 
     async def quit(self, ctx):
         self.vol.quit(ctx.author)
@@ -417,9 +425,11 @@ async def on_member_remove(member):
                 if str(role.color) == '#f1c40f':
                     section = role.name
                     break
-            wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+            print(section)
+            wb = openpyxl.load_workbook('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
             ws = wb[section]
             for i in range(3, 90):
+                print(member, ws['F' + str(i)].value)
                 if str(member) == ws['F' + str(i)].value:
                     ws['B' + str(i)].font = ft_reset
                     ws['C' + str(i)].font = ft_reset
@@ -428,30 +438,27 @@ async def on_member_remove(member):
                     ws['F' + str(i)].font = ft_reset
                     ws['F' + str(i)] = ''
                     break
-            wb.save('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+            wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
             await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
         except UnboundLocalError:
             channel = client.get_channel(783215699707166763)
             await channel.send(f'**{member}** has left the server without even verifying <a:triggered:803206114623619092>')
 
 @client.event
-async def on_member_update(old, new):
-    print(old.name, new.name)
-    if old.nick != new.nick:
-        print(f'{old.name} changed their nick from {old.nick} to {new.nick}\n')
-    if old.name != new.name or old.id != new.id:
-        section = str()
-        for role in old.roles:
-            if str(role.color) == '#f1c40f':
-                section = role.name
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-        ws = wb[section]
-        print('\nEntered!!\n')
-        for i in range(3, 90):
-            if id == ws['F' + str(i)].value:
-                print('\nChanged the ID in database\n')
-                ws['F' + str(i)] = str(new)
-        wb.save('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+async def on_user_update(old, new):
+    if old.name == new.name and old.id == new.id:
+        return
+    section = str()
+    for role in old.roles:
+        if str(role.color) == '#f1c40f':
+            section = role.name
+    wb = openpyxl.load_workbook('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
+    ws = wb[section]
+    for i in range(3, 90):
+        if id == ws['F' + str(i)].value:
+            print('\nChanged the ID in database\n')
+            ws['F' + str(i)] = str(new)
+    wb.save('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
 
 @client.command(help=vf, aliases=['vf_start'])
 async def voltorb_start(ctx):
@@ -462,6 +469,12 @@ async def voltorb_start(ctx):
 @client.command()
 async def flip(ctx):
     try:
+        if d[ctx.author.id].win:
+            await ctx.send('You\'ve already won your current session ' + ctx.author.mention + '. Type `' + prefix + 'advance` to proceed to the next level')
+            return
+        if d[ctx.author.id].lose:
+            await ctx.send('You\'ve lost your current session ' + ctx.author.mention + '. Type `' + prefix + 'resume` to continue')
+            return
         await d[ctx.author.id].flip(ctx=ctx)
     except KeyError:
         await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `%vf_start` to get started.')
@@ -469,6 +482,12 @@ async def flip(ctx):
 @client.command()
 async def resume(ctx):
     try:
+        if d[ctx.author.id].win:
+            await ctx.send('You\'ve already won your current session ' + ctx.author.mention + '. Type `' + prefix + 'advance` to proceed to the next level')
+            return
+        if not d[ctx.author.id].lose:
+            await ctx.send('You\'ve not lost your current session yet ' + ctx.author.mention + '.')
+            return
         await d[ctx.author.id].resume(ctx=ctx)
     except KeyError:
         await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `' + prefix + 'vf_start` to get started.')
@@ -476,9 +495,12 @@ async def resume(ctx):
 @client.command()
 async def advance(ctx):
     try:
-        if d[ctx.author.id].bool:
+        if d[ctx.author.id].win:
             await d[ctx.author.id].advance(ctx=ctx)
-            d[ctx.author.id].bool = False
+            d[ctx.author.id].win = False
+        elif d[ctx.author.id].lose:
+            await ctx.send('You\'ve lost your current session ' + ctx.author.mention + '. Type `' + prefix + 'resume` to continue')
+            return
         else:
             await ctx.send('You didn\'t win your current match yet, ' + ctx.author.mention + '. If you would like to restart, type `' + prefix + 'restart`')
     except KeyError:
@@ -514,4 +536,4 @@ class MyHelp(commands.MinimalHelpCommand):
 
 client.help_command = MyHelp()
 
-client.run(input())
+client.run(input('Enter token --> '))
