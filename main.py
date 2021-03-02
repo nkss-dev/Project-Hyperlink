@@ -12,9 +12,23 @@ from io import BytesIO
 prefix = '%'
 
 intents = discord.Intents.all()
-client = commands.Bot(command_prefix = prefix, intents = intents, help_command=commands.DefaultHelpCommand())
+client = commands.Bot(
+    command_prefix=prefix, intents=intents, help_command=commands.DefaultHelpCommand()
+)
 
-available = '\nAvailable commands: `' + prefix + 'verify`, `' + prefix + 'profile`, `' + prefix + 'memlist`, `' + prefix + 'tag` and `' + prefix + 'vf_start`.'
+available = (
+    '\nAvailable commands: `'
+    + prefix
+    + 'verify`, `'
+    + prefix
+    + 'profile`, `'
+    + prefix
+    + 'memlist`, `'
+    + prefix
+    + 'tag` and `'
+    + prefix
+    + 'vf_start`.'
+)
 
 tag = '''
 Now you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
@@ -36,8 +50,9 @@ The numbers on the side and bottom of the game board denote the sum of the tiles
 
 dm_message = '''Welcome to the NITKKR\'24 server! Before you can see/use all the channels that it has, you'll need to do a quick verification. The process of which is explained in the #welcome channel of the server. Please do not send the command to this dm as it will not be read, instead send it on the #commands channel on the server. If you have any issues with the command, @Priyanshu will help you out personally on the channel. But do try even if you didn't understand. Have fun!'''
 
-ft = Font(color = '0000FF00')
-ft_reset = Font(color = '00000000')
+ft = Font(color='0000FF00')
+ft_reset = Font(color='00000000')
+
 
 class bcolors:
     Purple = '\033[95m'
@@ -49,21 +64,26 @@ class bcolors:
     Bold = '\033[1m'
     Underline = '\033[4m'
 
+
 @client.event
 async def on_ready():
     os.system('cls')
     print('Bot Online!\n')
 
+
 @client.event
 async def on_member_join(member):
     guild = member.guild
-    role = get(guild.roles, name = 'Not-Verified')
+    role = get(guild.roles, name='Not-Verified')
     await member.add_roles(role)
     await member.send(dm_message)
     print(f'{member.name} has joined!')
     print(f'{role} was given to {member.name}!\n')
 
-@client.command(help='Verifies your presence in the record and gives you roles based on your section/subsection.\nAlso enables you to use the `%profile` and `%tag` commands')
+
+@client.command(
+    help='Verifies your presence in the record and gives you roles based on your section/subsection.\nAlso enables you to use the `%profile` and `%tag` commands'
+)
 async def verify(ctx):
     try:
         content = ctx.message.content.split('verify ')[1]
@@ -71,7 +91,9 @@ async def verify(ctx):
         await ctx.send('Type something after `' + prefix + 'verify`')
         return
     print(ctx.author, 'tried to verify!')
-    wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+    wb = openpyxl.load_workbook(
+        'Details/' + str(ctx.guild) + ' ' + str(ctx.guild.id) + '.xlsx'
+    )
     try:
         flag = 0
         section, roll_no = content.split(' ')
@@ -86,12 +108,18 @@ async def verify(ctx):
                 if str(ctx.author) == ws['F' + str(flag)].value:
                     await ctx.send('You\'re already verified!')
                     return
-                await ctx.send('The details you entered is of a record already claimed by `' + ws['F' + str(flag)].value + '` ' + ctx.message.author.mention + '.\nTry another record. If you think this was a mistake, contact a moderator.')
+                await ctx.send(
+                    'The details you entered is of a record already claimed by `'
+                    + ws['F' + str(flag)].value
+                    + '` '
+                    + ctx.message.author.mention
+                    + '.\nTry another record. If you think this was a mistake, contact a moderator.'
+                )
                 print(ctx.author, 'failed to verify.\n')
                 return
-            role = get(ctx.guild.roles, name = str(ws['C' + str(flag)].value))
+            role = get(ctx.guild.roles, name=str(ws['C' + str(flag)].value))
             await ctx.author.add_roles(role)
-            role = get(ctx.guild.roles, name = section)
+            role = get(ctx.guild.roles, name=section)
             await ctx.author.add_roles(role)
             ws['B' + str(flag)].font = ft
             ws['C' + str(flag)].font = ft
@@ -100,32 +128,52 @@ async def verify(ctx):
             ws['F' + str(flag)].font = ft
             ws['F' + str(flag)] = str(ctx.author)
             print(ctx.author, 'verified successfully.\n')
-            await ctx.send('Your record was found and verified ' + ctx.message.author.mention + '!\nYou will now be removed from this channel.')
-            role = get(ctx.guild.roles, id = 803608144181854208)
+            await ctx.send(
+                'Your record was found and verified '
+                + ctx.message.author.mention
+                + '!\nYou will now be removed from this channel.'
+            )
+            role = get(ctx.guild.roles, id=803608144181854208)
             await ctx.author.remove_roles(role)
             while True:
                 try:
-                    wb.save('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+                    wb.save(
+                        'Details/' + str(ctx.guild) + ' ' + str(ctx.guild.id) + '.xlsx'
+                    )
                     break
                 except:
                     continue
             id = str(ctx.author)
-            wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+            wb = openpyxl.load_workbook(
+                'Details/' + str(ctx.guild) + ' ' + str(ctx.guild.id) + '.xlsx'
+            )
             ws = wb[section]
             for i in range(3, 90):
                 if id == ws['F' + str(i)].value:
                     word = ws['D' + str(i)].value.split(' ')[0]
-                    await ctx.author.edit(nick = word[:1] + word[1:].lower())
+                    await ctx.author.edit(nick=word[:1] + word[1:].lower())
                     break
         else:
             print(ctx.author, 'failed to verify.\n')
-            await ctx.send('Error while matching details in record ' + ctx.author.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
+            await ctx.send(
+                'Error while matching details in record '
+                + ctx.author.mention
+                + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!'
+            )
     except Exception as error:
         print(f'{bcolors.Red}{error}{bcolors.White}\n')
         print(ctx.author, 'failed to verify.\n')
-        await ctx.send('Error while matching details in record ' + ctx.author.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
+        await ctx.send(
+            'Error while matching details in record '
+            + ctx.author.mention
+            + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!'
+        )
 
-@client.command(help='Displays details of the user related to the server and the college', aliases=['p', 'prof'])
+
+@client.command(
+    help='Displays details of the user related to the server and the college',
+    aliases=['p', 'prof'],
+)
 async def profile(ctx):
     try:
         member = ctx.message.mentions[0]
@@ -144,45 +192,178 @@ async def profile(ctx):
     if not section:
         await ctx.send('The requested record wasn\'t found!')
     else:
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+        wb = openpyxl.load_workbook(
+            'Details/' + str(ctx.guild) + ' ' + str(ctx.guild.id) + '.xlsx'
+        )
         ws = wb[section]
         for i in range(3, 90):
             if id == ws['F' + str(i)].value:
                 flag = i
                 break
-        roles = ', '.join([role.mention for role in member.roles if section != role.name and ws['C' + str(i)].value != role.name and '@everyone' != role.name])
+        roles = ', '.join(
+            [
+                role.mention
+                for role in member.roles
+                if section != role.name
+                and ws['C' + str(i)].value != role.name
+                and '@everyone' != role.name
+            ]
+        )
         if not roles:
             roles = 'None taken'
         embed = discord.Embed(
-            title = ' '.join([word[:1] + word[1:].lower() for word in ws['D' + str(i)].value.split(' ')]),
-            description = '**Roll Number: **' + str(ws['B' + str(i)].value)
-            + '\n**Section: **' + section + ws['C' + str(i)].value[4:]
-            + '\n**Roles: **' + roles
-            + '\n**Email: **' + ws['E' + str(i)].value,
-            colour = member.top_role.color
+            title=' '.join(
+                [
+                    word[:1] + word[1:].lower()
+                    for word in ws['D' + str(i)].value.split(' ')
+                ]
+            ),
+            description='**Roll Number: **'
+            + str(ws['B' + str(i)].value)
+            + '\n**Section: **'
+            + section
+            + ws['C' + str(i)].value[4:]
+            + '\n**Roles: **'
+            + roles
+            + '\n**Email: **'
+            + ws['E' + str(i)].value,
+            colour=member.top_role.color,
         )
-        embed.set_author(name = id + '\'s Profile', icon_url = member.avatar_url)
-        embed.set_thumbnail(url = member.avatar_url)
-        embed.set_footer(text = 'Joined at: ' + str(member.joined_at)[8:10] + '-' + str(member.joined_at)[5:7] + '-' + str(member.joined_at)[:4])
-        await ctx.send(embed = embed)
+        embed.set_author(name=id + '\'s Profile', icon_url=member.avatar_url)
+        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_footer(
+            text='Joined at: '
+            + str(member.joined_at)[8:10]
+            + '-'
+            + str(member.joined_at)[5:7]
+            + '-'
+            + str(member.joined_at)[:4]
+        )
+        await ctx.send(embed=embed)
 
-@client.command(help='Displays the total number of joined and remaining students for each section. Also displays the number of losers who didn\'t verify and total number of members on this server')
+
+@client.command(
+    help='Displays the total number of joined and remaining students for each section. Also displays the number of losers who didn\'t verify and total number of members on this server'
+)
 async def memlist(ctx):
-    list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B', 'Not-Verified']
-    total = [63, 61, 64, 58, 61, 59, 59, 56, 60, 57, 55, 64, 64, 67, 69, 70, 58, 59, 1104 - len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])]
+    list = [
+        'CE-A',
+        'CE-B',
+        'CE-C',
+        'CS-A',
+        'CS-B',
+        'EC-A',
+        'EC-B',
+        'EC-C',
+        'EE-A',
+        'EE-B',
+        'EE-C',
+        'IT-A',
+        'IT-B',
+        'ME-A',
+        'ME-B',
+        'ME-C',
+        'PI-A',
+        'PI-B',
+        'Not-Verified',
+    ]
+    total = [
+        63,
+        61,
+        64,
+        58,
+        61,
+        59,
+        59,
+        56,
+        60,
+        57,
+        55,
+        64,
+        64,
+        67,
+        69,
+        70,
+        58,
+        59,
+        1104
+        - len(
+            [
+                member
+                for member in ctx.guild.members
+                if discord.utils.get(ctx.guild.roles, name='Not-Verified')
+                not in member.roles
+                and not member.bot
+            ]
+        ),
+    ]
     previous = list[0][:2]
     no = '```lisp\n'
     for section, num in zip(list[:-1], total[:-1]):
         if previous != section[:2]:
             no += '\n'
-        no += '(' + section + ' --> ' + str(str(len(discord.utils.get(ctx.guild.roles, name = section).members)) + ' joined : ' + str(num - len(discord.utils.get(ctx.guild.roles, name = section).members)) + ' remaining') + ')\n'
+        no += (
+            '('
+            + section
+            + ' --> '
+            + str(
+                str(len(discord.utils.get(ctx.guild.roles, name=section).members))
+                + ' joined : '
+                + str(
+                    num - len(discord.utils.get(ctx.guild.roles, name=section).members)
+                )
+                + ' remaining'
+            )
+            + ')\n'
+        )
         previous = section[:2]
-    no += '\n(Verified --> ' + str(len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])) + ')\n'
-    no += '\n'.join(['(' + role + ' --> ' + str(str(len(discord.utils.get(ctx.guild.roles, name = role).members)) + ' joined : ' + str(i - len(discord.utils.get(ctx.guild.roles, name = role).members)) + ' remaining') + ')' for role, i in zip(list[18:], total[18:])]) + '\n'
-    no += '(Total --> ' + str(len([member for member in ctx.guild.members if not member.bot])) + ')```'
+    no += (
+        '\n(Verified --> '
+        + str(
+            len(
+                [
+                    member
+                    for member in ctx.guild.members
+                    if discord.utils.get(ctx.guild.roles, name='Not-Verified')
+                    not in member.roles
+                    and not member.bot
+                ]
+            )
+        )
+        + ')\n'
+    )
+    no += (
+        '\n'.join(
+            [
+                '('
+                + role
+                + ' --> '
+                + str(
+                    str(len(discord.utils.get(ctx.guild.roles, name=role).members))
+                    + ' joined : '
+                    + str(
+                        i - len(discord.utils.get(ctx.guild.roles, name=role).members)
+                    )
+                    + ' remaining'
+                )
+                + ')'
+                for role, i in zip(list[18:], total[18:])
+            ]
+        )
+        + '\n'
+    )
+    no += (
+        '(Total --> '
+        + str(len([member for member in ctx.guild.members if not member.bot]))
+        + ')```'
+    )
     await ctx.send(no)
 
-@client.command(help='Use this to tag the subsection roles of your section.\n\n**How to use:**\n' + tag)
+
+@client.command(
+    help='Use this to tag the subsection roles of your section.\n\n**How to use:**\n'
+    + tag
+)
 async def tag(ctx):
     try:
         msg = ctx.message.content.split('tag ')[1]
@@ -220,21 +401,51 @@ async def tag(ctx):
                 if not usertag:
                     if j and j[:2].upper() in section:
                         if j[3] == '0':
-                            if section[3] == 'A' and (j[4] == '1' or j[4] == '2' or j[4] == '3'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                            elif section[3] == 'B' and (j[4] == '4' or j[4] == '5' or j[4] == '6'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                            elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                            if section[3] == 'A' and (
+                                j[4] == '1' or j[4] == '2' or j[4] == '3'
+                            ):
+                                msg = msg.replace(
+                                    '@' + j[:5],
+                                    discord.utils.get(
+                                        ctx.guild.roles, name=j[:5].strip().upper()
+                                    ).mention,
+                                )
+                            elif section[3] == 'B' and (
+                                j[4] == '4' or j[4] == '5' or j[4] == '6'
+                            ):
+                                msg = msg.replace(
+                                    '@' + j[:5],
+                                    discord.utils.get(
+                                        ctx.guild.roles, name=j[:5].strip().upper()
+                                    ).mention,
+                                )
+                            elif section[3] == 'C' and (
+                                j[4] == '7' or j[4] == '8' or j[4] == '9'
+                            ):
+                                msg = msg.replace(
+                                    '@' + j[:5],
+                                    discord.utils.get(
+                                        ctx.guild.roles, name=j[:5].strip().upper()
+                                    ).mention,
+                                )
                             else:
                                 print('1')
-                                await ctx.send('You can\'t tag sections other than your own!')
+                                await ctx.send(
+                                    'You can\'t tag sections other than your own!'
+                                )
                                 return
                         elif j[3].upper() == section[3]:
-                            msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
+                            msg = msg.replace(
+                                '@' + j[:4],
+                                discord.utils.get(
+                                    ctx.guild.roles, name=j[:4].strip().upper()
+                                ).mention,
+                            )
                         else:
                             print('2')
-                            await ctx.send('You can\'t tag sections other than your own!')
+                            await ctx.send(
+                                'You can\'t tag sections other than your own!'
+                            )
                             return
                     elif j:
                         print('3')
@@ -244,6 +455,7 @@ async def tag(ctx):
     if flag:
         await ctx.message.delete()
         await webhook.send(msg.strip(), username=user, avatar_url=ctx.author.avatar_url)
+
 
 class Voltorb:
     def __init__(self):
@@ -272,19 +484,18 @@ class Voltorb:
         with BytesIO() as image_binary:
             board.save(image_binary, "PNG")
             image_binary.seek(0)
-            board = discord.File(fp = image_binary, filename='board.png')
-        embed = discord.Embed(
-            title = 'Voltorb Flip',
-            colour = self.member.top_role.color
+            board = discord.File(fp=image_binary, filename='board.png')
+        embed = discord.Embed(title='Voltorb Flip', colour=self.member.top_role.color)
+        embed.set_author(
+            name=str(self.member) + '\'s session', icon_url=self.member.avatar_url
         )
-        embed.set_author(name = str(self.member) + '\'s session', icon_url = self.member.avatar_url)
-        embed.set_thumbnail(url = 'attachment://voltorb.gif')
-        embed.set_image(url = 'attachment://board.png')
+        embed.set_thumbnail(url='attachment://voltorb.gif')
+        embed.set_image(url='attachment://board.png')
         embed.add_field(name='Level:', value=str(self.level), inline=True)
         embed.add_field(name='Coins:', value=str(self.coins), inline=True)
         embed.add_field(name='Total Coins:', value=str(self.total), inline=True)
         await ctx.message.delete()
-        self.message = await self.channel.send(files=[thumb, board], embed = embed)
+        self.message = await self.channel.send(files=[thumb, board], embed=embed)
 
     async def flip(self, ctx):
         try:
@@ -293,7 +504,9 @@ class Voltorb:
             await ctx.send('Type something after the command')
             return
         if 'row' in key[:3].lower() or 'col' in key[:3].lower():
-            coins, board = self.vol.edit_all(str(self.member), key[:3].lower(), key[4:].lower())
+            coins, board = self.vol.edit_all(
+                str(self.member), key[:3].lower(), key[4:].lower()
+            )
         else:
             if key[0] not in self.row or int(key[1]) not in self.col:
                 await ctx.message.delete()
@@ -314,29 +527,41 @@ class Voltorb:
                 self.coins *= coins
         except ValueError:
             self.win = True
-            self.total += self.coins*int(coins[:-1])
+            self.total += self.coins * int(coins[:-1])
         thumb = discord.File('voltorb.gif', filename='voltorb.gif')
         with BytesIO() as image_binary:
             board.save(image_binary, "PNG")
             image_binary.seek(0)
-            board = discord.File(fp = image_binary, filename='board.png')
-        embed = discord.Embed(
-            title = 'Voltorb Flip',
-            colour = self.member.top_role.color
+            board = discord.File(fp=image_binary, filename='board.png')
+        embed = discord.Embed(title='Voltorb Flip', colour=self.member.top_role.color)
+        embed.set_author(
+            name=str(self.member) + '\'s session', icon_url=self.member.avatar_url
         )
-        embed.set_author(name = str(self.member) + '\'s session', icon_url = self.member.avatar_url)
-        embed.set_thumbnail(url = 'attachment://voltorb.gif')
+        embed.set_thumbnail(url='attachment://voltorb.gif')
         embed.add_field(name='Level:', value=str(self.level), inline=True)
         embed.add_field(name='Coins:', value=str(self.coins), inline=True)
         embed.add_field(name='Total Coins:', value=str(self.total), inline=True)
-        embed.set_image(url = 'attachment://board.png')
+        embed.set_image(url='attachment://board.png')
         await ctx.message.delete()
         await self.message.delete()
-        self.message = await self.channel.send(files=[thumb, board], embed = embed)
+        self.message = await self.channel.send(files=[thumb, board], embed=embed)
         if self.lose:
-            self.rip = await ctx.send('Oh no! You hit a voltorb, ' + ctx.author.mention + ' and got 0 coins!\nType `%resume` to continue.')
+            self.rip = await ctx.send(
+                'Oh no! You hit a voltorb, '
+                + ctx.author.mention
+                + ' and got 0 coins!\nType `%resume` to continue.'
+            )
         if self.win:
-            self.rip = await ctx.send('Game clear, ' + ctx.author.mention + '! You received ' + str(self.coins*int(coins[:-1])) + ' Coins! Type `' + prefix + 'advance` to advance to level ' + str(self.level + 1))
+            self.rip = await ctx.send(
+                'Game clear, '
+                + ctx.author.mention
+                + '! You received '
+                + str(self.coins * int(coins[:-1]))
+                + ' Coins! Type `'
+                + prefix
+                + 'advance` to advance to level '
+                + str(self.level + 1)
+            )
             self.coins = 0
 
     async def resume(self, ctx):
@@ -350,7 +575,13 @@ class Voltorb:
             await self.run(ctx)
             self.lose = False
         except TypeError:
-            await ctx.send('You didn\'t lose your current match yet, ' + ctx.author.mention + '. If you would like to restart, type `' + prefix + 'restart`')
+            await ctx.send(
+                'You didn\'t lose your current match yet, '
+                + ctx.author.mention
+                + '. If you would like to restart, type `'
+                + prefix
+                + 'restart`'
+            )
 
     async def advance(self, ctx):
         await self.rip.delete()
@@ -360,14 +591,37 @@ class Voltorb:
         await self.run(ctx)
         self.win = False
 
+
 d = {}
+
 
 @client.command()
 async def excel(ctx):
-    list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
+    list = [
+        'CE-A',
+        'CE-B',
+        'CE-C',
+        'CS-A',
+        'CS-B',
+        'EC-A',
+        'EC-B',
+        'EC-C',
+        'EE-A',
+        'EE-B',
+        'EE-C',
+        'IT-A',
+        'IT-B',
+        'ME-A',
+        'ME-B',
+        'ME-C',
+        'PI-A',
+        'PI-B',
+    ]
     total = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     joined = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx', read_only = True)
+    wb = openpyxl.load_workbook(
+        'Details/' + str(ctx.guild) + ' ' + str(ctx.guild.id) + '.xlsx', read_only=True
+    )
     for i, j in zip(list, range(len(list))):
         ws = wb[i]
         for k in range(3, 80):
@@ -378,15 +632,146 @@ async def excel(ctx):
                 total[-1] += 1
     wb.close()
     joined[-1] = sum(joined[:-1])
-    no1 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(3)]) + '\n\n'
-    no2 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(3, 5)]) + '\n\n'
-    no3 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(5, 8)]) + '\n\n'
-    no4 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(8, 11)]) + '\n\n'
-    no5 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(11, 13)]) + '\n\n'
-    no6 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(13, 16)]) + '\n\n'
-    no7 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(16, 18)]) + '\n'
-    no8 = '(Not-Verified --> ' + str(joined[-1]) + ' joined : ' + str(total[-1] - joined[-1]) + ' remaining)\n'
-    await ctx.send('```lisp\n' + no1 + no2 + no3 + no4 + no5 + no6 + no7 + '\n(Verified --> ' + str(len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])) + ')\n' + no8 + '(Total --> ' + str(len([member for member in ctx.guild.members if not member.bot])) + ')```')
+    no1 = (
+        '\n'.join(
+            [
+                '('
+                + list[i]
+                + ' --> '
+                + str(joined[i])
+                + ' joined : '
+                + str(total[i] - joined[i])
+                + ' remaining)'
+                for i in range(3)
+            ]
+        )
+        + '\n\n'
+    )
+    no2 = (
+        '\n'.join(
+            [
+                '('
+                + list[i]
+                + ' --> '
+                + str(joined[i])
+                + ' joined : '
+                + str(total[i] - joined[i])
+                + ' remaining)'
+                for i in range(3, 5)
+            ]
+        )
+        + '\n\n'
+    )
+    no3 = (
+        '\n'.join(
+            [
+                '('
+                + list[i]
+                + ' --> '
+                + str(joined[i])
+                + ' joined : '
+                + str(total[i] - joined[i])
+                + ' remaining)'
+                for i in range(5, 8)
+            ]
+        )
+        + '\n\n'
+    )
+    no4 = (
+        '\n'.join(
+            [
+                '('
+                + list[i]
+                + ' --> '
+                + str(joined[i])
+                + ' joined : '
+                + str(total[i] - joined[i])
+                + ' remaining)'
+                for i in range(8, 11)
+            ]
+        )
+        + '\n\n'
+    )
+    no5 = (
+        '\n'.join(
+            [
+                '('
+                + list[i]
+                + ' --> '
+                + str(joined[i])
+                + ' joined : '
+                + str(total[i] - joined[i])
+                + ' remaining)'
+                for i in range(11, 13)
+            ]
+        )
+        + '\n\n'
+    )
+    no6 = (
+        '\n'.join(
+            [
+                '('
+                + list[i]
+                + ' --> '
+                + str(joined[i])
+                + ' joined : '
+                + str(total[i] - joined[i])
+                + ' remaining)'
+                for i in range(13, 16)
+            ]
+        )
+        + '\n\n'
+    )
+    no7 = (
+        '\n'.join(
+            [
+                '('
+                + list[i]
+                + ' --> '
+                + str(joined[i])
+                + ' joined : '
+                + str(total[i] - joined[i])
+                + ' remaining)'
+                for i in range(16, 18)
+            ]
+        )
+        + '\n'
+    )
+    no8 = (
+        '(Not-Verified --> '
+        + str(joined[-1])
+        + ' joined : '
+        + str(total[-1] - joined[-1])
+        + ' remaining)\n'
+    )
+    await ctx.send(
+        '```lisp\n'
+        + no1
+        + no2
+        + no3
+        + no4
+        + no5
+        + no6
+        + no7
+        + '\n(Verified --> '
+        + str(
+            len(
+                [
+                    member
+                    for member in ctx.guild.members
+                    if discord.utils.get(ctx.guild.roles, name='Not-Verified')
+                    not in member.roles
+                    and not member.bot
+                ]
+            )
+        )
+        + ')\n'
+        + no8
+        + '(Total --> '
+        + str(len([member for member in ctx.guild.members if not member.bot]))
+        + ')```'
+    )
+
 
 @client.event
 async def on_command_error(ctx, error):
@@ -394,12 +779,22 @@ async def on_command_error(ctx, error):
         await ctx.send(str(error) + available)
     else:
         print(f'{bcolors.Red}{error}{bcolors.White}\n')
-        await ctx.send('\nAn error occurred, contact ' + client.get_guild(783215699707166760).get_member(534651911903772674).mention + available)
+        await ctx.send(
+            '\nAn error occurred, contact '
+            + client.get_guild(783215699707166760)
+            .get_member(534651911903772674)
+            .mention
+            + available
+        )
         raise error
+
 
 @client.command()
 async def rename(ctx):
-    if 'mod' not in [name.name for name in ctx.author.roles] or not ctx.message.mentions:
+    if (
+        'mod' not in [name.name for name in ctx.author.roles]
+        or not ctx.message.mentions
+    ):
         await ctx.send('Lol nice try')
         return
     member = ctx.message.mentions[0]
@@ -411,14 +806,17 @@ async def rename(ctx):
     if not section:
         await ctx.send('The requested record wasn\'t found!')
     else:
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+        wb = openpyxl.load_workbook(
+            'Details/' + str(ctx.guild) + ' ' + str(ctx.guild.id) + '.xlsx'
+        )
         ws = wb[section]
         for i in range(3, 90):
             if id == ws['F' + str(i)].value:
                 word = ws['D' + str(i)].value.split(' ')[0]
-                await member.edit(nick = word[:1] + word[1:].lower())
+                await member.edit(nick=word[:1] + word[1:].lower())
                 break
     await ctx.message.delete()
+
 
 @client.event
 async def on_member_remove(member):
@@ -429,7 +827,9 @@ async def on_member_remove(member):
                     section = role.name
                     break
             print(section)
-            wb = openpyxl.load_workbook('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
+            wb = openpyxl.load_workbook(
+                'Details/' + str(member.guild) + ' ' + str(member.guild.id) + '.xlsx'
+            )
             ws = wb[section]
             for i in range(3, 90):
                 print(member, ws['F' + str(i)].value)
@@ -441,11 +841,18 @@ async def on_member_remove(member):
                     ws['F' + str(i)].font = ft_reset
                     ws['F' + str(i)] = ''
                     break
-            wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
-            await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
+            wb.save(
+                'Details/' + str(member.guild) + ' ' + str(member.guild.id) + '.xlsx'
+            )
+            await channel.send(
+                f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯'
+            )
         except UnboundLocalError:
             channel = client.get_channel(783215699707166763)
-            await channel.send(f'**{member}** has left the server without even verifying <a:triggered:803206114623619092>')
+            await channel.send(
+                f'**{member}** has left the server without even verifying <a:triggered:803206114623619092>'
+            )
+
 
 @client.event
 async def on_user_update(old, new):
@@ -455,13 +862,16 @@ async def on_user_update(old, new):
     for role in old.roles:
         if str(role.color) == '#f1c40f':
             section = role.name
-    wb = openpyxl.load_workbook('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
+    wb = openpyxl.load_workbook(
+        'Details/' + str(old.guild) + ' ' + str(old.guild.id) + '.xlsx'
+    )
     ws = wb[section]
     for i in range(3, 90):
         if id == ws['F' + str(i)].value:
             print('\nChanged the ID in database\n')
             ws['F' + str(i)] = str(new)
-    wb.save('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
+    wb.save('Details/' + str(old.guild) + ' ' + str(old.guild.id) + '.xlsx')
+
 
 @client.command(help=vf, aliases=['vf_start'])
 async def voltorb_start(ctx):
@@ -469,31 +879,64 @@ async def voltorb_start(ctx):
     d[ctx.author.id] = v1
     await d[ctx.author.id].run(ctx=ctx)
 
+
 @client.command()
 async def flip(ctx):
     try:
         if d[ctx.author.id].win:
-            await ctx.send('You\'ve already won your current session ' + ctx.author.mention + '. Type `' + prefix + 'advance` to proceed to the next level')
+            await ctx.send(
+                'You\'ve already won your current session '
+                + ctx.author.mention
+                + '. Type `'
+                + prefix
+                + 'advance` to proceed to the next level'
+            )
             return
         if d[ctx.author.id].lose:
-            await ctx.send('You\'ve lost your current session ' + ctx.author.mention + '. Type `' + prefix + 'resume` to continue')
+            await ctx.send(
+                'You\'ve lost your current session '
+                + ctx.author.mention
+                + '. Type `'
+                + prefix
+                + 'resume` to continue'
+            )
             return
         await d[ctx.author.id].flip(ctx=ctx)
     except KeyError:
-        await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `%vf_start` to get started.')
+        await ctx.send(
+            'You didn\'t start playing, '
+            + ctx.author.mention
+            + '. Type `%vf_start` to get started.'
+        )
+
 
 @client.command()
 async def resume(ctx):
     try:
         if d[ctx.author.id].win:
-            await ctx.send('You\'ve already won your current session ' + ctx.author.mention + '. Type `' + prefix + 'advance` to proceed to the next level')
+            await ctx.send(
+                'You\'ve already won your current session '
+                + ctx.author.mention
+                + '. Type `'
+                + prefix
+                + 'advance` to proceed to the next level'
+            )
             return
         if not d[ctx.author.id].lose:
-            await ctx.send('You\'ve not lost your current session yet ' + ctx.author.mention + '.')
+            await ctx.send(
+                'You\'ve not lost your current session yet ' + ctx.author.mention + '.'
+            )
             return
         await d[ctx.author.id].resume(ctx=ctx)
     except KeyError:
-        await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `' + prefix + 'vf_start` to get started.')
+        await ctx.send(
+            'You didn\'t start playing, '
+            + ctx.author.mention
+            + '. Type `'
+            + prefix
+            + 'vf_start` to get started.'
+        )
+
 
 @client.command()
 async def advance(ctx):
@@ -502,12 +945,31 @@ async def advance(ctx):
             await d[ctx.author.id].advance(ctx=ctx)
             d[ctx.author.id].win = False
         elif d[ctx.author.id].lose:
-            await ctx.send('You\'ve lost your current session ' + ctx.author.mention + '. Type `' + prefix + 'resume` to continue')
+            await ctx.send(
+                'You\'ve lost your current session '
+                + ctx.author.mention
+                + '. Type `'
+                + prefix
+                + 'resume` to continue'
+            )
             return
         else:
-            await ctx.send('You didn\'t win your current match yet, ' + ctx.author.mention + '. If you would like to restart, type `' + prefix + 'restart`')
+            await ctx.send(
+                'You didn\'t win your current match yet, '
+                + ctx.author.mention
+                + '. If you would like to restart, type `'
+                + prefix
+                + 'restart`'
+            )
     except KeyError:
-        await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `' + prefix + 'vf_start` to get started.')
+        await ctx.send(
+            'You didn\'t start playing, '
+            + ctx.author.mention
+            + '. Type `'
+            + prefix
+            + 'vf_start` to get started.'
+        )
+
 
 @client.command()
 async def quit(ctx):
@@ -516,15 +978,26 @@ async def quit(ctx):
         d.pop(ctx.author.id)
         await ctx.message.delete()
     except KeyError:
-        await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `' + prefix + 'vf_start` to get started.')
+        await ctx.send(
+            'You didn\'t start playing, '
+            + ctx.author.mention
+            + '. Type `'
+            + prefix
+            + 'vf_start` to get started.'
+        )
+
 
 @client.command(aliases=['inv'])
 async def invite(ctx):
-    await ctx.send('**NITKKR server:** https://discord.gg/4eF7R6afqv\n**kkr++ server:** https://discord.gg/epaTW7tjYR')
+    await ctx.send(
+        '**NITKKR server:** https://discord.gg/4eF7R6afqv\n**kkr++ server:** https://discord.gg/epaTW7tjYR'
+    )
+
 
 @client.command(aliases=['prefix'])
 async def change_prefix(ctx):
     prefix = ctx.message.content.split('prefix ')[1]
+
 
 class MyHelp(commands.MinimalHelpCommand):
     async def send_command_help(self, command):
@@ -536,6 +1009,7 @@ class MyHelp(commands.MinimalHelpCommand):
 
         channel = self.get_destination()
         await channel.send(embed=embed)
+
 
 client.help_command = MyHelp()
 
