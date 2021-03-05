@@ -1,4 +1,4 @@
-import discord, openpyxl, asyncio, aiohttp, os
+import discord, openpyxl, asyncio, aiohttp, os, sqlite3
 from discord.utils import get
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
@@ -521,10 +521,6 @@ async def quit(ctx):
 @client.command(aliases=['inv'])
 async def invite(ctx):
     await ctx.send('**NITKKR server:** https://discord.gg/4eF7R6afqv\n**kkr++ server:** https://discord.gg/epaTW7tjYR')
-
-@client.command(aliases=['prefix'])
-async def change_prefix(ctx):
-    prefix = ctx.message.content.split('prefix ')[1]
 
 class MyHelp(commands.MinimalHelpCommand):
     async def send_command_help(self, command):
