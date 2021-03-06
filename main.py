@@ -4,11 +4,13 @@ from discord.ext import commands
 from openpyxl.styles import Font
 from voltorb import voltorb
 from io import BytesIO
+from tags import Tags
 
 prefix = '%'
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix = prefix, intents = intents, help_command=commands.DefaultHelpCommand())
+client.add_cog(Tags())
 
 available = '\nAvailable commands: `' + prefix + 'verify`, `' + prefix + 'profile`, `' + prefix + 'memlist`, `' + prefix + 'tag` and `' + prefix + 'vf_start`.'
 
