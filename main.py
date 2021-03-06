@@ -1,11 +1,7 @@
 import discord, openpyxl, asyncio, aiohttp, os, sqlite3
 from discord.utils import get
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound
-from openpyxl.styles import colors
-from openpyxl.styles import Font, Color
-from openpyxl import Workbook
-from discord import Webhook, AsyncWebhookAdapter
+from openpyxl.styles import Font
 from voltorb import voltorb
 from io import BytesIO
 
