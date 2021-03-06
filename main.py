@@ -441,14 +441,16 @@ async def on_member_remove(member):
                     ws['F' + str(i)].font = ft_reset
                     ws['F' + str(i)] = ''
                     break
-            wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
             await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
-        except UnboundLocalError:
+            wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
+        except Exception as error:
             channel = client.get_channel(783215699707166763)
             await channel.send(f'**{member}** has left the server without even verifying <a:triggered:803206114623619092>')
+            raise error
 
 @client.event
 async def on_user_update(old, new):
+    old = old.mutual_guilds[0].get_member(old.id)
     if old.name == new.name and old.id == new.id:
         return
     section = str()
