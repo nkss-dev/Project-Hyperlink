@@ -217,12 +217,16 @@ async def tag(ctx):
             await ctx.send('You can\'t tag `@everyone` or `@here`')
             return
         if i and '@' in i:
+            i = i.replace('\\', '')
             for j in i.split('@')[1:]:
                 usertag = False
                 for k in ctx.message.mentions:
                     if str(k.id) in j:
                         usertag = True
-                if j[:4] not in sections and j[:5] not in subsections:
+                if '&' in j and int(j[1:-1]) in [role.id for role in ctx.guild.roles]:
+                    msg = msg.replace('\<@' + j, '@' + ctx.guild.get_role(int(j[1:-1])).name)
+                    j = j.replace(j, ctx.guild.get_role(int(j[1:-1])).name)
+                elif j[:4].upper() not in sections and j[:5].upper() not in subsections:
                     break
                 if not usertag:
                     if j and j[:2].upper() in section:
@@ -234,14 +238,17 @@ async def tag(ctx):
                             elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
                                 msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
                             else:
+                                print('1')
                                 await ctx.send('You can\'t tag sections other than your own!')
                                 return
                         elif j[3].upper() == section[3]:
                             msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
                         else:
+                            print('2')
                             await ctx.send('You can\'t tag sections other than your own!')
                             return
                     elif j:
+                        print('3')
                         await ctx.send('You can\'t tag sections other than your own!')
                         return
 
