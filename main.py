@@ -4,6 +4,9 @@ from discord.ext import commands
 from openpyxl.styles import Font
 from voltorb import voltorb
 from io import BytesIO
+from dotenv import load_dotenv
+
+load_dotenv()
 from tags import Tags
 
 prefix = '%'
@@ -58,7 +61,6 @@ class bcolors:
 
 @client.event
 async def on_ready():
-    os.system('cls')
     print('Bot Online!\n')
 
 @client.event
@@ -550,4 +552,4 @@ class MyHelp(commands.MinimalHelpCommand):
 
 client.help_command = MyHelp()
 
-client.run(input('Enter token --> '))
+client.run(os.getenv("BOT_TOKEN"))
