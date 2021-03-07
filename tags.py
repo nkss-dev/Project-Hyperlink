@@ -12,7 +12,7 @@ class Tags(commands.Cog):
         name = msg.content
         if msg.author.bot or name not in self.data:
             return
-        data = self.data[name]["content"].replace("@", "​@​")
+        data = self.data[name]["content"]
 
         await msg.channel.send(data)
 
@@ -29,7 +29,7 @@ class Tags(commands.Cog):
         if name in self.data:
             await ctx.send(f"it already exists, use `{ctx.prefix}tags delete` to delete it")
             return
-
+        content = await commands.clean_content().convert(ctx, content)
         self.data[name] = {
             "author": author,
             "content": content,
