@@ -6,6 +6,15 @@ from voltorb import voltorb
 from io import BytesIO
 
 prefix = '%'
+sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
+subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'CE-08', 'CE-09',
+            'CS-01', 'CS-02', 'CS-03', 'CS-04', 'CS-05', 'CS-06',
+            'EC-01', 'EC-02', 'EC-03', 'EC-04', 'EC-05', 'EC-06', 'EC-07', 'EC-08', 'EC-09',
+            'EE-01', 'EE-02', 'EE-03', 'EE-04', 'EE-05', 'EE-06', 'EE-07', 'EE-08', 'EE-09',
+            'IT-01', 'IT-02', 'IT-03', 'IT-04', 'IT-05', 'IT-06',
+            'ME-01', 'ME-02', 'ME-03', 'ME-04', 'ME-05', 'ME-06', 'ME-07', 'ME-08', 'ME-09',
+            'PI-01', 'PI-02', 'PI-03', 'PI-04', 'PI-05', 'PI-06'
+        ]
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix = prefix, intents = intents, help_command=commands.DefaultHelpCommand())
@@ -213,6 +222,8 @@ async def tag(ctx):
                 for k in ctx.message.mentions:
                     if str(k.id) in j:
                         usertag = True
+                if j[:4] not in sections and j[:5] not in subsections:
+                    break
                 if not usertag:
                     if j and j[:2].upper() in section:
                         if j[3] == '0':
@@ -223,17 +234,14 @@ async def tag(ctx):
                             elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
                                 msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
                             else:
-                                print('1')
                                 await ctx.send('You can\'t tag sections other than your own!')
                                 return
                         elif j[3].upper() == section[3]:
                             msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
                         else:
-                            print('2')
                             await ctx.send('You can\'t tag sections other than your own!')
                             return
                     elif j:
-                        print('3')
                         await ctx.send('You can\'t tag sections other than your own!')
                         return
 
