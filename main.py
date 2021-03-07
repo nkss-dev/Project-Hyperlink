@@ -4,6 +4,9 @@ from discord.ext import commands
 from openpyxl.styles import Font
 from voltorb import voltorb
 from io import BytesIO
+from dotenv import load_dotenv
+
+load_dotenv()
 
 prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
@@ -548,4 +551,4 @@ class MyHelp(commands.MinimalHelpCommand):
 
 client.help_command = MyHelp()
 
-client.run(input('Enter token --> '))
+client.run(os.getenv("BOT_TOKEN"))
