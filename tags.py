@@ -4,8 +4,11 @@ from discord.ext import commands
 
 class Tags(commands.Cog):
     def __init__(self):
-        with open("Details/tags.json") as f:
-            self.data = json.load(f)
+        try:
+            with open("Details/tags.json") as f:
+                self.data = json.load(f)
+        except FileNotFoundError:
+            self.data = {}
 
     @commands.Cog.listener()
     async def on_message(self, msg):
