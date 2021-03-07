@@ -59,7 +59,6 @@ class bcolors:
 
 @client.event
 async def on_ready():
-    os.system('cls')
     print('Bot Online!\n')
 
 @client.event
