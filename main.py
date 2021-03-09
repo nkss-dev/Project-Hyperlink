@@ -178,7 +178,7 @@ async def profile(ctx):
 @client.command(help='Displays the total number of joined and remaining students for each section. Also displays the number of losers who didn\'t verify and total number of members on this server')
 async def memlist(ctx):
     list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B', 'Not-Verified']
-    total = [63, 61, 64, 58, 61, 59, 59, 56, 60, 57, 55, 64, 64, 67, 69, 70, 58, 59, 1104 - len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])]
+    total = [64, 61, 64, 58, 61, 59, 59, 56, 60, 57, 55, 64, 64, 67, 69, 70, 58, 59, 1105 - len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])]
     previous = list[0][:2]
     no = '```lisp\n'
     for section, num in zip(list[:-1], total[:-1]):
