@@ -5,7 +5,7 @@ from discord.ext import commands
 class Tags(commands.Cog):
     def __init__(self):
         try:
-            with open("Details/tags.json") as f:
+            with open("db/tags.json") as f:
                 self.data = json.load(f)
         except FileNotFoundError:
             self.data = {}
@@ -106,5 +106,5 @@ class Tags(commands.Cog):
         await ctx.send(data["content"].replace("@", "​@​"))
 
     def save(self):
-        with open("Details/tags.json", 'w') as f:
+        with open("db/tags.json", 'w') as f:
             json.dump(self.data, f)
