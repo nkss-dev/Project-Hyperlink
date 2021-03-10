@@ -63,7 +63,7 @@ class Tags(commands.Cog):
         await ctx.send("tag edited.")
 
     @tags.command(name="clone")
-    async def clone(self, ctx, name):
+    async def clone(self, ctx, new_name, name):
         """Clones an existing tag"""
         author = ctx.author.id
 
@@ -71,8 +71,8 @@ class Tags(commands.Cog):
             await ctx.send(f"the tag '{name}' doesn't exist.")
             return
 
-        content = self.data[name]
-        self.data[name] = {
+        content = self.data[name]["content"]
+        self.data[new_name] = {
             "author": author,
             "content": content,
         }
