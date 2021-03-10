@@ -92,65 +92,60 @@ async def on_member_join(member):
 
 @client.command(help='Verifies your presence in the record and gives you roles based on your section/subsection.\nAlso enables you to use the `%profile` and `%tag` commands')
 async def verify(ctx):
+    # Checks if the author is already in the database
+    conn = sqlite3.connect('db/details.db')
+    temp = conn.cursor()
+    temp.execute('SELECT * from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+    if temp.fetchone():
+        await ctx.send('You\'re already verified!')
+        return
+    # Assigns message content to variable
     try:
         content = ctx.message.content.split('verify ')[1]
     except:
-        await ctx.send('Type something after `' + prefix + 'verify`')
+        await ctx.send(f'Type something after `{prefix}verify`, {ctx.author.mention}')
         return
-    print(ctx.author, 'tried to verify!')
-    wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
     try:
-        flag = 0
-        section, roll_no = content.split(' ')
-        roll_no = int(roll_no)
-        ws = wb[section]
-        for i in range(3, 90):
-            if roll_no == ws['B' + str(i)].value:
-                flag = i
-                break
-        if flag:
-            if ws['F' + str(flag)].value:
-                if str(ctx.author) == ws['F' + str(flag)].value:
-                    await ctx.send('You\'re already verified!')
-                    return
-                await ctx.send('The details you entered is of a record already claimed by `' + ws['F' + str(flag)].value + '` ' + ctx.message.author.mention + '.\nTry another record. If you think this was a mistake, contact a moderator.')
-                print(ctx.author, 'failed to verify.\n')
-                return
-            role = get(ctx.guild.roles, name = str(ws['C' + str(flag)].value))
-            await ctx.author.add_roles(role)
-            role = get(ctx.guild.roles, name = section)
-            await ctx.author.add_roles(role)
-            ws['B' + str(flag)].font = ft
-            ws['C' + str(flag)].font = ft
-            ws['D' + str(flag)].font = ft
-            ws['E' + str(flag)].font = ft
-            ws['F' + str(flag)].font = ft
-            ws['F' + str(flag)] = str(ctx.author)
-            print(ctx.author, 'verified successfully.\n')
-            await ctx.send('Your record was found and verified ' + ctx.message.author.mention + '!\nYou will now be removed from this channel.')
-            role = get(ctx.guild.roles, id = 803608144181854208)
-            await ctx.author.remove_roles(role)
-            while True:
-                try:
-                    wb.save('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-                    break
-                except:
-                    continue
-            id = str(ctx.author)
-            wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-            ws = wb[section]
-            for i in range(3, 90):
-                if id == ws['F' + str(i)].value:
-                    word = ws['D' + str(i)].value.split(' ')[0]
-                    await ctx.author.edit(nick = word[:1] + word[1:].lower())
-                    break
-        else:
-            print(ctx.author, 'failed to verify.\n')
-            await ctx.send('Error while matching details in record ' + ctx.author.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
+        section = content.split(' ')[0]
+        roll_no = int(content.split(' ')[1])
+        c = conn.cursor()
+        # Gets the record of the given roll number
+        c.execute('SELECT * from main where Roll_Number = (:roll)', {'roll': roll_no})
+        tuple = c.fetchone()
+        # Exit if roll number doesn't exist
+        if not tuple:
+            await ctx.send(f'The requested record was not found, {ctx.author.mention}. Please re-check the entered details and try again')
+            return
+        # Exit if entered section doesn't match an existing section
+        if section not in sections:
+            await ctx.send(f'"{section}" is not an existing section, {ctx.author.mention}.\nPlease re-check the entered details and try again')
+            return
+        # Exit if entered section doesn't match the section that the roll number is bound to
+        if section != tuple[2]:
+            await ctx.send(f'The section that you entered does not match that of the roll number that you entered, {ctx.author.mention}.\nPlease re-check the entered details and try again')
+            return
+        # Exit if the record is already claimed by another user
+        if tuple[9]:
+            await ctx.send(f'The details you entered is of a record already claimed by `{tuple[9]}` {ctx.author.mention}.\nTry another record. If you think this was a mistake, contact a moderator.')
+            return
+        # Assigning one SubSection and one Section role to the user
+        role = get(ctx.guild.roles, name = tuple[2])
+        await ctx.author.add_roles(role)
+        role = get(ctx.guild.roles, name = tuple[3])
+        await ctx.author.add_roles(role)
+        await ctx.send(f'Your record was found and verified {ctx.author.mention}!\nYou will now be removed from this channel.')
+        # Removing the 'Not-Verified' role from the user
+        role = get(ctx.guild.roles, name = 'Not-Verified')
+        await ctx.author.remove_roles(role)
+        # Updating the record in the database
+        c.execute('UPDATE main SET Discord_UID = (:uid) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no})
+        conn.commit()
+        # Changing the nick of the user to their first name
+        word = tuple[4].split(' ')[0]
+        await ctx.author.edit(nick = word[:1] + word[1:].lower())
     except Exception as error:
         print(f'{bcolors.Red}{error}{bcolors.White}\n')
-        print(ctx.author, 'failed to verify.\n')
-        await ctx.send('Error while matching details in record ' + ctx.author.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
+        await ctx.send(f'Error while matching details in record {ctx.author.mention}.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
 
 @client.command(help='Displays details of the user related to the server and the college', aliases=['p', 'prof'])
 async def profile(ctx):
@@ -171,7 +166,7 @@ async def profile(ctx):
     if not section:
         await ctx.send('The requested record wasn\'t found!')
     else:
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+        wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
         ws = wb[section]
         for i in range(3, 90):
             if id == ws['F' + str(i)].value:
@@ -400,7 +395,7 @@ async def excel(ctx):
     list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
     total = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     joined = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx', read_only = True)
+    wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx', read_only = True)
     for i, j in zip(list, range(len(list))):
         ws = wb[i]
         for k in range(3, 80):
@@ -444,7 +439,7 @@ async def rename(ctx):
     if not section:
         await ctx.send('The requested record wasn\'t found!')
     else:
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+        wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
         ws = wb[section]
         for i in range(3, 90):
             if id == ws['F' + str(i)].value:
@@ -462,7 +457,7 @@ async def on_member_remove(member):
                     section = role.name
                     break
             print(section)
-            wb = openpyxl.load_workbook('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
+            wb = openpyxl.load_workbook('db/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
             ws = wb[section]
             for i in range(3, 90):
                 print(member, ws['F' + str(i)].value)
@@ -476,7 +471,7 @@ async def on_member_remove(member):
                     break
             channel = client.get_channel(783215699707166763)
             await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
-            wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
+            wb.save('db/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
         except Exception as error:
             channel = client.get_channel(783215699707166763)
             await channel.send(f'**{member}** has left the server without even verifying <a:triggered:803206114623619092>')
@@ -492,13 +487,13 @@ async def on_user_update(old, new):
     for role in old.roles:
         if str(role.color) == '#f1c40f':
             section = role.name
-    wb = openpyxl.load_workbook('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
+    wb = openpyxl.load_workbook('db/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
     ws = wb[section]
     for i in range(3, 90):
         if id == ws['F' + str(i)].value:
             print('\nChanged the ID in database\n')
             ws['F' + str(i)] = str(new)
-    wb.save('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
+    wb.save('db/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
 
 @client.command(help=vf, aliases=['vf_start'])
 async def voltorb_start(ctx):
