@@ -88,11 +88,11 @@ class Tags(commands.Cog):
 
         old_data = self.data[name]
         if old_data["author"] != ctx.message.author.id:
-            await ctx.send("You are not the author :rage:")
+            await ctx.send("you are not the author :rage:")
             return
 
         del self.data[name]
-        await ctx.send("deleted")
+        await ctx.send("tag deleted")
         self.save()
 
     @tags.command(name="get")
