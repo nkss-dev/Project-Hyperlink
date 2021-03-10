@@ -79,11 +79,21 @@ async def verify(ctx):
     except:
         await ctx.send('Type something after `' + prefix + 'verify`')
         return
-    print(ctx.author, 'tried to verify!')
+    force = False
+    try:
+        if 'mod' in [name.name for name in ctx.author.roles]:
+            member = ctx.message.mentions[0]
+            force = True
+        else:
+            member = ctx.author
+    except:
+        member = ctx.author
+    print(member, 'tried to verify!')
     wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
     try:
         flag = 0
-        section, roll_no = content.split(' ')
+        section = content.split(' ')[0]
+        roll_no = content.split(' ')[1]
         roll_no = int(roll_no)
         ws = wb[section]
         for i in range(3, 90):
@@ -92,47 +102,48 @@ async def verify(ctx):
                 break
         if flag:
             if ws['F' + str(flag)].value:
-                if str(ctx.author) == ws['F' + str(flag)].value:
+                if not force and str(member) == ws['F' + str(flag)].value:
                     await ctx.send('You\'re already verified!')
                     return
-                await ctx.send('The details you entered is of a record already claimed by `' + ws['F' + str(flag)].value + '` ' + ctx.message.author.mention + '.\nTry another record. If you think this was a mistake, contact a moderator.')
-                print(ctx.author, 'failed to verify.\n')
-                return
+                if not force:
+                    await ctx.send('The details you entered is of a record already claimed by `' + ws['F' + str(flag)].value + '` ' + member.mention + '.\nTry another record. If you think this was a mistake, contact a moderator.')
+                    print(member, 'failed to verify.\n')
+                    return
             role = get(ctx.guild.roles, name = str(ws['C' + str(flag)].value))
-            await ctx.author.add_roles(role)
+            await member.add_roles(role)
             role = get(ctx.guild.roles, name = section)
-            await ctx.author.add_roles(role)
+            await member.add_roles(role)
             ws['B' + str(flag)].font = ft
             ws['C' + str(flag)].font = ft
             ws['D' + str(flag)].font = ft
             ws['E' + str(flag)].font = ft
             ws['F' + str(flag)].font = ft
-            ws['F' + str(flag)] = str(ctx.author)
-            print(ctx.author, 'verified successfully.\n')
-            await ctx.send('Your record was found and verified ' + ctx.message.author.mention + '!\nYou will now be removed from this channel.')
+            ws['F' + str(flag)] = str(member)
+            print(member, 'verified successfully.\n')
+            await ctx.send('Your record was found and verified ' + member.mention + '!\nYou will now be removed from this channel.')
             role = get(ctx.guild.roles, id = 803608144181854208)
-            await ctx.author.remove_roles(role)
+            await member.remove_roles(role)
             while True:
                 try:
                     wb.save('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
                     break
                 except:
                     continue
-            id = str(ctx.author)
+            id = str(member)
             wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
             ws = wb[section]
             for i in range(3, 90):
                 if id == ws['F' + str(i)].value:
                     word = ws['D' + str(i)].value.split(' ')[0]
-                    await ctx.author.edit(nick = word[:1] + word[1:].lower())
+                    await member.edit(nick = word[:1] + word[1:].lower())
                     break
         else:
-            print(ctx.author, 'failed to verify.\n')
-            await ctx.send('Error while matching details in record ' + ctx.author.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
+            print(member, 'failed to verify.\n')
+            await ctx.send('Error while matching details in record ' + member.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
     except Exception as error:
         print(f'{bcolors.Red}{error}{bcolors.White}\n')
-        print(ctx.author, 'failed to verify.\n')
-        await ctx.send('Error while matching details in record ' + ctx.author.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
+        print(member, 'failed to verify.\n')
+        await ctx.send('Error while matching details in record ' + member.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
 
 @client.command(help='Displays details of the user related to the server and the college', aliases=['p', 'prof'])
 async def profile(ctx):
@@ -456,6 +467,7 @@ async def on_member_remove(member):
                     ws['F' + str(i)].font = ft_reset
                     ws['F' + str(i)] = ''
                     break
+            channel = client.get_channel(783215699707166763)
             await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
             wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
         except Exception as error:
@@ -465,6 +477,7 @@ async def on_member_remove(member):
 
 @client.event
 async def on_user_update(old, new):
+    print(old.name)
     old = old.mutual_guilds[0].get_member(old.id)
     if old.name == new.name and old.id == new.id:
         return
