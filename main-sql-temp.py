@@ -1,4 +1,4 @@
-import discord, openpyxl, asyncio, aiohttp, os, sqlite3
+import discord, openpyxl, asyncio, aiohttp, os, sqlite3, json
 from discord.utils import get
 from discord.ext import commands
 from openpyxl.styles import Font
@@ -61,15 +61,33 @@ class bcolors:
 
 @client.event
 async def on_ready():
-    print('Bot Online!\n')
+    print(f'Logged on as {client.user}!\n')
 
 @client.event
 async def on_member_join(member):
+    print(f'{member.name} has joined!')
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    c.execute('SELECT * from main where Discord_UID = (:uid)', {'uid': member.id})
+    tuple = c.fetchone()
     guild = member.guild
+    if tuple:
+        guilds = json.loads(tuple[10])
+        if guild.id not in guilds:
+            guilds.append(guild.id)
+        guilds = json.dumps(guilds)
+        role = get(guild.roles, name = tuple[2])
+        await member.add_roles(role)
+        print(f'{role} was given to {member.name}!')
+        role = get(guild.roles, name = tuple[3])
+        await member.add_roles(role)
+        print(f'{role} was given to {member.name}!\n')
+        c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+        conn.commit()
+        return
     role = get(guild.roles, name = 'Not-Verified')
     await member.add_roles(role)
     await member.send(dm_message)
-    print(f'{member.name} has joined!')
     print(f'{role} was given to {member.name}!\n')
 
 @client.command(help='Verifies your presence in the record and gives you roles based on your section/subsection.\nAlso enables you to use the `%profile` and `%tag` commands')
@@ -178,7 +196,7 @@ async def profile(ctx):
 @client.command(help='Displays the total number of joined and remaining students for each section. Also displays the number of losers who didn\'t verify and total number of members on this server')
 async def memlist(ctx):
     list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B', 'Not-Verified']
-    total = [63, 61, 64, 58, 61, 59, 59, 56, 60, 57, 55, 64, 64, 67, 69, 70, 58, 59, 1104 - len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])]
+    total = [64, 61, 64, 58, 61, 59, 59, 56, 60, 57, 55, 64, 64, 67, 69, 70, 58, 59, 1105 - len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])]
     previous = list[0][:2]
     no = '```lisp\n'
     for section, num in zip(list[:-1], total[:-1]):
@@ -456,6 +474,7 @@ async def on_member_remove(member):
                     ws['F' + str(i)].font = ft_reset
                     ws['F' + str(i)] = ''
                     break
+            channel = client.get_channel(783215699707166763)
             await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
             wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
         except Exception as error:
@@ -465,6 +484,7 @@ async def on_member_remove(member):
 
 @client.event
 async def on_user_update(old, new):
+    print(old.name)
     old = old.mutual_guilds[0].get_member(old.id)
     if old.name == new.name and old.id == new.id:
         return
