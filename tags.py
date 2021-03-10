@@ -40,6 +40,45 @@ class Tags(commands.Cog):
         self.save()
         await ctx.send("It is safe with me now")
 
+    @tags.command(name="edit")
+    async def edit(self, ctx, name, *, content):
+        """Edit an existing tag"""
+        author = ctx.author.id
+
+        if name not in self.data:
+            await ctx.send(f"The tags '{name}' doesn't exist.")
+            return
+
+        old_data = self.data[name]
+        if old_data["author"] != author:
+            await ctx.send("you are not the author :rage:")
+            return
+
+        content = await commands.clean_content().convert(ctx, content)
+        self.data[name] = {
+            "author": author,
+            "content": content,
+        }
+        self.save()
+        await ctx.send("tag edited.")
+
+    @tags.command(name="clone")
+    async def clone(self, ctx, name):
+        """Clones an existing tag"""
+        author = ctx.author.id
+
+        if name not in self.data:
+            await ctx.send(f"the tag '{name}' doesn't exist.")
+            return
+
+        content = self.data[name]
+        self.data[name] = {
+            "author": author,
+            "content": content,
+        }
+        self.save()
+        await ctx.send("tag cloned.")
+
     @tags.command(name="delete")
     async def delete(self, ctx, name):
         """Delete the given tag. Only author can delete the tag"""
