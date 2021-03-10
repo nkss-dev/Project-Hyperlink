@@ -65,30 +65,33 @@ async def on_ready():
 
 @client.event
 async def on_member_join(member):
-    print(f'{member.name} has joined!')
     conn = sqlite3.connect('db/details.db')
     c = conn.cursor()
+    # Checks if the user who joined is already in the database or not
     c.execute('SELECT * from main where Discord_UID = (:uid)', {'uid': member.id})
     tuple = c.fetchone()
     guild = member.guild
     if tuple:
+        # Fetches the mutual guilds list from the user
         guilds = json.loads(tuple[10])
+        # Adds the new guild id if it's a new one
         if guild.id not in guilds:
             guilds.append(guild.id)
         guilds = json.dumps(guilds)
+        # Assigning one SubSection and one Section role to the user
         role = get(guild.roles, name = tuple[2])
         await member.add_roles(role)
-        print(f'{role} was given to {member.name}!')
         role = get(guild.roles, name = tuple[3])
         await member.add_roles(role)
-        print(f'{role} was given to {member.name}!\n')
+        # Updating the record in the database
         c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
         conn.commit()
         return
+    # Adding the 'Not-Verified' role if the user details do not exist in the database
     role = get(guild.roles, name = 'Not-Verified')
     await member.add_roles(role)
+    # Sends a dm to the new user explaining that they have to verify
     await member.send(dm_message)
-    print(f'{role} was given to {member.name}!\n')
 
 @client.command(help='Verifies your presence in the record and gives you roles based on your section/subsection.\nAlso enables you to use the `%profile` and `%tag` commands')
 async def verify(ctx):
