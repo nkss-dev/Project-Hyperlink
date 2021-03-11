@@ -451,31 +451,32 @@ async def nick(ctx):
 @client.event
 async def on_member_remove(member):
     if not member.bot:
-        try:
-            for role in member.roles:
-                if str(role.color) == '#f1c40f':
-                    section = role.name
-                    break
-            print(section)
-            wb = openpyxl.load_workbook('db/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
-            ws = wb[section]
-            for i in range(3, 90):
-                print(member, ws['F' + str(i)].value)
-                if str(member) == ws['F' + str(i)].value:
-                    ws['B' + str(i)].font = ft_reset
-                    ws['C' + str(i)].font = ft_reset
-                    ws['D' + str(i)].font = ft_reset
-                    ws['E' + str(i)].font = ft_reset
-                    ws['F' + str(i)].font = ft_reset
-                    ws['F' + str(i)] = ''
-                    break
-            channel = client.get_channel(783215699707166763)
-            await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
-            wb.save('db/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
-        except Exception as error:
-            channel = client.get_channel(783215699707166763)
-            await channel.send(f'**{member}** has left the server without even verifying <a:triggered:803206114623619092>')
-            raise error
+        conn = sqlite3.connect('db/details.db')
+        c = conn.cursor()
+        # Gets details of user from the database
+        c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+        tuple = c.fetchone()
+        channel = client.get_channel(783215699707166763)
+        # Exit if the user was not found
+        if not tuple:
+            await channel.send(f'{member.mention} has left the server without even verifying <a:triggered:803206114623619092>')
+            return
+        # Fetches the mutual guilds list from the user
+        guilds = json.loads(tuple[10])
+        # Removes the guild from the list
+        guilds.remove(member.guild.id)
+        # Remvoes their ID from the database if they don't have a verified email
+        # and this was the only guild they shared with the bot
+        if tuple[11] == 'False' and len(guilds) > 0:
+            guilds = json.dumps(guilds)
+            c.execute('UPDATE main SET Discord_UID = (:uid) Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+            conn.commit()
+        # Only removes the guild ID otherwise
+        else:
+            guilds = json.dumps(guilds)
+            c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+            conn.commit()
+        await channel.send(f'{member.mention} has left the server.')
 
 @client.event
 async def on_user_update(old, new):
