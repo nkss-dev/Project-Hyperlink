@@ -213,6 +213,7 @@ async def memlist(ctx):
 
 @client.command(help='Use this to tag the subsection roles of your section.\n\n**How to use:**\n' + tag)
 async def tag(ctx):
+    # Assigns message content to variable
     try:
         msg = ctx.message.content.split('tag ')[1]
     except:
@@ -220,65 +221,75 @@ async def tag(ctx):
         return
     bool = False
     async with aiohttp.ClientSession() as session:
+        # Checks if a webhook already exists for that channel
         webhooks = await ctx.channel.webhooks()
         for webhook in webhooks:
             if webhook.user == client.user:
                 bool = True
                 break
+        # Creates a webhook if none exist
         if not bool:
             webhook = await ctx.channel.create_webhook(name='Webhook')
-            print('created hook')
     if ctx.author.nick:
-        user = ctx.author.nick
+        username = ctx.author.nick
     else:
-        user = str(ctx.author.name)
-    flag = True
-    for role in ctx.author.roles:
-        if str(role.color) == '#f1c40f':
-            section = role.name
+        username = str(ctx.author.name)
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    # Gets details of user from the database
+    c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+    section = c.fetchone()[2]
     for i in msg.split(' '):
+        # Exit if the user tries to ping @everyone or @here
         if '@everyone' in i or '@here' in i:
             await ctx.send('You can\'t tag `@everyone` or `@here`')
             return
-        if i and '@' in i:
-            i = i.replace('\\', '')
-            for j in i.split('@')[1:]:
-                usertag = False
-                for k in ctx.message.mentions:
-                    if str(k.id) in j:
-                        usertag = True
-                if '&' in j and int(j[1:-1]) in [role.id for role in ctx.guild.roles]:
-                    msg = msg.replace('\<@' + j, '@' + ctx.guild.get_role(int(j[1:-1])).name)
-                    j = j.replace(j, ctx.guild.get_role(int(j[1:-1])).name)
-                elif j[:4].upper() not in sections and j[:5].upper() not in subsections:
-                    break
-                if not usertag:
-                    if j and j[:2].upper() in section:
-                        if j[3] == '0':
-                            if section[3] == 'A' and (j[4] == '1' or j[4] == '2' or j[4] == '3'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                            elif section[3] == 'B' and (j[4] == '4' or j[4] == '5' or j[4] == '6'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                            elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                            else:
-                                print('1')
-                                await ctx.send('You can\'t tag sections other than your own!')
-                                return
-                        elif j[3].upper() == section[3]:
-                            msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
-                        else:
-                            print('2')
-                            await ctx.send('You can\'t tag sections other than your own!')
-                            return
-                    elif j:
-                        print('3')
+        # Skip to the next iteration if the current word doesn't contain a tag
+        if not i or '@' not in i:
+            continue
+        i = i.replace('\\', '')
+        # Loops through every tag in the word/phrase
+        for j in i.split('@')[1:]:
+            # Checks if a user has been tagged
+            usertag = False
+            for k in ctx.message.mentions:
+                if str(k.id) in j:
+                    usertag = True
+            # Checks if a role has been tagged by its ID
+            if '&' in j and int(j[1:-1]) in [role.id for role in ctx.guild.roles]:
+                msg = msg.replace('\<@' + j, '@' + ctx.guild.get_role(int(j[1:-1])).name)
+                j = j.replace(j, ctx.guild.get_role(int(j[1:-1])).name)
+            # Skip to the next iteration if tagged section doesn't exist
+            elif j[:4].upper() not in sections and j[:5].upper() not in subsections:
+                continue
+            # Skip to the next iteration if the tag is of a user
+            if usertag:
+                continue
+            # Checks if the user belongs to the tagged section
+            if j and j[:2].upper() in section:
+                # Checks if the tag is of a SubSection
+                if j[3] == '0':
+                    # Checks if the user belongs to the Section of the SubSection that they attempted to tag
+                    if section[3] == 'A' and (j[4] == '1' or j[4] == '2' or j[4] == '3'):
+                        msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                    elif section[3] == 'B' and (j[4] == '4' or j[4] == '5' or j[4] == '6'):
+                        msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                    elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
+                        msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                    else:
                         await ctx.send('You can\'t tag sections other than your own!')
                         return
-
-    if flag:
-        await ctx.message.delete()
-        await webhook.send(msg.strip(), username=user, avatar_url=ctx.author.avatar_url)
+                elif j[3].upper() == section[3]:
+                    msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
+                else:
+                    await ctx.send('You can\'t tag sections other than your own!')
+                    return
+            elif j:
+                await ctx.send('You can\'t tag sections other than your own!')
+                return
+    # Deletes the sent command and sends the new tagged version
+    await ctx.message.delete()
+    await webhook.send(msg.strip(), username=username, avatar_url=ctx.author.avatar_url)
 
 class Voltorb:
     def __init__(self):
