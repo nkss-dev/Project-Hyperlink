@@ -408,32 +408,6 @@ class Voltorb:
 
 d = {}
 
-@client.command()
-async def excel(ctx):
-    list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
-    total = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    joined = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx', read_only = True)
-    for i, j in zip(list, range(len(list))):
-        ws = wb[i]
-        for k in range(3, 80):
-            if ws['B' + str(k)].value:
-                total[j] += 1
-                if ws['F' + str(k)].value:
-                    joined[j] += 1
-                total[-1] += 1
-    wb.close()
-    joined[-1] = sum(joined[:-1])
-    no1 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(3)]) + '\n\n'
-    no2 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(3, 5)]) + '\n\n'
-    no3 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(5, 8)]) + '\n\n'
-    no4 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(8, 11)]) + '\n\n'
-    no5 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(11, 13)]) + '\n\n'
-    no6 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(13, 16)]) + '\n\n'
-    no7 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(16, 18)]) + '\n'
-    no8 = '(Not-Verified --> ' + str(joined[-1]) + ' joined : ' + str(total[-1] - joined[-1]) + ' remaining)\n'
-    await ctx.send('```lisp\n' + no1 + no2 + no3 + no4 + no5 + no6 + no7 + '\n(Verified --> ' + str(len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])) + ')\n' + no8 + '(Total --> ' + str(len([member for member in ctx.guild.members if not member.bot])) + ')```')
-
 @client.event
 async def on_command_error(ctx, error):
     if 'Command' in str(error) and 'is not found' in str(error):
