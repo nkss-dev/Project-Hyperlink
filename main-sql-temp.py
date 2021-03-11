@@ -421,9 +421,12 @@ async def on_command_error(ctx, error):
         raise error
 
 @client.command()
-async def rename(ctx):
-    if 'mod' not in [name.name for name in ctx.author.roles] or not ctx.message.mentions:
-        await ctx.send('Lol nice try')
+async def nick(ctx):
+    if not ctx.author.guild_permissions.manage_nicknames:
+        await ctx.send('This command requires you to have the `Manage Nicknames` permission to use it')
+        return
+    if not ctx.message.mentions:
+        await ctx.send('Tag someone to change their nickname.')
         return
     member = ctx.message.mentions[0]
     id = str(member)
