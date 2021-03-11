@@ -65,6 +65,9 @@ async def on_ready():
 
 @client.event
 async def on_member_join(member):
+    # Exit if the user is a bot
+    if member.bot:
+        return
     conn = sqlite3.connect('db/details.db')
     c = conn.cursor()
     # Checks if the user who joined is already in the database or not
