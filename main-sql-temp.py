@@ -153,43 +153,47 @@ async def verify(ctx):
 @client.command(help='Displays details of the user related to the server and the college', aliases=['p', 'prof'])
 async def profile(ctx):
     try:
+        # Checks for any mentions in the message
         member = ctx.message.mentions[0]
         if member == ctx.author:
             pass
+        # Exits if the author is not a moderator
         elif 'mod' not in [name.name for name in ctx.author.roles]:
-            await ctx.send('Lol nice try (You can\'t see other\'s profiles)')
+            await ctx.send('You cannot see other\'s profiles')
             return
     except:
         member = ctx.author
-    id = str(member)
-    section = str()
-    for role in member.roles:
-        if str(role.color) == '#f1c40f':
-            section = role.name
-    if not section:
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    # Gets details of requested user from the database
+    c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+    tuple = c.fetchone()
+    # Exit if the user was not found
+    if not tuple:
         await ctx.send('The requested record wasn\'t found!')
+        return
+    # Creates a list of role objects of the user to display in the embed
+    roles = ', '.join([role.mention for role in member.roles if tuple[2] != role.name and tuple[3] != role.name and '@everyone' != role.name])
+    if not roles:
+        roles = 'None taken'
+    # Checking if the user has a verified email or not
+    if tuple[11] == 'True':
+        verification_status = ' <:verified:819460140247810059>'
     else:
-        wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-        ws = wb[section]
-        for i in range(3, 90):
-            if id == ws['F' + str(i)].value:
-                flag = i
-                break
-        roles = ', '.join([role.mention for role in member.roles if section != role.name and ws['C' + str(i)].value != role.name and '@everyone' != role.name])
-        if not roles:
-            roles = 'None taken'
-        embed = discord.Embed(
-            title = ' '.join([word[:1] + word[1:].lower() for word in ws['D' + str(i)].value.split(' ')]),
-            description = '**Roll Number: **' + str(ws['B' + str(i)].value)
-            + '\n**Section: **' + section + ws['C' + str(i)].value[4:]
-            + '\n**Roles: **' + roles
-            + '\n**Email: **' + ws['E' + str(i)].value,
-            colour = member.top_role.color
-        )
-        embed.set_author(name = id + '\'s Profile', icon_url = member.avatar_url)
-        embed.set_thumbnail(url = member.avatar_url)
-        embed.set_footer(text = 'Joined at: ' + str(member.joined_at)[8:10] + '-' + str(member.joined_at)[5:7] + '-' + str(member.joined_at)[:4])
-        await ctx.send(embed = embed)
+        verification_status = ' <:notverified:819460105250537483>'
+    # Creating the embed
+    embed = discord.Embed(
+        title = ' '.join([word[:1] + word[1:].lower() for word in tuple[4].split(' ')]) + verification_status,
+        description = '**Roll Number: **' + str(tuple[1])
+        + '\n**Section: **' + tuple[2] + tuple[3][4:]
+        + '\n**Roles: **' + roles
+        + '\n**Email: **' + tuple[6],
+        colour = member.top_role.color
+    )
+    embed.set_author(name = str(member) + '\'s Profile', icon_url = member.avatar_url)
+    embed.set_thumbnail(url = member.avatar_url)
+    embed.set_footer(text = 'Joined at: ' + str(member.joined_at)[8:10] + '-' + str(member.joined_at)[5:7] + '-' + str(member.joined_at)[:4])
+    await ctx.send(embed = embed)
 
 @client.command(help='Displays the total number of joined and remaining students for each section. Also displays the number of losers who didn\'t verify and total number of members on this server')
 async def memlist(ctx):
