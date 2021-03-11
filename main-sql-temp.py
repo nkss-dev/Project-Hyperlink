@@ -160,7 +160,7 @@ async def profile(ctx):
         member = ctx.message.mentions[0]
         if member == ctx.author:
             pass
-        # Exits if the author is not a moderator
+        # Exit if the author is not a moderator
         elif 'mod' not in [name.name for name in ctx.author.roles]:
             await ctx.send('You cannot see other\'s profiles')
             return
@@ -241,7 +241,11 @@ async def tag(ctx):
     c = conn.cursor()
     # Gets details of user from the database
     c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-    section = c.fetchone()[2]
+    tuple = c.fetchone()
+    if not tuple:
+        await ctx.send('The requested user does not exist in the record')
+        return
+    section = tuple[2]
     for i in msg.split(' '):
         # Exit if the user tries to ping @everyone or @here
         if '@everyone' in i or '@here' in i:
@@ -422,29 +426,27 @@ async def on_command_error(ctx, error):
 
 @client.command()
 async def nick(ctx):
+    # Exit if required perms are missing
     if not ctx.author.guild_permissions.manage_nicknames:
         await ctx.send('This command requires you to have the `Manage Nicknames` permission to use it')
         return
+    # Exit if no one was tagged
     if not ctx.message.mentions:
         await ctx.send('Tag someone to change their nickname.')
         return
-    member = ctx.message.mentions[0]
-    id = str(member)
-    section = str()
-    for role in member.roles:
-        if str(role.color) == '#f1c40f':
-            section = role.name
-    if not section:
-        await ctx.send('The requested record wasn\'t found!')
-    else:
-        wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-        ws = wb[section]
-        for i in range(3, 90):
-            if id == ws['F' + str(i)].value:
-                word = ws['D' + str(i)].value.split(' ')[0]
-                await member.edit(nick = word[:1] + word[1:].lower())
-                break
-    await ctx.message.delete()
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    for member in ctx.message.mentions:
+        # Gets details of user from the database
+        c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+        tuple = c.fetchone()
+        # Exit if the user was not found
+        if not tuple:
+            await ctx.send(f'{member} does not exist in the record')
+            return
+        word = tuple[4].split(' ')[0]
+        await member.edit(nick = word[:1] + word[1:].lower())
+        await ctx.send(f'Changed the nick of `{member}` successfully.')
 
 @client.event
 async def on_member_remove(member):
