@@ -478,24 +478,6 @@ async def on_member_remove(member):
             conn.commit()
         await channel.send(f'{member.mention} has left the server.')
 
-@client.event
-async def on_user_update(old, new):
-    print(old.name)
-    old = old.mutual_guilds[0].get_member(old.id)
-    if old.name == new.name and old.id == new.id:
-        return
-    section = str()
-    for role in old.roles:
-        if str(role.color) == '#f1c40f':
-            section = role.name
-    wb = openpyxl.load_workbook('db/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
-    ws = wb[section]
-    for i in range(3, 90):
-        if id == ws['F' + str(i)].value:
-            print('\nChanged the ID in database\n')
-            ws['F' + str(i)] = str(new)
-    wb.save('db/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
-
 @client.command(help=vf, aliases=['vf_start'])
 async def voltorb_start(ctx):
     v1 = Voltorb()
