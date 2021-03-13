@@ -469,7 +469,7 @@ async def on_member_remove(member):
         # and this was the only guild they shared with the bot
         if tuple[11] == 'False' and len(guilds) > 0:
             guilds = json.dumps(guilds)
-            c.execute('UPDATE main SET Discord_UID = (:uid) Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+            c.execute('UPDATE main SET Discord_UID = NULL, Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
             conn.commit()
         # Only removes the guild ID otherwise
         else:
