@@ -89,7 +89,7 @@ async def verify(ctx):
     except:
         member = ctx.author
     print(member, 'tried to verify!')
-    wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+    wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
     try:
         flag = 0
         section = content.split(' ')[0]
@@ -125,12 +125,12 @@ async def verify(ctx):
             await member.remove_roles(role)
             while True:
                 try:
-                    wb.save('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+                    wb.save('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
                     break
                 except:
                     continue
             id = str(member)
-            wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+            wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
             ws = wb[section]
             for i in range(3, 90):
                 if id == ws['F' + str(i)].value:
@@ -164,7 +164,7 @@ async def profile(ctx):
     if not section:
         await ctx.send('The requested record wasn\'t found!')
     else:
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+        wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
         ws = wb[section]
         for i in range(3, 90):
             if id == ws['F' + str(i)].value:
@@ -393,7 +393,7 @@ async def excel(ctx):
     list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
     total = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     joined = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx', read_only = True)
+    wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx', read_only = True)
     for i, j in zip(list, range(len(list))):
         ws = wb[i]
         for k in range(3, 80):
@@ -437,7 +437,7 @@ async def rename(ctx):
     if not section:
         await ctx.send('The requested record wasn\'t found!')
     else:
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
+        wb = openpyxl.load_workbook('db/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
         ws = wb[section]
         for i in range(3, 90):
             if id == ws['F' + str(i)].value:
@@ -455,7 +455,7 @@ async def on_member_remove(member):
                     section = role.name
                     break
             print(section)
-            wb = openpyxl.load_workbook('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
+            wb = openpyxl.load_workbook('db/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
             ws = wb[section]
             for i in range(3, 90):
                 print(member, ws['F' + str(i)].value)
@@ -469,7 +469,7 @@ async def on_member_remove(member):
                     break
             channel = client.get_channel(783215699707166763)
             await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
-            wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
+            wb.save('db/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
         except Exception as error:
             channel = client.get_channel(783215699707166763)
             await channel.send(f'**{member}** has left the server without even verifying <a:triggered:803206114623619092>')
@@ -485,13 +485,13 @@ async def on_user_update(old, new):
     for role in old.roles:
         if str(role.color) == '#f1c40f':
             section = role.name
-    wb = openpyxl.load_workbook('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
+    wb = openpyxl.load_workbook('db/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
     ws = wb[section]
     for i in range(3, 90):
         if id == ws['F' + str(i)].value:
             print('\nChanged the ID in database\n')
             ws['F' + str(i)] = str(new)
-    wb.save('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
+    wb.save('db/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
 
 @client.command(help=vf, aliases=['vf_start'])
 async def voltorb_start(ctx):
