@@ -459,7 +459,7 @@ async def on_member_remove(member):
         channel = client.get_channel(783215699707166763)
         # Exit if the user was not found
         if not tuple:
-            await channel.send(f'{member.mention} has left the server without even verifying <a:triggered:803206114623619092>')
+            await channel.send(f'{member.mention} has left the server because they didn\'t know how to verify <a:triggered:803206114623619092>')
             return
         # Fetches the mutual guilds list from the user
         guilds = json.loads(tuple[10])
