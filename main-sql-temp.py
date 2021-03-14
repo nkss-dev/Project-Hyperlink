@@ -98,10 +98,10 @@ async def on_member_join(member):
 
 @client.command(help='Verifies your presence in the record and gives you roles based on your section/subsection.\nAlso enables you to use the `%profile` and `%tag` commands')
 async def verify(ctx):
-    # Checks if the author is already in the database
     conn = sqlite3.connect('db/details.db')
     temp = conn.cursor()
     temp.execute('SELECT * from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+    # Exit if the author is already in the database
     if temp.fetchone():
         await ctx.send('You\'re already verified!')
         return
@@ -220,7 +220,7 @@ async def tag(ctx):
     try:
         msg = ctx.message.content.split('tag ')[1]
     except:
-        await ctx.send('Type something after `' + prefix + 'tag`')
+        await ctx.send(f'Type something after `{prefix}tag`')
         return
     bool = False
     async with aiohttp.ClientSession() as session:
@@ -421,7 +421,6 @@ async def on_command_error(ctx, error):
         await ctx.send(str(error) + available)
     else:
         print(f'{bcolors.Red}{error}{bcolors.White}\n')
-        await ctx.send('\nAn error occurred, contact ' + client.get_guild(783215699707166760).get_member(534651911903772674).mention + available)
         raise error
 
 @client.command()
@@ -450,7 +449,7 @@ async def nick(ctx):
 
 @client.event
 async def on_member_remove(member):
-    if not member.bot:
+    if not member.bot and member.guild.id == 783215699707166760:
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
         # Gets details of user from the database
