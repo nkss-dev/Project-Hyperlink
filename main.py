@@ -1,4 +1,4 @@
-import discord, openpyxl, asyncio, aiohttp, os, sqlite3
+import discord, openpyxl, asyncio, aiohttp, os, sqlite3, json
 from discord.utils import get
 from discord.ext import commands
 from openpyxl.styles import Font
@@ -61,130 +61,142 @@ class bcolors:
 
 @client.event
 async def on_ready():
-    print('Bot Online!\n')
+    print(f'Logged on as {client.user}!\n')
 
 @client.event
 async def on_member_join(member):
+    # Exit if the user is a bot
+    if member.bot:
+        return
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    # Checks if the user who joined is already in the database or not
+    c.execute('SELECT * from main where Discord_UID = (:uid)', {'uid': member.id})
+    tuple = c.fetchone()
     guild = member.guild
+    if tuple:
+        # Fetches the mutual guilds list from the user
+        guilds = json.loads(tuple[10])
+        # Adds the new guild id if it's a new one
+        if guild.id not in guilds:
+            guilds.append(guild.id)
+        guilds = json.dumps(guilds)
+        # Assigning one SubSection and one Section role to the user
+        role = get(guild.roles, name = tuple[2])
+        await member.add_roles(role)
+        role = get(guild.roles, name = tuple[3])
+        await member.add_roles(role)
+        # Updating the record in the database
+        c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+        conn.commit()
+        return
+    # Adding the 'Not-Verified' role if the user details do not exist in the database
     role = get(guild.roles, name = 'Not-Verified')
     await member.add_roles(role)
+    # Sends a dm to the new user explaining that they have to verify
     await member.send(dm_message)
-    print(f'{member.name} has joined!')
-    print(f'{role} was given to {member.name}!\n')
 
 @client.command(help='Verifies your presence in the record and gives you roles based on your section/subsection.\nAlso enables you to use the `%profile` and `%tag` commands')
 async def verify(ctx):
+    conn = sqlite3.connect('db/details.db')
+    temp = conn.cursor()
+    temp.execute('SELECT * from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+    # Exit if the author is already in the database
+    if temp.fetchone():
+        await ctx.send('You\'re already verified!')
+        return
+    # Assigns message content to variable
     try:
         content = ctx.message.content.split('verify ')[1]
     except:
-        await ctx.send('Type something after `' + prefix + 'verify`')
+        await ctx.send(f'Type something after `{prefix}verify`, {ctx.author.mention}')
         return
-    force = False
     try:
-        if 'mod' in [name.name for name in ctx.author.roles]:
-            member = ctx.message.mentions[0]
-            force = True
-        else:
-            member = ctx.author
-    except:
-        member = ctx.author
-    print(member, 'tried to verify!')
-    wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-    try:
-        flag = 0
         section = content.split(' ')[0]
-        roll_no = content.split(' ')[1]
-        roll_no = int(roll_no)
-        ws = wb[section]
-        for i in range(3, 90):
-            if roll_no == ws['B' + str(i)].value:
-                flag = i
-                break
-        if flag:
-            if ws['F' + str(flag)].value:
-                if not force and str(member) == ws['F' + str(flag)].value:
-                    await ctx.send('You\'re already verified!')
-                    return
-                if not force:
-                    await ctx.send('The details you entered is of a record already claimed by `' + ws['F' + str(flag)].value + '` ' + member.mention + '.\nTry another record. If you think this was a mistake, contact a moderator.')
-                    print(member, 'failed to verify.\n')
-                    return
-            role = get(ctx.guild.roles, name = str(ws['C' + str(flag)].value))
-            await member.add_roles(role)
-            role = get(ctx.guild.roles, name = section)
-            await member.add_roles(role)
-            ws['B' + str(flag)].font = ft
-            ws['C' + str(flag)].font = ft
-            ws['D' + str(flag)].font = ft
-            ws['E' + str(flag)].font = ft
-            ws['F' + str(flag)].font = ft
-            ws['F' + str(flag)] = str(member)
-            print(member, 'verified successfully.\n')
-            await ctx.send('Your record was found and verified ' + member.mention + '!\nYou will now be removed from this channel.')
-            role = get(ctx.guild.roles, id = 803608144181854208)
-            await member.remove_roles(role)
-            while True:
-                try:
-                    wb.save('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-                    break
-                except:
-                    continue
-            id = str(member)
-            wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-            ws = wb[section]
-            for i in range(3, 90):
-                if id == ws['F' + str(i)].value:
-                    word = ws['D' + str(i)].value.split(' ')[0]
-                    await member.edit(nick = word[:1] + word[1:].lower())
-                    break
-        else:
-            print(member, 'failed to verify.\n')
-            await ctx.send('Error while matching details in record ' + member.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
+        roll_no = int(content.split(' ')[1])
+        c = conn.cursor()
+        # Gets the record of the given roll number
+        c.execute('SELECT * from main where Roll_Number = (:roll)', {'roll': roll_no})
+        tuple = c.fetchone()
+        # Exit if roll number doesn't exist
+        if not tuple:
+            await ctx.send(f'The requested record was not found, {ctx.author.mention}. Please re-check the entered details and try again')
+            return
+        # Exit if entered section doesn't match an existing section
+        if section not in sections:
+            await ctx.send(f'"{section}" is not an existing section, {ctx.author.mention}.\nPlease re-check the entered details and try again')
+            return
+        # Exit if entered section doesn't match the section that the roll number is bound to
+        if section != tuple[2]:
+            await ctx.send(f'The section that you entered does not match that of the roll number that you entered, {ctx.author.mention}.\nPlease re-check the entered details and try again')
+            return
+        # Exit if the record is already claimed by another user
+        if tuple[9]:
+            await ctx.send(f'The details you entered is of a record already claimed by `{tuple[9]}` {ctx.author.mention}.\nTry another record. If you think this was a mistake, contact a moderator.')
+            return
+        # Assigning one SubSection and one Section role to the user
+        role = get(ctx.guild.roles, name = tuple[2])
+        await ctx.author.add_roles(role)
+        role = get(ctx.guild.roles, name = tuple[3])
+        await ctx.author.add_roles(role)
+        await ctx.send(f'Your record was found and verified {ctx.author.mention}!\nYou will now be removed from this channel.')
+        # Removing the 'Not-Verified' role from the user
+        role = get(ctx.guild.roles, name = 'Not-Verified')
+        await ctx.author.remove_roles(role)
+        # Updating the record in the database
+        c.execute('UPDATE main SET Discord_UID = (:uid) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no})
+        conn.commit()
+        # Changing the nick of the user to their first name
+        word = tuple[4].split(' ')[0]
+        await ctx.author.edit(nick = word[:1] + word[1:].lower())
     except Exception as error:
         print(f'{bcolors.Red}{error}{bcolors.White}\n')
-        print(member, 'failed to verify.\n')
-        await ctx.send('Error while matching details in record ' + member.mention + '.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
+        await ctx.send(f'Error while matching details in record {ctx.author.mention}.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
 
 @client.command(help='Displays details of the user related to the server and the college', aliases=['p', 'prof'])
 async def profile(ctx):
     try:
+        # Checks for any mentions in the message
         member = ctx.message.mentions[0]
         if member == ctx.author:
             pass
+        # Exit if the author is not a moderator
         elif 'mod' not in [name.name for name in ctx.author.roles]:
-            await ctx.send('Lol nice try (You can\'t see other\'s profiles)')
+            await ctx.send('You cannot see other\'s profiles')
             return
     except:
         member = ctx.author
-    id = str(member)
-    section = str()
-    for role in member.roles:
-        if str(role.color) == '#f1c40f':
-            section = role.name
-    if not section:
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    # Gets details of requested user from the database
+    c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+    tuple = c.fetchone()
+    # Exit if the user was not found
+    if not tuple:
         await ctx.send('The requested record wasn\'t found!')
+        return
+    # Creates a list of role objects of the user to display in the embed
+    roles = ', '.join([role.mention for role in member.roles if tuple[2] != role.name and tuple[3] != role.name and '@everyone' != role.name])
+    if not roles:
+        roles = 'None taken'
+    # Checking if the user has a verified email or not
+    if tuple[11] == 'True':
+        verification_status = ' <:verified:819460140247810059>'
     else:
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-        ws = wb[section]
-        for i in range(3, 90):
-            if id == ws['F' + str(i)].value:
-                flag = i
-                break
-        roles = ', '.join([role.mention for role in member.roles if section != role.name and ws['C' + str(i)].value != role.name and '@everyone' != role.name])
-        if not roles:
-            roles = 'None taken'
-        embed = discord.Embed(
-            title = ' '.join([word[:1] + word[1:].lower() for word in ws['D' + str(i)].value.split(' ')]),
-            description = '**Roll Number: **' + str(ws['B' + str(i)].value)
-            + '\n**Section: **' + section + ws['C' + str(i)].value[4:]
-            + '\n**Roles: **' + roles
-            + '\n**Email: **' + ws['E' + str(i)].value,
-            colour = member.top_role.color
-        )
-        embed.set_author(name = id + '\'s Profile', icon_url = member.avatar_url)
-        embed.set_thumbnail(url = member.avatar_url)
-        embed.set_footer(text = 'Joined at: ' + str(member.joined_at)[8:10] + '-' + str(member.joined_at)[5:7] + '-' + str(member.joined_at)[:4])
-        await ctx.send(embed = embed)
+        verification_status = ' <:notverified:819460105250537483>'
+    # Creating the embed
+    embed = discord.Embed(
+        title = ' '.join([word[:1] + word[1:].lower() for word in tuple[4].split(' ')]) + verification_status,
+        description = '**Roll Number: **' + str(tuple[1])
+        + '\n**Section: **' + tuple[2] + tuple[3][4:]
+        + '\n**Roles: **' + roles
+        + '\n**Email: **' + tuple[6],
+        colour = member.top_role.color
+    )
+    embed.set_author(name = str(member) + '\'s Profile', icon_url = member.avatar_url)
+    embed.set_thumbnail(url = member.avatar_url)
+    embed.set_footer(text = 'Joined at: ' + str(member.joined_at)[8:10] + '-' + str(member.joined_at)[5:7] + '-' + str(member.joined_at)[:4])
+    await ctx.send(embed = embed)
 
 @client.command(help='Displays the total number of joined and remaining students for each section. Also displays the number of losers who didn\'t verify and total number of members on this server')
 async def memlist(ctx):
@@ -204,72 +216,87 @@ async def memlist(ctx):
 
 @client.command(help='Use this to tag the subsection roles of your section.\n\n**How to use:**\n' + tag)
 async def tag(ctx):
+    # Assigns message content to variable
     try:
         msg = ctx.message.content.split('tag ')[1]
     except:
-        await ctx.send('Type something after `' + prefix + 'tag`')
+        await ctx.send(f'Type something after `{prefix}tag`')
         return
     bool = False
     async with aiohttp.ClientSession() as session:
+        # Checks if a webhook already exists for that channel
         webhooks = await ctx.channel.webhooks()
         for webhook in webhooks:
             if webhook.user == client.user:
                 bool = True
                 break
+        # Creates a webhook if none exist
         if not bool:
             webhook = await ctx.channel.create_webhook(name='Webhook')
-            print('created hook')
     if ctx.author.nick:
-        user = ctx.author.nick
+        username = ctx.author.nick
     else:
-        user = str(ctx.author.name)
-    flag = True
-    for role in ctx.author.roles:
-        if str(role.color) == '#f1c40f':
-            section = role.name
+        username = str(ctx.author.name)
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    # Gets details of user from the database
+    c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+    tuple = c.fetchone()
+    if not tuple:
+        await ctx.send('The requested user does not exist in the record')
+        return
+    section = tuple[2]
     for i in msg.split(' '):
+        # Exit if the user tries to ping @everyone or @here
         if '@everyone' in i or '@here' in i:
             await ctx.send('You can\'t tag `@everyone` or `@here`')
             return
-        if i and '@' in i:
-            i = i.replace('\\', '')
-            for j in i.split('@')[1:]:
-                usertag = False
-                for k in ctx.message.mentions:
-                    if str(k.id) in j:
-                        usertag = True
-                if '&' in j and int(j[1:-1]) in [role.id for role in ctx.guild.roles]:
-                    msg = msg.replace('\<@' + j, '@' + ctx.guild.get_role(int(j[1:-1])).name)
-                    j = j.replace(j, ctx.guild.get_role(int(j[1:-1])).name)
-                elif j[:4].upper() not in sections and j[:5].upper() not in subsections:
-                    break
-                if not usertag:
-                    if j and j[:2].upper() in section:
-                        if j[3] == '0':
-                            if section[3] == 'A' and (j[4] == '1' or j[4] == '2' or j[4] == '3'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                            elif section[3] == 'B' and (j[4] == '4' or j[4] == '5' or j[4] == '6'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                            elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
-                                msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                            else:
-                                print('1')
-                                await ctx.send('You can\'t tag sections other than your own!')
-                                return
-                        elif j[3].upper() == section[3]:
-                            msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
-                        else:
-                            print('2')
-                            await ctx.send('You can\'t tag sections other than your own!')
-                            return
-                    elif j:
-                        print('3')
+        # Skip to the next iteration if the current word doesn't contain a tag
+        if not i or '@' not in i:
+            continue
+        i = i.replace('\\', '')
+        # Loops through every tag in the word/phrase
+        for j in i.split('@')[1:]:
+            # Checks if a user has been tagged
+            usertag = False
+            for k in ctx.message.mentions:
+                if str(k.id) in j:
+                    usertag = True
+            # Checks if a role has been tagged by its ID
+            if '&' in j and int(j[1:-1]) in [role.id for role in ctx.guild.roles]:
+                msg = msg.replace('\<@' + j, '@' + ctx.guild.get_role(int(j[1:-1])).name)
+                j = j.replace(j, ctx.guild.get_role(int(j[1:-1])).name)
+            # Skip to the next iteration if tagged section doesn't exist
+            elif j[:4].upper() not in sections and j[:5].upper() not in subsections:
+                continue
+            # Skip to the next iteration if the tag is of a user
+            if usertag:
+                continue
+            # Checks if the user belongs to the tagged section
+            if j and j[:2].upper() in section:
+                # Checks if the tag is of a SubSection
+                if j[3] == '0':
+                    # Checks if the user belongs to the Section of the SubSection that they attempted to tag
+                    if section[3] == 'A' and (j[4] == '1' or j[4] == '2' or j[4] == '3'):
+                        msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                    elif section[3] == 'B' and (j[4] == '4' or j[4] == '5' or j[4] == '6'):
+                        msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                    elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
+                        msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                    else:
                         await ctx.send('You can\'t tag sections other than your own!')
                         return
-
-    if flag:
-        await ctx.message.delete()
-        await webhook.send(msg.strip(), username=user, avatar_url=ctx.author.avatar_url)
+                elif j[3].upper() == section[3]:
+                    msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
+                else:
+                    await ctx.send('You can\'t tag sections other than your own!')
+                    return
+            elif j:
+                await ctx.send('You can\'t tag sections other than your own!')
+                return
+    # Deletes the sent command and sends the new tagged version
+    await ctx.message.delete()
+    await webhook.send(msg.strip(), username=username, avatar_url=ctx.author.avatar_url)
 
 class Voltorb:
     def __init__(self):
@@ -388,110 +415,67 @@ class Voltorb:
 
 d = {}
 
-@client.command()
-async def excel(ctx):
-    list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
-    total = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    joined = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx', read_only = True)
-    for i, j in zip(list, range(len(list))):
-        ws = wb[i]
-        for k in range(3, 80):
-            if ws['B' + str(k)].value:
-                total[j] += 1
-                if ws['F' + str(k)].value:
-                    joined[j] += 1
-                total[-1] += 1
-    wb.close()
-    joined[-1] = sum(joined[:-1])
-    no1 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(3)]) + '\n\n'
-    no2 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(3, 5)]) + '\n\n'
-    no3 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(5, 8)]) + '\n\n'
-    no4 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(8, 11)]) + '\n\n'
-    no5 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(11, 13)]) + '\n\n'
-    no6 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(13, 16)]) + '\n\n'
-    no7 = '\n'.join(['(' + list[i] + ' --> ' + str(joined[i]) + ' joined : ' + str(total[i] - joined[i]) + ' remaining)' for i in range(16, 18)]) + '\n'
-    no8 = '(Not-Verified --> ' + str(joined[-1]) + ' joined : ' + str(total[-1] - joined[-1]) + ' remaining)\n'
-    await ctx.send('```lisp\n' + no1 + no2 + no3 + no4 + no5 + no6 + no7 + '\n(Verified --> ' + str(len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])) + ')\n' + no8 + '(Total --> ' + str(len([member for member in ctx.guild.members if not member.bot])) + ')```')
-
 @client.event
 async def on_command_error(ctx, error):
     if 'Command' in str(error) and 'is not found' in str(error):
         await ctx.send(str(error) + available)
     else:
         print(f'{bcolors.Red}{error}{bcolors.White}\n')
-        await ctx.send('\nAn error occurred, contact ' + client.get_guild(783215699707166760).get_member(534651911903772674).mention + available)
         raise error
 
 @client.command()
-async def rename(ctx):
-    if 'mod' not in [name.name for name in ctx.author.roles] or not ctx.message.mentions:
-        await ctx.send('Lol nice try')
+async def nick(ctx):
+    # Exit if required perms are missing
+    if not ctx.author.guild_permissions.manage_nicknames:
+        await ctx.send('This command requires you to have the `Manage Nicknames` permission to use it')
         return
-    member = ctx.message.mentions[0]
-    id = str(member)
-    section = str()
-    for role in member.roles:
-        if str(role.color) == '#f1c40f':
-            section = role.name
-    if not section:
-        await ctx.send('The requested record wasn\'t found!')
-    else:
-        wb = openpyxl.load_workbook('Details/' + str(ctx.guild)  + ' ' + str(ctx.guild.id) + '.xlsx')
-        ws = wb[section]
-        for i in range(3, 90):
-            if id == ws['F' + str(i)].value:
-                word = ws['D' + str(i)].value.split(' ')[0]
-                await member.edit(nick = word[:1] + word[1:].lower())
-                break
-    await ctx.message.delete()
+    # Exit if no one was tagged
+    if not ctx.message.mentions:
+        await ctx.send('Tag someone to change their nickname.')
+        return
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    for member in ctx.message.mentions:
+        # Gets details of user from the database
+        c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+        tuple = c.fetchone()
+        # Exit if the user was not found
+        if not tuple:
+            await ctx.send(f'{member} does not exist in the record')
+            return
+        word = tuple[4].split(' ')[0]
+        await member.edit(nick = word[:1] + word[1:].lower())
+        await ctx.send(f'Changed the nick of `{member}` successfully.')
 
 @client.event
 async def on_member_remove(member):
-    if not member.bot:
-        try:
-            for role in member.roles:
-                if str(role.color) == '#f1c40f':
-                    section = role.name
-                    break
-            print(section)
-            wb = openpyxl.load_workbook('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
-            ws = wb[section]
-            for i in range(3, 90):
-                print(member, ws['F' + str(i)].value)
-                if str(member) == ws['F' + str(i)].value:
-                    ws['B' + str(i)].font = ft_reset
-                    ws['C' + str(i)].font = ft_reset
-                    ws['D' + str(i)].font = ft_reset
-                    ws['E' + str(i)].font = ft_reset
-                    ws['F' + str(i)].font = ft_reset
-                    ws['F' + str(i)] = ''
-                    break
-            channel = client.get_channel(783215699707166763)
-            await channel.send(f'**{member}** has left the server. I guess they just didn\'t like it ¯\_(ツ)_/¯')
-            wb.save('Details/' + str(member.guild)  + ' ' + str(member.guild.id) + '.xlsx')
-        except Exception as error:
-            channel = client.get_channel(783215699707166763)
-            await channel.send(f'**{member}** has left the server without even verifying <a:triggered:803206114623619092>')
-            raise error
-
-@client.event
-async def on_user_update(old, new):
-    print(old.name)
-    old = old.mutual_guilds[0].get_member(old.id)
-    if old.name == new.name and old.id == new.id:
-        return
-    section = str()
-    for role in old.roles:
-        if str(role.color) == '#f1c40f':
-            section = role.name
-    wb = openpyxl.load_workbook('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
-    ws = wb[section]
-    for i in range(3, 90):
-        if id == ws['F' + str(i)].value:
-            print('\nChanged the ID in database\n')
-            ws['F' + str(i)] = str(new)
-    wb.save('Details/' + str(old.guild)  + ' ' + str(old.guild.id) + '.xlsx')
+    if not member.bot and member.guild.id == 783215699707166760:
+        conn = sqlite3.connect('db/details.db')
+        c = conn.cursor()
+        # Gets details of user from the database
+        c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+        tuple = c.fetchone()
+        channel = client.get_channel(783215699707166763)
+        # Exit if the user was not found
+        if not tuple:
+            await channel.send(f'{member.mention} has left the server because they didn\'t know how to verify <a:triggered:803206114623619092>')
+            return
+        # Fetches the mutual guilds list from the user
+        guilds = json.loads(tuple[10])
+        # Removes the guild from the list
+        guilds.remove(member.guild.id)
+        # Remvoes their ID from the database if they don't have a verified email
+        # and this was the only guild they shared with the bot
+        if tuple[11] == 'False' and len(guilds) > 0:
+            guilds = json.dumps(guilds)
+            c.execute('UPDATE main SET Discord_UID = NULL, Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+            conn.commit()
+        # Only removes the guild ID otherwise
+        else:
+            guilds = json.dumps(guilds)
+            c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+            conn.commit()
+        await channel.send(f'{member.mention} has left the server.')
 
 @client.command(help=vf, aliases=['vf_start'])
 async def voltorb_start(ctx):
