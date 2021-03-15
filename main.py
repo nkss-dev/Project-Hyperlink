@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 from tags import Tags
+from ign import IGN
 
 prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
@@ -23,6 +24,7 @@ subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'C
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix = prefix, intents = intents, help_command=commands.DefaultHelpCommand())
 client.add_cog(Tags())
+client.add_cog(IGN())
 
 available = '\nAvailable commands: `' + prefix + 'verify`, `' + prefix + 'profile`, `' + prefix + 'memlist`, `' + prefix + 'tag` and `' + prefix + 'vf_start`.'
 
