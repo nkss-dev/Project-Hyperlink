@@ -1,14 +1,13 @@
-import discord, openpyxl, asyncio, aiohttp, os, sqlite3, json
+import discord, asyncio, aiohttp, os, sqlite3, json
 from discord.utils import get
 from discord.ext import commands
-from openpyxl.styles import Font
-from voltorb import voltorb
 from io import BytesIO
 from dotenv import load_dotenv
 
 load_dotenv()
 from tags import Tags
 from ign import IGN
+from voltorb import Voltorb_Flip
 
 prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
@@ -25,8 +24,9 @@ intents = discord.Intents.all()
 client = commands.Bot(command_prefix = prefix, intents = intents, help_command=commands.DefaultHelpCommand())
 client.add_cog(Tags())
 client.add_cog(IGN())
+client.add_cog(Voltorb_Flip())
 
-available = '\nAvailable commands: `' + prefix + 'verify`, `' + prefix + 'profile`, `' + prefix + 'memlist`, `' + prefix + 'tag` and `' + prefix + 'vf_start`.'
+available = f'\nAvailable commands: `{prefix}prefix`, `{prefix}profile`, `{prefix}memlist`, `{prefix}tag` and `{prefix}vf_start`.'
 
 tag = '''
 Now you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
@@ -46,10 +46,7 @@ This is a recreatation of the Voltorb Flip game that appears in the Korean and W
 
 The numbers on the side and bottom of the game board denote the sum of the tiles and how many bombs are present in that row/column, respectively. Each tile you flip multiplies your collected coins by that value. Once you uncover all of the 2 and 3 tiles, all of the coins you gained this level will be added to your total and you'll go up one level to a max of 7. If you flip over a Voltorb, you lose all your coins from the current level and risk going down to a lower level.'''
 
-dm_message = '''Welcome to the NITKKR\'24 server! Before you can see/use all the channels that it has, you'll need to do a quick verification. The process of which is explained in the #welcome channel of the server. Please do not send the command to this dm as it will not be read, instead send it on the #commands channel on the server. If you have any issues with the command, @Priyanshu will help you out personally on the channel. But do try even if you didn't understand. Have fun!'''
-
-ft = Font(color = '0000FF00')
-ft_reset = Font(color = '00000000')
+dm_message = '''Welcome to the NITKKR'24 server! Before you can see/use all the channels that it has, you'll need to do a quick verification. The process of which is explained in the #welcome channel of the server. Please do not send the command to this dm as it will not be read, instead send it on the #commands channel on the server. If you have any issues with the command, @Priyanshu will help you out personally on the channel. But do try even if you didn't understand. Have fun!'''
 
 class bcolors:
     Purple = '\033[95m'
@@ -300,123 +297,6 @@ async def tag(ctx):
     await ctx.message.delete()
     await webhook.send(msg.strip(), username=username, avatar_url=ctx.author.avatar_url)
 
-class Voltorb:
-    def __init__(self):
-        self.level = 1
-        self.coins = 0
-        self.total = 0
-        self.lose = False
-        self.win = False
-        self.guild = discord.Guild
-        self.channel = discord.TextChannel
-        self.rip = discord.Message
-        self.member = discord.Member
-        self.message = discord.Message
-        self.spam = client.get_channel(810764987076968500)
-        self.url = ''
-        self.vol = voltorb()
-        self.row = ['a', 'b', 'c', 'd', 'e']
-        self.col = [1, 2, 3, 4, 5]
-
-    async def run(self, ctx):
-        self.channel = ctx.channel
-        self.guild = ctx.guild
-        self.member = ctx.author
-        thumb = discord.File('voltorb.gif', filename='voltorb.gif')
-        board = self.vol.create(name=str(self.member))
-        with BytesIO() as image_binary:
-            board.save(image_binary, "PNG")
-            image_binary.seek(0)
-            board = discord.File(fp = image_binary, filename='board.png')
-        embed = discord.Embed(
-            title = 'Voltorb Flip',
-            colour = self.member.top_role.color
-        )
-        embed.set_author(name = str(self.member) + '\'s session', icon_url = self.member.avatar_url)
-        embed.set_thumbnail(url = 'attachment://voltorb.gif')
-        embed.set_image(url = 'attachment://board.png')
-        embed.add_field(name='Level:', value=str(self.level), inline=True)
-        embed.add_field(name='Coins:', value=str(self.coins), inline=True)
-        embed.add_field(name='Total Coins:', value=str(self.total), inline=True)
-        await ctx.message.delete()
-        self.message = await self.channel.send(files=[thumb, board], embed = embed)
-
-    async def flip(self, ctx):
-        try:
-            key = ctx.message.content.split('flip ')[1]
-        except IndexError:
-            await ctx.send('Type something after the command')
-            return
-        if 'row' in key[:3].lower() or 'col' in key[:3].lower():
-            coins, board = self.vol.edit_all(str(self.member), key[:3].lower(), key[4:].lower())
-        else:
-            if key[0] not in self.row or int(key[1]) not in self.col:
-                await ctx.message.delete()
-                bruh = await ctx.send('That\'s an invalid tile')
-                await bruh.delete(delay=5)
-                return
-            coins, board = self.vol.edit(str(self.member), key)
-        try:
-            int(coins)
-            if coins == -1:
-                self.lose = True
-            elif self.coins == 0:
-                self.coins = coins
-            elif not coins:
-                await ctx.send('The tile(s) is/are already flipped!')
-                return
-            else:
-                self.coins *= coins
-        except ValueError:
-            self.win = True
-            self.total += self.coins*int(coins[:-1])
-        thumb = discord.File('voltorb.gif', filename='voltorb.gif')
-        with BytesIO() as image_binary:
-            board.save(image_binary, "PNG")
-            image_binary.seek(0)
-            board = discord.File(fp = image_binary, filename='board.png')
-        embed = discord.Embed(
-            title = 'Voltorb Flip',
-            colour = self.member.top_role.color
-        )
-        embed.set_author(name = str(self.member) + '\'s session', icon_url = self.member.avatar_url)
-        embed.set_thumbnail(url = 'attachment://voltorb.gif')
-        embed.add_field(name='Level:', value=str(self.level), inline=True)
-        embed.add_field(name='Coins:', value=str(self.coins), inline=True)
-        embed.add_field(name='Total Coins:', value=str(self.total), inline=True)
-        embed.set_image(url = 'attachment://board.png')
-        await ctx.message.delete()
-        await self.message.delete()
-        self.message = await self.channel.send(files=[thumb, board], embed = embed)
-        if self.lose:
-            self.rip = await ctx.send('Oh no! You hit a voltorb, ' + ctx.author.mention + ' and got 0 coins!\nType `%resume` to continue.')
-        if self.win:
-            self.rip = await ctx.send('Game clear, ' + ctx.author.mention + '! You received ' + str(self.coins*int(coins[:-1])) + ' Coins! Type `' + prefix + 'advance` to advance to level ' + str(self.level + 1))
-            self.coins = 0
-
-    async def resume(self, ctx):
-        try:
-            await self.rip.delete()
-            if self.level != 1:
-                self.level -= 1
-            self.coins = 0
-            self.vol = voltorb()
-            await self.message.delete()
-            await self.run(ctx)
-            self.lose = False
-        except TypeError:
-            await ctx.send('You didn\'t lose your current match yet, ' + ctx.author.mention + '. If you would like to restart, type `' + prefix + 'restart`')
-
-    async def advance(self, ctx):
-        await self.rip.delete()
-        self.level += 1
-        self.vol = voltorb()
-        await self.message.delete()
-        await self.run(ctx)
-        self.win = False
-
-d = {}
-
 @client.event
 async def on_command_error(ctx, error):
     if 'Command' in str(error) and 'is not found' in str(error):
@@ -468,7 +348,7 @@ async def on_member_remove(member):
         guilds.remove(member.guild.id)
         # Remvoes their ID from the database if they don't have a verified email
         # and this was the only guild they shared with the bot
-        if tuple[11] == 'False' and len(guilds) > 0:
+        if tuple[11] == 'False' and guilds:
             guilds = json.dumps(guilds)
             c.execute('UPDATE main SET Discord_UID = NULL, Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
             conn.commit()
@@ -478,61 +358,6 @@ async def on_member_remove(member):
             c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
             conn.commit()
         await channel.send(f'{member.mention} has left the server.')
-
-@client.command(help=vf, aliases=['vf_start'])
-async def voltorb_start(ctx):
-    v1 = Voltorb()
-    d[ctx.author.id] = v1
-    await d[ctx.author.id].run(ctx=ctx)
-
-@client.command()
-async def flip(ctx):
-    try:
-        if d[ctx.author.id].win:
-            await ctx.send('You\'ve already won your current session ' + ctx.author.mention + '. Type `' + prefix + 'advance` to proceed to the next level')
-            return
-        if d[ctx.author.id].lose:
-            await ctx.send('You\'ve lost your current session ' + ctx.author.mention + '. Type `' + prefix + 'resume` to continue')
-            return
-        await d[ctx.author.id].flip(ctx=ctx)
-    except KeyError:
-        await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `%vf_start` to get started.')
-
-@client.command()
-async def resume(ctx):
-    try:
-        if d[ctx.author.id].win:
-            await ctx.send('You\'ve already won your current session ' + ctx.author.mention + '. Type `' + prefix + 'advance` to proceed to the next level')
-            return
-        if not d[ctx.author.id].lose:
-            await ctx.send('You\'ve not lost your current session yet ' + ctx.author.mention + '.')
-            return
-        await d[ctx.author.id].resume(ctx=ctx)
-    except KeyError:
-        await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `' + prefix + 'vf_start` to get started.')
-
-@client.command()
-async def advance(ctx):
-    try:
-        if d[ctx.author.id].win:
-            await d[ctx.author.id].advance(ctx=ctx)
-            d[ctx.author.id].win = False
-        elif d[ctx.author.id].lose:
-            await ctx.send('You\'ve lost your current session ' + ctx.author.mention + '. Type `' + prefix + 'resume` to continue')
-            return
-        else:
-            await ctx.send('You didn\'t win your current match yet, ' + ctx.author.mention + '. If you would like to restart, type `' + prefix + 'restart`')
-    except KeyError:
-        await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `' + prefix + 'vf_start` to get started.')
-
-@client.command()
-async def quit(ctx):
-    try:
-        await d[ctx.author.id].message.delete()
-        d.pop(ctx.author.id)
-        await ctx.message.delete()
-    except KeyError:
-        await ctx.send('You didn\'t start playing, ' + ctx.author.mention + '. Type `' + prefix + 'vf_start` to get started.')
 
 @client.command(aliases=['inv'])
 async def invite(ctx):
