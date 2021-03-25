@@ -1,13 +1,13 @@
-import discord, asyncio, aiohttp, os, sqlite3, json
+import discord, aiohttp, os, sqlite3, json
 from discord.utils import get
 from discord.ext import commands
-from io import BytesIO
 from dotenv import load_dotenv
 
 load_dotenv()
 from tags import Tags
 from ign import IGN
 from voltorb import Voltorb_Flip
+from drive import Drive
 
 prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
@@ -25,8 +25,9 @@ client = commands.Bot(command_prefix = prefix, intents = intents, help_command=c
 client.add_cog(Tags())
 client.add_cog(IGN())
 client.add_cog(Voltorb_Flip())
+client.add_cog(Drive())
 
-available = f'\nAvailable commands: `{prefix}prefix`, `{prefix}profile`, `{prefix}memlist`, `{prefix}tag` and `{prefix}vf_start`.'
+available = f'\nAvailable commands: `{prefix}profile`, `{prefix}memlist`, `{prefix}tag` and `{prefix}vf_start`.'
 
 tag = '''
 Now you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
@@ -61,11 +62,76 @@ class bcolors:
 @client.event
 async def on_ready():
     print(f'Logged on as {client.user}!\n')
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=f'{prefix}help'))
+
+# @client.event
+# async def on_message(message):
+#     if message.author.bot or message.author.guild.id == 336642139381301249:
+#         return
+#     print('function load')
+#     with open('level.json','r') as f:
+#         users = json.load(f)
+#         print('file load')
+#     await update_data(users, message.author,message.guild)
+#     await add_experience(users, message.author, 4, message.guild)
+#     await level_up(users, message.author,message.channel, message.guild)
+#
+#     with open('level.json','w') as f:
+#         json.dump(users, f)
+#     await client.process_commands(message)
+#
+# async def update_data(users, user,server):
+#     if not str(server.id) in users:
+#         users[str(server.id)] = {}
+#         if not str(user.id) in users[str(server.id)]:
+#             users[str(server.id)][str(user.id)] = {}
+#             users[str(server.id)][str(user.id)]['experience'] = 0
+#             users[str(server.id)][str(user.id)]['level'] = 1
+#     elif not str(user.id) in users[str(server.id)]:
+#             users[str(server.id)][str(user.id)] = {}
+#             users[str(server.id)][str(user.id)]['experience'] = 0
+#             users[str(server.id)][str(user.id)]['level'] = 1
+#
+# async def add_experience(users, user, exp, server):
+#   users[str(user.guild.id)][str(user.id)]['experience'] += exp
+#
+# async def level_up(users, user, channel, server):
+#   experience = users[str(user.guild.id)][str(user.id)]['experience']
+#   lvl_start = users[str(user.guild.id)][str(user.id)]['level']
+#   lvl_end = int(experience ** (1/4))
+#   if str(user.guild.id) != '757383943116030074':
+#     if lvl_start < lvl_end:
+#       await channel.send('{} has leveled up to Level {}'.format(user.mention, lvl_end))
+#       users[str(user.guild.id)][str(user.id)]['level'] = lvl_end
+#
+# @client.command(aliases = ['rank','lvl'])
+# async def level(ctx,member: discord.Member = None):
+#
+#     if not member:
+#         user = ctx.message.author
+#         with open('level.json','r') as f:
+#             users = json.load(f)
+#         lvl = users[str(ctx.guild.id)][str(user.id)]['level']
+#         exp = users[str(ctx.guild.id)][str(user.id)]['experience']
+#
+#         embed = discord.Embed(title = 'Level {}'.format(lvl), description = f"{exp} XP " ,color = discord.Color.green())
+#         embed.set_author(name = ctx.author, icon_url = ctx.author.avatar_url)
+#         await ctx.send(embed = embed)
+#     else:
+#       with open('level.json','r') as f:
+#           users = json.load(f)
+#       lvl = users[str(ctx.guild.id)][str(member.id)]['level']
+#       exp = users[str(ctx.guild.id)][str(member.id)]['experience']
+#       embed = discord.Embed(title = 'Level {}'.format(lvl), description = f"{exp} XP" ,color = discord.Color.green())
+#       embed.set_author(name = member, icon_url = member.avatar_url)
+#
+#       await ctx.send(embed = embed)
+
 
 @client.event
 async def on_member_join(member):
     # Exit if the user is a bot
-    if member.bot:
+    if member.bot or member.guild.id == 336642139381301249:
         return
     conn = sqlite3.connect('db/details.db')
     c = conn.cursor()
@@ -331,33 +397,34 @@ async def nick(ctx):
 
 @client.event
 async def on_member_remove(member):
-    if not member.bot and member.guild.id == 783215699707166760:
-        conn = sqlite3.connect('db/details.db')
-        c = conn.cursor()
-        # Gets details of user from the database
-        c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
-        tuple = c.fetchone()
-        channel = client.get_channel(783215699707166763)
-        # Exit if the user was not found
-        if not tuple:
-            await channel.send(f'{member.mention} has left the server because they didn\'t know how to verify <a:triggered:803206114623619092>')
-            return
-        # Fetches the mutual guilds list from the user
-        guilds = json.loads(tuple[10])
-        # Removes the guild from the list
-        guilds.remove(member.guild.id)
-        # Remvoes their ID from the database if they don't have a verified email
-        # and this was the only guild they shared with the bot
-        if tuple[11] == 'False' and guilds:
-            guilds = json.dumps(guilds)
-            c.execute('UPDATE main SET Discord_UID = NULL, Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
-            conn.commit()
-        # Only removes the guild ID otherwise
-        else:
-            guilds = json.dumps(guilds)
-            c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
-            conn.commit()
-        await channel.send(f'{member.mention} has left the server.')
+    if member.bot or member.guild.id == 336642139381301249:
+        return
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    # Gets details of user from the database
+    c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+    tuple = c.fetchone()
+    channel = client.get_channel(783215699707166763)
+    # Exit if the user was not found
+    if not tuple:
+        await channel.send(f'{member.mention} has left the server because they didn\'t know how to verify <a:triggered:803206114623619092>')
+        return
+    # Fetches the mutual guilds list from the user
+    guilds = json.loads(tuple[10])
+    # Removes the guild from the list
+    guilds.remove(member.guild.id)
+    # Remvoes their ID from the database if they don't have a verified email
+    # and this was the only guild they shared with the bot
+    if tuple[11] == 'False' and guilds:
+        guilds = json.dumps(guilds)
+        c.execute('UPDATE main SET Discord_UID = NULL, Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+        conn.commit()
+    # Only removes the guild ID otherwise
+    else:
+        guilds = json.dumps(guilds)
+        c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+        conn.commit()
+    await channel.send(f'{member.mention} has left the server.')
 
 @client.command(aliases=['inv'])
 async def invite(ctx):
