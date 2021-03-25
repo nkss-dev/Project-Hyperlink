@@ -39,7 +39,7 @@ class Drive(commands.Cog):
         # for item in enumerate(self.items):
         #     print('{:<5}{:<35}{:<95}{:<20}'.format(f'{item[0]+1}.', item[1]['mimeType'], item[1]['name'], item[1]['id']))
 
-    @commands.group(name='drive', invoke_without_command=True)
+    @commands.group(name='drive')
     async def drive(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.send('Invalid drive command passed.')
