@@ -8,6 +8,7 @@ from tags import Tags
 from ign import IGN
 from voltorb import Voltorb_Flip
 from drive import Drive
+from verification import Verify
 
 prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
@@ -26,6 +27,7 @@ client.add_cog(Tags())
 client.add_cog(IGN())
 client.add_cog(Voltorb_Flip())
 client.add_cog(Drive())
+client.add_cog(Verify())
 
 available = f'\nAvailable commands: `{prefix}profile`, `{prefix}memlist`, `{prefix}tag` and `{prefix}vf_start`.'
 
@@ -64,70 +66,6 @@ async def on_ready():
     print(f'Logged on as {client.user}!\n')
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=f'{prefix}help'))
 
-# @client.event
-# async def on_message(message):
-#     if message.author.bot or message.author.guild.id == 336642139381301249:
-#         return
-#     print('function load')
-#     with open('level.json','r') as f:
-#         users = json.load(f)
-#         print('file load')
-#     await update_data(users, message.author,message.guild)
-#     await add_experience(users, message.author, 4, message.guild)
-#     await level_up(users, message.author,message.channel, message.guild)
-#
-#     with open('level.json','w') as f:
-#         json.dump(users, f)
-#     await client.process_commands(message)
-#
-# async def update_data(users, user,server):
-#     if not str(server.id) in users:
-#         users[str(server.id)] = {}
-#         if not str(user.id) in users[str(server.id)]:
-#             users[str(server.id)][str(user.id)] = {}
-#             users[str(server.id)][str(user.id)]['experience'] = 0
-#             users[str(server.id)][str(user.id)]['level'] = 1
-#     elif not str(user.id) in users[str(server.id)]:
-#             users[str(server.id)][str(user.id)] = {}
-#             users[str(server.id)][str(user.id)]['experience'] = 0
-#             users[str(server.id)][str(user.id)]['level'] = 1
-#
-# async def add_experience(users, user, exp, server):
-#   users[str(user.guild.id)][str(user.id)]['experience'] += exp
-#
-# async def level_up(users, user, channel, server):
-#   experience = users[str(user.guild.id)][str(user.id)]['experience']
-#   lvl_start = users[str(user.guild.id)][str(user.id)]['level']
-#   lvl_end = int(experience ** (1/4))
-#   if str(user.guild.id) != '757383943116030074':
-#     if lvl_start < lvl_end:
-#       await channel.send('{} has leveled up to Level {}'.format(user.mention, lvl_end))
-#       users[str(user.guild.id)][str(user.id)]['level'] = lvl_end
-#
-# @client.command(aliases = ['rank','lvl'])
-# async def level(ctx,member: discord.Member = None):
-#
-#     if not member:
-#         user = ctx.message.author
-#         with open('level.json','r') as f:
-#             users = json.load(f)
-#         lvl = users[str(ctx.guild.id)][str(user.id)]['level']
-#         exp = users[str(ctx.guild.id)][str(user.id)]['experience']
-#
-#         embed = discord.Embed(title = 'Level {}'.format(lvl), description = f"{exp} XP " ,color = discord.Color.green())
-#         embed.set_author(name = ctx.author, icon_url = ctx.author.avatar_url)
-#         await ctx.send(embed = embed)
-#     else:
-#       with open('level.json','r') as f:
-#           users = json.load(f)
-#       lvl = users[str(ctx.guild.id)][str(member.id)]['level']
-#       exp = users[str(ctx.guild.id)][str(member.id)]['experience']
-#       embed = discord.Embed(title = 'Level {}'.format(lvl), description = f"{exp} XP" ,color = discord.Color.green())
-#       embed.set_author(name = member, icon_url = member.avatar_url)
-#
-#       await ctx.send(embed = embed)
-
-
 @client.event
 async def on_member_join(member):
     # Exit if the user is a bot
@@ -160,63 +98,6 @@ async def on_member_join(member):
     await member.add_roles(role)
     # Sends a dm to the new user explaining that they have to verify
     await member.send(dm_message)
-
-@client.command(help='Verifies your presence in the record and gives you roles based on your section/subsection.\nAlso enables you to use the `%profile` and `%tag` commands')
-async def verify(ctx):
-    conn = sqlite3.connect('db/details.db')
-    temp = conn.cursor()
-    temp.execute('SELECT * from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-    # Exit if the author is already in the database
-    if temp.fetchone():
-        await ctx.send('You\'re already verified!')
-        return
-    # Assigns message content to variable
-    try:
-        content = ctx.message.content.split('verify ')[1]
-    except:
-        await ctx.send(f'Type something after `{prefix}verify`, {ctx.author.mention}')
-        return
-    try:
-        section = content.split(' ')[0]
-        roll_no = int(content.split(' ')[1])
-        c = conn.cursor()
-        # Gets the record of the given roll number
-        c.execute('SELECT * from main where Roll_Number = (:roll)', {'roll': roll_no})
-        tuple = c.fetchone()
-        # Exit if roll number doesn't exist
-        if not tuple:
-            await ctx.send(f'The requested record was not found, {ctx.author.mention}. Please re-check the entered details and try again')
-            return
-        # Exit if entered section doesn't match an existing section
-        if section not in sections:
-            await ctx.send(f'"{section}" is not an existing section, {ctx.author.mention}.\nPlease re-check the entered details and try again')
-            return
-        # Exit if entered section doesn't match the section that the roll number is bound to
-        if section != tuple[2]:
-            await ctx.send(f'The section that you entered does not match that of the roll number that you entered, {ctx.author.mention}.\nPlease re-check the entered details and try again')
-            return
-        # Exit if the record is already claimed by another user
-        if tuple[9]:
-            await ctx.send(f'The details you entered is of a record already claimed by `{tuple[9]}` {ctx.author.mention}.\nTry another record. If you think this was a mistake, contact a moderator.')
-            return
-        # Assigning one SubSection and one Section role to the user
-        role = get(ctx.guild.roles, name = tuple[2])
-        await ctx.author.add_roles(role)
-        role = get(ctx.guild.roles, name = tuple[3])
-        await ctx.author.add_roles(role)
-        await ctx.send(f'Your record was found and verified {ctx.author.mention}!\nYou will now be removed from this channel.')
-        # Removing the 'Not-Verified' role from the user
-        role = get(ctx.guild.roles, name = 'Not-Verified')
-        await ctx.author.remove_roles(role)
-        # Updating the record in the database
-        c.execute('UPDATE main SET Discord_UID = (:uid) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no})
-        conn.commit()
-        # Changing the nick of the user to their first name
-        word = tuple[4].split(' ')[0]
-        await ctx.author.edit(nick = word[:1] + word[1:].lower())
-    except Exception as error:
-        print(f'{bcolors.Red}{error}{bcolors.White}\n')
-        await ctx.send(f'Error while matching details in record {ctx.author.mention}.\nYou\'ve either entered details that don\'t match or the syntax of the command is incorrect!')
 
 @client.command(help='Displays details of the user related to the server and the college', aliases=['p', 'prof'])
 async def profile(ctx):
@@ -443,4 +324,4 @@ class MyHelp(commands.MinimalHelpCommand):
 
 client.help_command = MyHelp()
 
-client.run(os.getenv("BOT_TOKEN"))
+client.run(os.getenv('BOT_TOKEN'))
