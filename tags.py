@@ -12,6 +12,8 @@ class Tags(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, msg):
+        if msg.guild.id == 336642139381301249:
+            return
         name = msg.content
         if msg.author.bot or name not in self.data:
             return
