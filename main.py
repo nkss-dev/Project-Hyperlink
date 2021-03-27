@@ -311,6 +311,11 @@ async def on_member_remove(member):
 async def invite(ctx):
     await ctx.send('**NITKKR server:** https://discord.gg/4eF7R6afqv\n**kkr++ server:** https://discord.gg/epaTW7tjYR')
 
+@client.command()
+async def restart(ctx):
+    await ctx.message.delete()
+    await client.close()
+
 class MyHelp(commands.MinimalHelpCommand):
     async def send_command_help(self, command):
         embed = discord.Embed(title=self.get_command_signature(command))
