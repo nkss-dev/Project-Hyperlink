@@ -247,22 +247,22 @@ class Verify(commands.Cog):
             await self.verify_basic(ctx, args)
         elif 'False' in details[2]:
             if ctx.channel.slowmode_delay < 5:
-                await ctx.send('You can only use this command in a channel which has slowmode enabled.')
+                await ctx.send(f'You can only use this command in a channel which has slowmode enabled, {ctx.author.mention}.')
                 return
             if 'code' in args[0].lower():
                 if str(ctx.author.id) in self.data:
                     if self.data[str(ctx.author.id)] == args[1]:
-                        await ctx.send('Your email has been verified successfully!')
+                        await ctx.send(f'Your email has been verified successfully, {ctx.author.mention}!')
                         del self.data[str(ctx.author.id)]
                         self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
                         self.conn.commit()
                     else:
-                        await ctx.send('The code you entered is incorrect')
+                        await ctx.send(f'The code you entered is incorrect, {ctx.author.mention}.')
                 return
             if details[1].lower() == args[0].lower():
                 await self.verify_email(ctx, [details[1], details[0]])
             else:
-                await ctx.send('The email that you entered does not match your institute email. Please try again with a valid email.\nIf you think this was a mistake, contact a mod.')
+                await ctx.send(f'The email that you entered does not match your institute email, {ctx.author.mention}. Please try again with a valid email.\nIf you think this was a mistake, contact a mod.')
 
     def save(self):
         with open('db/codes.json', 'w') as f:
