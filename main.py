@@ -316,6 +316,35 @@ async def restart(ctx):
     await ctx.message.delete()
     await client.close()
 
+@client.event
+async def on_voice_state_update(member, before, after):
+    if member.bot:
+        return
+    if not after.channel:
+        try:
+            with open('db/VCs.json') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = []
+        if before.channel.id in data:
+            await before.channel.delete()
+        data.remove(before.channel.id)
+        with open('db/VCs.json', 'w') as f:
+            json.dump(data, f)
+        return
+    if after.channel.id != 825291932108455946:
+        return
+    vc = await member.guild.create_voice_channel(f'{member.name}\'s Party', category=after.channel.category)
+    await member.move_to(vc)
+    try:
+        with open('db/VCs.json') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = []
+    data.append(vc.id)
+    with open('db/VCs.json', 'w') as f:
+        json.dump(data, f)
+
 class MyHelp(commands.MinimalHelpCommand):
     async def send_command_help(self, command):
         embed = discord.Embed(title=self.get_command_signature(command))
