@@ -15,7 +15,7 @@ class voltorb_embed:
 
     async def run(self, ctx):
         self.vol = voltorb_board(self.vol, f'boards/{ctx.author.id}.png')
-        thumb = discord.File('voltorb.gif', filename='voltorb.gif')
+        thumb = discord.File('sprites/voltorb.gif', filename='voltorb.gif')
         board = discord.File(f'boards/{ctx.author.id}.png', filename='board.png')
         embed = discord.Embed(
             title = 'Voltorb Flip',
@@ -63,7 +63,7 @@ class voltorb_embed:
         except ValueError:
             self.win = True
             self.total += self.coins*int(coins[:-1])
-        thumb = discord.File('voltorb.gif', filename='voltorb.gif')
+        thumb = discord.File('sprites/voltorb.gif', filename='voltorb.gif')
         board = discord.File(f'boards/{ctx.author.id}.png', filename='board.png')
         embed = discord.Embed(
             title = 'Voltorb Flip',
@@ -265,7 +265,7 @@ class voltorb_board:
                 self.flip[i][j] = True
         bg.save(name)
 
-class Voltorb_Flip(commands.Cog):
+class VoltorbFlip(commands.Cog):
     def __init__(self):
         try:
             with open('db/boards.json') as f:
