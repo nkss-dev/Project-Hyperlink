@@ -313,6 +313,9 @@ async def invite(ctx):
 
 @client.command()
 async def restart(ctx):
+    if not ctx.author.guild_permissions.manage_server:
+        await ctx.send('This command requires you to have the `Manage Server` permission to use it')
+        return
     await ctx.message.delete()
     await client.close()
 
@@ -320,30 +323,38 @@ async def restart(ctx):
 async def on_voice_state_update(member, before, after):
     if member.bot:
         return
-    if not after.channel:
+    if before.channel and before.channel != after.channel:
         try:
             with open('db/VCs.json') as f:
                 data = json.load(f)
         except FileNotFoundError:
             data = []
         if before.channel.id in data:
-            await before.channel.delete()
-        data.remove(before.channel.id)
-        with open('db/VCs.json', 'w') as f:
-            json.dump(data, f)
+            if not len(before.channel.members):
+                await before.channel.delete()
+                data.remove(before.channel.id)
+            with open('db/VCs.json', 'w') as f:
+                json.dump(data, f)
+            return
+    if not after.channel:
         return
-    if after.channel.id != 825291932108455946:
+    if after.channel.id not in [825422681695846430, 825326477570211852, 825456619211063327]:
         return
-    vc = await member.guild.create_voice_channel(f'{member.name}\'s Party', category=after.channel.category)
+    if member.nick:
+        member_name = member.nick
+    else:
+        member_name = member.name
+    vc = await member.guild.create_voice_channel(f'{member_name}\'s Party', category=after.channel.category)
     await member.move_to(vc)
     try:
         with open('db/VCs.json') as f:
             data = json.load(f)
     except FileNotFoundError:
         data = []
-    data.append(vc.id)
-    with open('db/VCs.json', 'w') as f:
-        json.dump(data, f)
+    if vc.id not in data:
+        data.append(vc.id)
+        with open('db/VCs.json', 'w') as f:
+            json.dump(data, f)
 
 class MyHelp(commands.MinimalHelpCommand):
     async def send_command_help(self, command):
