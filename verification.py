@@ -1,8 +1,19 @@
 import discord, sqlite3, json, smtplib, os, math, random
 from discord.ext import commands
+from discord.utils import get
 from email.message import EmailMessage
 from dotenv import load_dotenv
 load_dotenv()
+
+sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
+subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'CE-08', 'CE-09',
+            'CS-01', 'CS-02', 'CS-03', 'CS-04', 'CS-05', 'CS-06',
+            'EC-01', 'EC-02', 'EC-03', 'EC-04', 'EC-05', 'EC-06', 'EC-07', 'EC-08', 'EC-09',
+            'EE-01', 'EE-02', 'EE-03', 'EE-04', 'EE-05', 'EE-06', 'EE-07', 'EE-08', 'EE-09',
+            'IT-01', 'IT-02', 'IT-03', 'IT-04', 'IT-05', 'IT-06',
+            'ME-01', 'ME-02', 'ME-03', 'ME-04', 'ME-05', 'ME-06', 'ME-07', 'ME-08', 'ME-09',
+            'PI-01', 'PI-02', 'PI-03', 'PI-04', 'PI-05', 'PI-06'
+        ]
 
 class Verify(commands.Cog):
     def __init__(self):
@@ -179,10 +190,10 @@ class Verify(commands.Cog):
     async def verify_basic(self, ctx, args):
         section = args[0]
         roll_no = int(args[1])
-        c = conn.cursor()
+        self.c = self.conn.cursor()
         # Gets the record of the given roll number
-        c.execute('SELECT * from main where Roll_Number = (:roll)', {'roll': roll_no})
-        tuple = c.fetchone()
+        self.c.execute('SELECT * from main where Roll_Number = (:roll)', {'roll': roll_no})
+        tuple = self.c.fetchone()
         # Exit if roll number doesn't exist
         if not tuple:
             await ctx.send(f'The requested record was not found, {ctx.author.mention}. Please re-check the entered details and try again')
@@ -200,17 +211,17 @@ class Verify(commands.Cog):
             await ctx.send(f'The details you entered is of a record already claimed by `{tuple[9]}` {ctx.author.mention}.\nTry another record. If you think this was a mistake, contact a moderator.')
             return
         # Assigning one SubSection and one Section role to the user
-        role = get(ctx.guild.roles, name = tuple[2])
+        role = discord.utils.get(ctx.guild.roles, name = tuple[2])
         await ctx.author.add_roles(role)
-        role = get(ctx.guild.roles, name = tuple[3])
+        role = discord.utils.get(ctx.guild.roles, name = tuple[3])
         await ctx.author.add_roles(role)
         await ctx.send(f'Your record was found and verified {ctx.author.mention}!\nYou will now be removed from this channel.')
         # Removing the 'Not-Verified' role from the user
-        role = get(ctx.guild.roles, name = 'Not-Verified')
+        role = discord.utils.get(ctx.guild.roles, name = 'Not-Verified')
         await ctx.author.remove_roles(role)
         # Updating the record in the database
-        c.execute('UPDATE main SET Discord_UID = (:uid) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no})
-        conn.commit()
+        self.c.execute('UPDATE main SET Discord_UID = (:uid) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no})
+        self.conn.commit()
         # Changing the nick of the user to their first name
         word = tuple[4].split(' ')[0]
         await ctx.author.edit(nick = word[:1] + word[1:].lower())
