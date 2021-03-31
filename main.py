@@ -1,14 +1,16 @@
-import discord, aiohttp, os, sqlite3, json
+import discord, aiohttp, os, sqlite3, json, pytz, asyncio
 from discord.utils import get
 from discord.ext import commands
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 load_dotenv()
 from tags import Tags
 from ign import IGN
-from voltorb import Voltorb_Flip
+from voltorb import VoltorbFlip
 from drive import Drive
 from verification import Verify
+from reminder import Reminder
 
 prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
@@ -22,12 +24,13 @@ subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'C
         ]
 
 intents = discord.Intents.all()
-client = commands.Bot(command_prefix = prefix, intents = intents, help_command=commands.DefaultHelpCommand())
+client = commands.Bot(commands.when_mentioned_or('%'), intents = intents, help_command=commands.DefaultHelpCommand())
 client.add_cog(Tags())
 client.add_cog(IGN())
-client.add_cog(Voltorb_Flip())
+client.add_cog(VoltorbFlip())
 client.add_cog(Drive())
 client.add_cog(Verify())
+client.add_cog(Reminder())
 
 available = f'\nAvailable commands: `{prefix}profile`, `{prefix}memlist`, `{prefix}tag` and `{prefix}vf_start`.'
 
@@ -189,7 +192,7 @@ async def tag(ctx):
     c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
     tuple = c.fetchone()
     if not tuple:
-        await ctx.send('The requested user does not exist in the record')
+        await ctx.send(f'Only verified members can be use this feature, {ctx.author.mention}.')
         return
     section = tuple[2]
     for i in msg.split(' '):
@@ -219,7 +222,15 @@ async def tag(ctx):
             if usertag:
                 continue
             # Checks if the user belongs to the tagged section
-            if j and j[:2].upper() in section:
+            if j and ctx.author.guild_permissions.mention_everyone:
+                if j[3] == '0':
+                    msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                elif j[3].upper() == section[3]:
+                    msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
+            if j and j[:2].upper() not in section:
+                await ctx.send('You can\'t tag sections other than your own!')
+                return
+            elif j and j[:2].upper() in section:
                 # Checks if the tag is of a SubSection
                 if j[3] == '0':
                     # Checks if the user belongs to the Section of the SubSection that they attempted to tag
@@ -237,20 +248,9 @@ async def tag(ctx):
                 else:
                     await ctx.send('You can\'t tag sections other than your own!')
                     return
-            elif j:
-                await ctx.send('You can\'t tag sections other than your own!')
-                return
     # Deletes the sent command and sends the new tagged version
     await ctx.message.delete()
     await webhook.send(msg.strip(), username=username, avatar_url=ctx.author.avatar_url)
-
-@client.event
-async def on_command_error(ctx, error):
-    if 'Command' in str(error) and 'is not found' in str(error):
-        await ctx.send(str(error) + available)
-    else:
-        print(f'{bcolors.Red}{error}{bcolors.White}\n')
-        raise error
 
 @client.command()
 async def nick(ctx):
@@ -313,7 +313,7 @@ async def invite(ctx):
 
 @client.command()
 async def restart(ctx):
-    if not ctx.author.guild_permissions.manage_server:
+    if not ctx.author.guild_permissions.manage_guild:
         await ctx.send('This command requires you to have the `Manage Server` permission to use it')
         return
     await ctx.message.delete()
@@ -338,7 +338,7 @@ async def on_voice_state_update(member, before, after):
             return
     if not after.channel:
         return
-    if after.channel.id not in [825422681695846430, 825326477570211852, 825456619211063327]:
+    if after.channel.id not in [825422681695846430, 825456619211063327]:
         return
     if member.nick:
         member_name = member.nick
@@ -356,6 +356,42 @@ async def on_voice_state_update(member, before, after):
         with open('db/VCs.json', 'w') as f:
             json.dump(data, f)
 
+async def reminder_loop():
+    await client.wait_until_ready()
+    while not client.is_closed():
+        try:
+            with open('db/reminders.json') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = {}
+        IST = pytz.timezone('Asia/Kolkata')
+        datetime_ist = datetime.now(IST)
+        print(datetime_ist.strftime('%Y-%m-%d %H:%M:%S'))
+        for i in data:
+            time = IST.localize(datetime.strptime(data[i]['time'], '%Y-%m-%d %H:%M:%S'))
+            if time <= datetime_ist:
+                channel = client.get_channel(data[i]['channel'])
+                if channel:
+                    await channel.send(data[i]['message'])
+                else:
+                    author = client.get_user(data[i]['author'])
+                    await author.send(data[i]['message'])
+                if 'False' not in data[i]['repeat']:
+                    if data[i]['repeat'] == 'daily':
+                        time += timedelta(days=1)
+                    elif data[i]['repeat'] == 'weekly':
+                        time += timedelta(days=7)
+                    elif data[i]['repeat'] == 'monthly':
+                        time += timedelta(months=1)
+                    elif data[i]['repeat'] == 'yearly':
+                        time += timedelta(years=1)
+                    data[i]['time'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    del data[i]
+                with open('db/reminders.json', 'w') as f:
+                    json.dump(data, f)
+        await asyncio.sleep(1)
+
 class MyHelp(commands.MinimalHelpCommand):
     async def send_command_help(self, command):
         embed = discord.Embed(title=self.get_command_signature(command))
@@ -368,5 +404,5 @@ class MyHelp(commands.MinimalHelpCommand):
         await channel.send(embed=embed)
 
 client.help_command = MyHelp()
-
+client.loop.create_task(reminder_loop())
 client.run(os.getenv('BOT_TOKEN'))
