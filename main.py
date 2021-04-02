@@ -227,7 +227,7 @@ async def tag(ctx):
                     msg = msg.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
                 elif j[3].upper() == section[3]:
                     msg = msg.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
-            if j and j[:2].upper() not in section:
+            elif j and j[:2].upper() not in section:
                 await ctx.send('You can\'t tag sections other than your own!')
                 return
             elif j and j[:2].upper() in section:
@@ -309,7 +309,15 @@ async def on_member_remove(member):
 
 @client.command(aliases=['inv'])
 async def invite(ctx):
-    await ctx.send('**NITKKR server:** https://discord.gg/4eF7R6afqv\n**kkr++ server:** https://discord.gg/epaTW7tjYR')
+    servers = ['NITKKR\'24: https://discord.gg/4eF7R6afqv',
+        'kkr++: https://discord.gg/epaTW7tjYR'
+    ]
+    embed = discord.Embed(
+        title = 'Invites:',
+        description = '\n'.join(servers),
+        color = discord.Color.blurple()
+    )
+    await ctx.send(embed=embed)
 
 @client.command()
 async def restart(ctx):
@@ -355,42 +363,6 @@ async def on_voice_state_update(member, before, after):
         data.append(vc.id)
         with open('db/VCs.json', 'w') as f:
             json.dump(data, f)
-
-async def reminder_loop():
-    await client.wait_until_ready()
-    while not client.is_closed():
-        try:
-            with open('db/reminders.json') as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            data = {}
-        IST = pytz.timezone('Asia/Kolkata')
-        datetime_ist = datetime.now(IST)
-        print(datetime_ist.strftime('%Y-%m-%d %H:%M:%S'))
-        for i in data:
-            time = IST.localize(datetime.strptime(data[i]['time'], '%Y-%m-%d %H:%M:%S'))
-            if time <= datetime_ist:
-                channel = client.get_channel(data[i]['channel'])
-                if channel:
-                    await channel.send(data[i]['message'])
-                else:
-                    author = client.get_user(data[i]['author'])
-                    await author.send(data[i]['message'])
-                if 'False' not in data[i]['repeat']:
-                    if data[i]['repeat'] == 'daily':
-                        time += timedelta(days=1)
-                    elif data[i]['repeat'] == 'weekly':
-                        time += timedelta(days=7)
-                    elif data[i]['repeat'] == 'monthly':
-                        time += timedelta(months=1)
-                    elif data[i]['repeat'] == 'yearly':
-                        time += timedelta(years=1)
-                    data[i]['time'] = time.strftime('%Y-%m-%d %H:%M:%S')
-                else:
-                    del data[i]
-                with open('db/reminders.json', 'w') as f:
-                    json.dump(data, f)
-        await asyncio.sleep(1)
 
 class MyHelp(commands.MinimalHelpCommand):
     async def send_command_help(self, command):
