@@ -109,11 +109,10 @@ class IGN(commands.Cog):
         for game in igns:
             ign += f'\n**{game}:** {igns[game]}'
         embed = discord.Embed(
-            title = f'{member}\'s IGNs:',
+            title = f'{member}\'s IGNs:\n',
             description = ign,
             color = member.top_role.color
         )
-        embed.set_author(name=member, icon_url=member.avatar_url)
         embed.set_thumbnail(url=member.avatar_url)
         if not oneself:
             embed.set_footer(text=f'Requested by: {ctx.author}', icon_url=ctx.author.avatar_url)
