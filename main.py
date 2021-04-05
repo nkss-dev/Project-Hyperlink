@@ -11,6 +11,7 @@ from voltorb import VoltorbFlip
 from drive import Drive
 from verification import Verify
 from reminder import Reminder
+from logger import Logger
 
 prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
@@ -31,6 +32,7 @@ client.add_cog(VoltorbFlip())
 client.add_cog(Drive())
 client.add_cog(Verify())
 client.add_cog(Reminder())
+client.add_cog(Logger(client))
 
 available = f'\nAvailable commands: `{prefix}profile`, `{prefix}memlist`, `{prefix}tag` and `{prefix}vf_start`.'
 
