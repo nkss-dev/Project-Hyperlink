@@ -1,0 +1,77 @@
+import discord, json
+from datetime import datetime
+from discord.ext import commands
+
+class Logger(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        try:
+            with open('db/guilds.json') as f:
+                self.data = json.load(f)
+        except FileNotFoundError:
+            self.data = {}
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        if message.author.bot:
+            return
+        channel = self.bot.get_channel(self.data[str(message.guild.id)]['delete_channel'])
+        if not channel:
+            return
+        embed = discord.Embed(
+            description = f'Message deleted in {message.channel.mention}',
+            color = discord.Color.from_rgb(255, 0, 0)
+        )
+        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+        if not message.content:
+            embed.add_field(name='**Content**', value='Could not find message content')
+        else:
+            embed.add_field(name='**Content**', value=message.content)
+        if message.attachments:
+            if 'image' in message.attachments[0].content_type:
+                embed.set_image(url=message.attachments[0].url)
+        embed.timestamp = datetime.utcnow()
+        embed.set_footer(text=f'User ID: {message.author.id}')
+        try:
+            await channel.send(embed=embed)
+        except:
+            print(message.content)
+
+    @commands.Cog.listener()
+    async def on_raw_bulk_message_delete(self, payload):
+        channel = self.bot.get_channel(self.data[str(payload.guild_id)]['delete_channel'])
+        if not channel:
+            return
+        embed = discord.Embed(
+            description = f'{len(payload.cached_messages)} messages were deleted in {payload.cached_messages[0].channel.mention}',
+            color = discord.Color.from_rgb(255, 0, 0)
+        )
+        embed.timestamp = datetime.utcnow()
+        await channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        if before.author.bot:
+            return
+        channel = self.bot.get_channel(self.data[str(before.guild.id)]['delete_channel'])
+        if not channel:
+            return
+        embed = discord.Embed(
+            description = f'Message edited in {before.channel.mention} - [Jump to message]({before.jump_url})',
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed.set_author(name=before.author, icon_url=before.author.avatar_url)
+        if not before.content:
+            embed.add_field(name='**Old Message**', value='Could not find message content')
+        else:
+            embed.add_field(name='**Old Message**', value=before.content)
+        if not after.content:
+            embed.add_field(name='**New Message**', value='Could not find message content', inline=False)
+        else:
+            embed.add_field(name='**New Message**', value=after.content, inline=False)
+        embed.timestamp = datetime.utcnow()
+        embed.set_footer(text=f'User ID: {before.author.id}')
+        try:
+            await channel.send(embed=embed)
+        except:
+            print(before.content)
