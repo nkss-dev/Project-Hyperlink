@@ -56,6 +56,8 @@ class Logger(commands.Cog):
         channel = self.bot.get_channel(self.data[str(before.guild.id)]['delete_channel'])
         if not channel:
             return
+        if before.content == after.content:
+            return
         embed = discord.Embed(
             description = f'Message edited in {before.channel.mention} - [Jump to message]({before.jump_url})',
             color = discord.Color.from_rgb(255, 255, 0)
