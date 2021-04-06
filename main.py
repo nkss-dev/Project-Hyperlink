@@ -12,6 +12,7 @@ from drive import Drive
 from verification import Verify
 from reminder import Reminder
 from logger import Logger
+from help import Help
 
 prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
@@ -25,7 +26,7 @@ subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'C
         ]
 
 intents = discord.Intents.all()
-client = commands.Bot(commands.when_mentioned_or('%'), intents = intents, help_command=commands.DefaultHelpCommand())
+client = commands.Bot(commands.when_mentioned_or('%'), intents = intents)
 client.add_cog(Tags())
 client.add_cog(IGN())
 client.add_cog(VoltorbFlip())
@@ -33,28 +34,9 @@ client.add_cog(Drive())
 client.add_cog(Verify())
 client.add_cog(Reminder())
 client.add_cog(Logger(client))
+client.add_cog(Help(client))
 
 available = f'\nAvailable commands: `{prefix}profile`, `{prefix}memlist`, `{prefix}tag` and `{prefix}vf_start`.'
-
-tag = '''
-Now you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
-That means that if you're in IT-A, you can tag `IT-A, IT-01, IT-02, ...` but you can NOT tag `IT-B, IT-06, ME-B, CE-01, PI-06, ...`
-
-**How do I tag? The normal tagging still doesn't work.**
-Here's how, you will have to precede your message with `%tag ` and type the role tag manually along with the message that you want to send.
-Examples:
-`%tag Hey @CS-01 can you solve this?`
-`%tag @it-a when's the due date of the assignment`
-Capitalization does NOT matter.
-
-**PS:** If you're found to abuse this facility, ie. spam tags or tag people for an unimportant reason, then this facility will be revoked for you and you may be banned temporarily. Though I'll try to avoid such things. (And you should too)'''
-
-vf = '''
-This is a recreatation of the Voltorb Flip game that appears in the Korean and Western releases of Pokémon HeartGold and SoulSilver. The game is a mix between Minesweeper and Picture Cross and the placement of the bombs are given for each row and column. The goal of the game is to uncover all of the 2 and 3 tiles on a given board and move up to higher levels which have higher coin totals.
-
-The numbers on the side and bottom of the game board denote the sum of the tiles and how many bombs are present in that row/column, respectively. Each tile you flip multiplies your collected coins by that value. Once you uncover all of the 2 and 3 tiles, all of the coins you gained this level will be added to your total and you'll go up one level to a max of 7. If you flip over a Voltorb, you lose all your coins from the current level and risk going down to a lower level.'''
-
-dm_message = '''Welcome to the NITKKR'24 server! Before you can see/use all the channels that it has, you'll need to do a quick verification. The process of which is explained in the #welcome channel of the server. Please do not send the command to this dm as it will not be read, instead send it on the #commands channel on the server. If you have any issues with the command, @Priyanshu will help you out personally on the channel. But do try even if you didn't understand. Have fun!'''
 
 class bcolors:
     Purple = '\033[95m'
@@ -102,10 +84,14 @@ async def on_member_join(member):
     role = get(guild.roles, name = 'Not-Verified')
     await member.add_roles(role)
     # Sends a dm to the new user explaining that they have to verify
+    dm_message = '''Welcome to the NITKKR'24 server!
+    Before you can see/use all the channels that it has, you'll need to do a quick verification. The process of which is explained in the #welcome channel of the server. Please do not send the command to this dm as it will not be read, instead send it on the #commands channel on the server. If you have any issues with the command, @Priyanshu will help you out personally on the channel. But do try even if you didn't understand.
+    Have fun!'''
     await member.send(dm_message)
 
-@client.command(help='Displays details of the user related to the server and the college', aliases=['p', 'prof'])
+@client.command(brief='Displays details of the user', aliases=['p'])
 async def profile(ctx):
+    """Displays details of the user related to the server and the college"""
     try:
         # Checks for any mentions in the message
         member = ctx.message.mentions[0]
@@ -149,8 +135,9 @@ async def profile(ctx):
     embed.set_footer(text = 'Joined at: ' + str(member.joined_at)[8:10] + '-' + str(member.joined_at)[5:7] + '-' + str(member.joined_at)[:4])
     await ctx.send(embed = embed)
 
-@client.command(help='Displays the total number of joined and remaining students for each section. Also displays the number of losers who didn\'t verify and total number of members on this server')
+@client.command(brief='Segregated display of the number of members')
 async def memlist(ctx):
+    """Displays the total number of members joined per section. Also displays the number of verified members on the server along with the total number of humans on the server"""
     list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B', 'Not-Verified']
     total = [64, 61, 64, 58, 61, 59, 59, 56, 60, 57, 55, 64, 64, 67, 69, 70, 58, 59, 1105 - len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])]
     previous = list[0][:2]
@@ -165,8 +152,20 @@ async def memlist(ctx):
     no += '(Total --> ' + str(len([member for member in ctx.guild.members if not member.bot])) + ')```'
     await ctx.send(no)
 
-@client.command(help='Use this to tag the subsection roles of your section.\n\n**How to use:**\n' + tag)
+@client.command(brief='Allows user to tag section/subsection roles')
 async def tag(ctx):
+    """**How to use:**
+    Now you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
+    That means that if you're in IT-A, you can tag `IT-A, IT-01, IT-02, ...` but you can NOT tag `IT-B, IT-06, ME-B, CE-01, PI-06, ...`
+
+    **How do I tag? The normal tagging still doesn't work.**
+    Here's how, you will have to precede your message with `%tag ` and type the role tag manually along with the message that you want to send.
+    Examples:
+    `%tag Hey @CS-01 can you solve this?`
+    `%tag @it-a when's the due date of the assignment`
+    Capitalization does NOT matter.
+
+    **PS:** If you're found to abuse this facility, ie. spam tags or tag people for an unimportant reason, then this facility will be revoked for you and you may be banned temporarily. Though I'll try to avoid such things. (And you should too)"""
     # Assigns message content to variable
     try:
         msg = ctx.message.content.split('tag ')[1]
@@ -254,8 +253,9 @@ async def tag(ctx):
     await ctx.message.delete()
     await webhook.send(msg.strip(), username=username, avatar_url=ctx.author.avatar_url)
 
-@client.command()
+@client.command(brief='Nicks the user to their first name')
 async def nick(ctx):
+    """Changes name of the user to their first name as in the database. Can only be used by members with the `Manage Nicknames` permission."""
     # Exit if required perms are missing
     if not ctx.author.guild_permissions.manage_nicknames:
         await ctx.send('This command requires you to have the `Manage Nicknames` permission to use it')
@@ -309,7 +309,7 @@ async def on_member_remove(member):
         conn.commit()
     await channel.send(f'{member.mention} has left the server.')
 
-@client.command(aliases=['inv'])
+@client.command(brief='Gives invites of some servers', aliases=['inv'])
 async def invite(ctx):
     servers = ['NITKKR\'24: https://discord.gg/4eF7R6afqv',
         'kkr++: https://discord.gg/epaTW7tjYR'
@@ -321,8 +321,9 @@ async def invite(ctx):
     )
     await ctx.send(embed=embed)
 
-@client.command()
+@client.command(brief='Restarts the bot')
 async def restart(ctx):
+    """Restarts the bot. Can only be used by members with the `Manage Server` permission."""
     if not ctx.author.guild_permissions.manage_guild:
         await ctx.send('This command requires you to have the `Manage Server` permission to use it')
         return
@@ -366,17 +367,5 @@ async def on_voice_state_update(member, before, after):
         with open('db/VCs.json', 'w') as f:
             json.dump(data, f)
 
-class MyHelp(commands.MinimalHelpCommand):
-    async def send_command_help(self, command):
-        embed = discord.Embed(title=self.get_command_signature(command))
-        embed.add_field(name="Help", value=command.help)
-        alias = command.aliases
-        if alias:
-            embed.add_field(name="Aliases", value=", ".join(alias), inline=False)
-
-        channel = self.get_destination()
-        await channel.send(embed=embed)
-
-client.help_command = MyHelp()
 client.loop.create_task(reminder_loop())
 client.run(os.getenv('BOT_TOKEN'))
