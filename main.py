@@ -16,8 +16,13 @@ subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'C
             'PI-01', 'PI-02', 'PI-03', 'PI-04', 'PI-05', 'PI-06'
         ]
 
+def get_prefix(client, message):
+    with open('db/guilds.json', 'r') as f:
+        prefixes = json.load(f)
+    return prefixes[str(message.guild.id)]['prefix']
+
 intents = discord.Intents.all()
-client = commands.Bot(command_prefix='%', intents=intents)
+client = commands.Bot(command_prefix=get_prefix, intents=intents)
 
 @client.event
 async def on_ready():
