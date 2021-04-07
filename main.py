@@ -5,14 +5,6 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
 load_dotenv()
-from tags import Tags
-from ign import IGN
-from voltorb import VoltorbFlip
-from drive import Drive
-from verification import Verify
-from reminder import Reminder
-from logger import Logger
-from help import Help
 
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
 subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'CE-08', 'CE-09',
@@ -26,24 +18,6 @@ subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'C
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix='%', intents=intents)
-client.add_cog(Tags())
-client.add_cog(IGN())
-client.add_cog(VoltorbFlip())
-client.add_cog(Drive())
-client.add_cog(Verify())
-client.add_cog(Reminder())
-client.add_cog(Logger(client))
-client.add_cog(Help(client))
-
-class bcolors:
-    Purple = '\033[95m'
-    Blue = '\033[94m'
-    Green = '\033[92m'
-    Yellow = '\033[93m'
-    Red = '\033[91m'
-    White = '\033[0m'
-    Bold = '\033[1m'
-    Underline = '\033[4m'
 
 @client.event
 async def on_ready():
@@ -385,6 +359,10 @@ async def on_voice_state_update(member, before, after):
         data.append(vc.id)
         with open('db/VCs.json', 'w') as f:
             json.dump(data, f)
+
+for filename in os.listdir('./cogs'):
+    if filename.endswith('.py'):
+        client.load_extension(f'cogs.{filename[:-3]}')
 
 client.loop.create_task(reminder_loop())
 client.run(os.getenv('BOT_TOKEN'))
