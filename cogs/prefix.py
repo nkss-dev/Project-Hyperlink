@@ -22,7 +22,7 @@ class Prefix(commands.Cog):
         prefixes = self.data[str(ctx.guild.id)]['prefix']
         embed = discord.Embed(
             title = 'Prefixes',
-            description = ',\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]),
+            description = '\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]),
             color = discord.Color.blurple()
         )
         await ctx.send(embed=embed)
