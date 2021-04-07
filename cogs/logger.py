@@ -77,3 +77,6 @@ class Logger(commands.Cog):
             await channel.send(embed=embed)
         except:
             print(before.content)
+
+def setup(bot):
+    bot.add_cog(Logger(bot))

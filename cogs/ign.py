@@ -2,7 +2,9 @@ import sqlite3, json, os, discord
 from discord.ext import commands
 
 class IGN(commands.Cog):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
+
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
         try:
@@ -149,3 +151,6 @@ class IGN(commands.Cog):
         self.c.execute('UPDATE main SET IGN = (:ign) where Discord_UID = (:uid)', {'ign': json.dumps(igns), 'uid': ctx.author.id})
         self.conn.commit()
         await ctx.reply(f'IGN for {game} removed successfully.')
+
+def setup(bot):
+    bot.add_cog(IGN(bot))

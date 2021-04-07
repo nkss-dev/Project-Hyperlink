@@ -266,7 +266,8 @@ class voltorb_board:
         bg.save(name)
 
 class VoltorbFlip(commands.Cog):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         try:
             with open('db/boards.json') as f:
                 self.data = json.load(f)
@@ -366,3 +367,6 @@ class VoltorbFlip(commands.Cog):
         # del self.data[id]['vol']
         with open('db/boards.json', 'w') as f:
             json.dump(self.data, f)
+
+def setup(bot):
+    bot.add_cog(VoltorbFlip(bot))

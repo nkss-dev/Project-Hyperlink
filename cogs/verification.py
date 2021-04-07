@@ -16,7 +16,9 @@ subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'C
         ]
 
 class Verify(commands.Cog):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
+
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
         try:
@@ -278,3 +280,6 @@ class Verify(commands.Cog):
     def save(self):
         with open('db/codes.json', 'w') as f:
             json.dump(self.data, f)
+
+def setup(bot):
+    bot.add_cog(Verify(bot))

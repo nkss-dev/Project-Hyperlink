@@ -79,3 +79,6 @@ class Help(commands.Cog):
                     color = discord.Color.from_rgb(255, 165, 0)
                 )
                 await ctx.send(embed=embed)
+
+def setup(bot):
+    bot.add_cog(Help(bot))

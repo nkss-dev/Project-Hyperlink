@@ -3,7 +3,8 @@ from discord.ext import commands
 
 
 class Tags(commands.Cog):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         try:
             with open("db/tags.json") as f:
                 self.data = json.load(f)
@@ -110,3 +111,6 @@ class Tags(commands.Cog):
     def save(self):
         with open("db/tags.json", 'w') as f:
             json.dump(self.data, f)
+
+def setup(bot):
+    bot.add_cog(Tags(bot))

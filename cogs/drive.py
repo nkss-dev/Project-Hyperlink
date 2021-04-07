@@ -7,7 +7,9 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
 class Drive(commands.Cog):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
+
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
@@ -105,3 +107,6 @@ class Drive(commands.Cog):
     async def refresh(self, ctx):
         self.__init__()
         await ctx.send('Drive cache refreshed!')
+
+def setup(bot):
+    bot.add_cog(Drive(bot))
