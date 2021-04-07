@@ -153,16 +153,20 @@ async def memlist(ctx, batch: int=2024):
     tuple = c.fetchone()
     total.append(tuple[0])
     joined.append(tuple[1])
-    table =  '+---------+--------+-----------+----------+\n'
-    table += '| Section | Joined | Remaining | Verified |\n'
-    table += '+---------+--------+-----------+----------+\n'
+    table =  '╭─────────┬────────┬───────────┬──────────╮\n'
+    table += '│ Section │ Joined │ Remaining │ Verified │\n'
+    table += '├─────────┼────────┼───────────┼──────────┤\n'
+    previous = sections[0][:2]
     for section, num1, num2, verify in zip(sections, joined, total, verified):
-        table += '|{:^9}|{:^8}|{:^11}|{:^10}|\n'.format(section, str(num1).zfill(2), str(num2-num1).zfill(2), str(verify).zfill(2))
-    table += '+---------+--------+-----------+----------+\n'
-    table += '|  Total  |{:^8}|{:^11}|{:^10}|\n'.format(str(sum(joined[:-1])).zfill(2), str(sum(total[:-1])-sum(joined[:-1])).zfill(2), str(sum(verified)).zfill(2))
-    table += '+---------+--------+-----------+----------+'
+        if section[:2] != previous[:2]:
+            table += '├─────────┼────────┼───────────┼──────────┤\n'
+        table += '│{:^9}│{:^8}│{:^11}│{:^10}│\n'.format(section, str(num1).zfill(2), str(num2-num1).zfill(2), str(verify).zfill(2))
+        previous = section[:2]
+    table += '├─────────┼────────┼───────────┼──────────┤\n'
+    table += '│  Total  │{:^8}│{:^11}│{:^10}│\n'.format(str(sum(joined[:-1])).zfill(2), str(sum(total[:-1])-sum(joined[:-1])).zfill(2), str(sum(verified)).zfill(2))
+    table += '╰─────────┴────────┴───────────┴──────────╯'
     embed = discord.Embed(
-        description = f'```+---------+--------+-----------+----------+\n{table}```',
+        description = f'```\n{table}```',
         color = discord.Color.blurple()
     )
     await ctx.send(embed=embed)
