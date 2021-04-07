@@ -14,7 +14,6 @@ from reminder import Reminder
 from logger import Logger
 from help import Help
 
-prefix = '%'
 sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
 subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'CE-08', 'CE-09',
             'CS-01', 'CS-02', 'CS-03', 'CS-04', 'CS-05', 'CS-06',
@@ -26,7 +25,7 @@ subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'C
         ]
 
 intents = discord.Intents.all()
-client = commands.Bot(commands.when_mentioned_or('%'), intents = intents)
+client = commands.Bot(command_prefix='%', intents=intents)
 client.add_cog(Tags())
 client.add_cog(IGN())
 client.add_cog(VoltorbFlip())
@@ -35,8 +34,6 @@ client.add_cog(Verify())
 client.add_cog(Reminder())
 client.add_cog(Logger(client))
 client.add_cog(Help(client))
-
-available = f'\nAvailable commands: `{prefix}profile`, `{prefix}memlist`, `{prefix}tag` and `{prefix}vf_start`.'
 
 class bcolors:
     Purple = '\033[95m'
@@ -51,7 +48,7 @@ class bcolors:
 @client.event
 async def on_ready():
     print(f'Logged on as {client.user}!\n')
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=f'{prefix}help'))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=f'%help'))
 
 @client.event
 async def on_member_join(member):
@@ -136,21 +133,39 @@ async def profile(ctx):
     await ctx.send(embed = embed)
 
 @client.command(brief='Segregated display of the number of members')
-async def memlist(ctx):
+async def memlist(ctx, batch: int=2024):
     """Displays the total number of members joined per section. Also displays the number of verified members on the server along with the total number of humans on the server"""
-    list = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B', 'Not-Verified']
-    total = [64, 61, 64, 58, 61, 59, 59, 56, 60, 57, 55, 64, 64, 67, 69, 70, 58, 59, 1105 - len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])]
-    previous = list[0][:2]
-    no = '```lisp\n'
-    for section, num in zip(list[:-1], total[:-1]):
-        if previous != section[:2]:
-            no += '\n'
-        no += '(' + section + ' --> ' + str(str(len(discord.utils.get(ctx.guild.roles, name = section).members)) + ' joined : ' + str(num - len(discord.utils.get(ctx.guild.roles, name = section).members)) + ' remaining') + ')\n'
-        previous = section[:2]
-    no += '\n(Verified --> ' + str(len([member for member in ctx.guild.members if discord.utils.get(ctx.guild.roles, name = 'Not-Verified') not in member.roles and not member.bot])) + ')\n'
-    no += '\n'.join(['(' + role + ' --> ' + str(str(len(discord.utils.get(ctx.guild.roles, name = role).members)) + ' joined : ' + str(i - len(discord.utils.get(ctx.guild.roles, name = role).members)) + ' remaining') + ')' for role, i in zip(list[18:], total[18:])]) + '\n'
-    no += '(Total --> ' + str(len([member for member in ctx.guild.members if not member.bot])) + ')```'
-    await ctx.send(no)
+    conn = sqlite3.connect('db/details.db')
+    c = conn.cursor()
+    total = []
+    joined = []
+    verified = []
+    for section in sections:
+        c.execute('SELECT count(*), count(Discord_UID) from main where Section = (:section) and Batch = (:batch)', {'section': section, 'batch': batch})
+        tuple = c.fetchone()
+        total.append(tuple[0])
+        joined.append(tuple[1])
+    for section in sections:
+        c.execute('SELECT count(*) from main where Section = (:section) and Verified = "True" and Batch = (:batch)', {'section': section, 'batch': batch})
+        tuple = c.fetchone()
+        verified.append(tuple[0])
+    c.execute('SELECT count(*), count(Discord_UID) from main where Batch = (:batch)', {'batch': batch})
+    tuple = c.fetchone()
+    total.append(tuple[0])
+    joined.append(tuple[1])
+    table =  '+---------+--------+-----------+----------+\n'
+    table += '| Section | Joined | Remaining | Verified |\n'
+    table += '+---------+--------+-----------+----------+\n'
+    for section, num1, num2, verify in zip(sections, joined, total, verified):
+        table += '|{:^9}|{:^8}|{:^11}|{:^10}|\n'.format(section, str(num1).zfill(2), str(num2-num1).zfill(2), str(verify).zfill(2))
+    table += '+---------+--------+-----------+----------+\n'
+    table += '|  Total  |{:^8}|{:^11}|{:^10}|\n'.format(str(sum(joined[:-1])).zfill(2), str(sum(total[:-1])-sum(joined[:-1])).zfill(2), str(sum(verified)).zfill(2))
+    table += '+---------+--------+-----------+----------+'
+    embed = discord.Embed(
+        description = f'```+---------+--------+-----------+----------+\n{table}```',
+        color = discord.Color.blurple()
+    )
+    await ctx.send(embed=embed)
 
 @client.command(brief='Allows user to tag section/subsection roles')
 async def tag(ctx):
