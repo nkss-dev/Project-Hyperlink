@@ -17,16 +17,31 @@ client = commands.Bot(command_prefix=get_prefix, intents=intents)
 @client.command(brief='Displays details of the user', aliases=['p'])
 async def profile(ctx):
     """Displays details of the user related to the server and the college"""
-    try:
-        # Checks for any mentions in the message
-        member = ctx.message.mentions[0]
-        if member == ctx.author:
-            pass
-        # Exit if the author is not a moderator
-        elif 'mod' not in [name.name for name in ctx.author.roles]:
-            await ctx.send('You cannot see other\'s profiles')
+    member = ctx.message.mentions
+    if member and member[0] != ctx.author:
+        try:
+            with open('db/guilds.json', 'r') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = {str(ctx.guild.id): {'prefix': ['%'], 'mod_role': []}}
+            with open('db/guilds.json', 'w') as f:
+                json.dump(data, f)
+        # Fetches the moderator roles set for that guild
+        if mod_roles := [ctx.guild.get_role(role) for role in data[str(ctx.guild.id)]['mod_roles']]:
+            flag = False
+            for mod_role in mod_roles:
+                if mod_role in ctx.author.roles:
+                    flag = True
+                    break
+            # Exit if the author is not a moderator
+            if not flag:
+                await ctx.reply('You\'re not authorised to use this command.')
+                return
+        else:
+            await ctx.send('No moderator role has been set for this guild. Set moderator roles using the `setmod` command.')
             return
-    except:
+        member = member[0]
+    else:
         member = ctx.author
     conn = sqlite3.connect('db/details.db')
     c = conn.cursor()
@@ -207,27 +222,24 @@ async def tag(ctx, content):
     await webhook.send(content.strip(), username=username, avatar_url=ctx.author.avatar_url)
 
 @client.command(brief='Nicks the user to their first name')
+@commands.has_permissions(manage_nicknames=True)
 async def nick(ctx):
     """Changes name of the user to their first name as in the database. Can only be used by members with the `Manage Nicknames` permission."""
-    # Exit if required perms are missing
-    if not ctx.author.guild_permissions.manage_nicknames:
-        await ctx.send('This command requires you to have the `Manage Nicknames` permission to use it')
-        return
     # Exit if no one was tagged
     if not ctx.message.mentions:
-        await ctx.send('Tag someone to change their nickname.')
+        await ctx.reply('Tag someone to reset their nickname.')
         return
     conn = sqlite3.connect('db/details.db')
     c = conn.cursor()
     for member in ctx.message.mentions:
         # Gets details of user from the database
-        c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+        c.execute('SELECT Name FROM main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = c.fetchone()
         # Exit if the user was not found
         if not tuple:
-            await ctx.send(f'{member} does not exist in the record')
+            await ctx.send(f'{member} does not exist in the database')
             return
-        word = tuple[4].split(' ')[0]
+        word = tuple[0].split(' ')[0]
         await member.edit(nick = word[:1] + word[1:].lower())
         await ctx.send(f'Changed the nick of `{member}` successfully.')
 
