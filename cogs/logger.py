@@ -15,7 +15,7 @@ class Logger(commands.Cog):
     async def on_message_delete(self, message):
         if message.author.bot:
             return
-        channel = self.bot.get_channel(self.data[str(message.guild.id)]['delete_channel'])
+        channel = self.bot.get_channel(self.data[str(message.guild.id)]['logging_channel'][0])
         if not channel:
             return
         embed = discord.Embed(
@@ -39,7 +39,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
-        channel = self.bot.get_channel(self.data[str(payload.guild_id)]['delete_channel'])
+        channel = self.bot.get_channel(self.data[str(payload.guild_id)]['logging_channel'][0])
         if not channel:
             return
         embed = discord.Embed(
@@ -53,7 +53,7 @@ class Logger(commands.Cog):
     async def on_message_edit(self, before, after):
         if before.author.bot:
             return
-        channel = self.bot.get_channel(self.data[str(before.guild.id)]['delete_channel'])
+        channel = self.bot.get_channel(self.data[str(payload.guild_id)]['logging_channel'][1])
         if not channel:
             return
         if before.content == after.content:
