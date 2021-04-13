@@ -1,9 +1,15 @@
-import discord, json
+import discord, json, sqlite3
+from discord.utils import get
 from discord.ext import commands
 
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        try:
+            with open('db/guilds.json') as f:
+                self.data = json.load(f)
+        except FileNotFoundError:
+            self.data = {}
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -13,25 +19,29 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         # Exit if the user is a bot
-        if member.bot or member.guild.id != 783215699707166760:
+        if member.bot:
+            return
+        if channel := self.bot.get_channel(self.data[str(member.guild.id)]['join_msg_channel']):
+            await channel.send(f'{member.mention} just joined the server!')
+        if not self.data[str(member.guild.id)]['verification']:
             return
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
         # Checks if the user who joined is already in the database or not
-        c.execute('SELECT * from main where Discord_UID = (:uid)', {'uid': member.id})
+        c.execute('SELECT Section, SubSection, Guilds from main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = c.fetchone()
         guild = member.guild
         if tuple:
             # Fetches the mutual guilds list from the user
-            guilds = json.loads(tuple[10])
-            # Adds the new guild id if it's a new one
+            guilds = json.loads(tuple[2])
+            # Adds the new guild id if it is a new one
             if guild.id not in guilds:
                 guilds.append(guild.id)
             guilds = json.dumps(guilds)
             # Assigning one SubSection and one Section role to the user
-            role = get(guild.roles, name = tuple[2])
+            role = get(guild.roles, name = tuple[0])
             await member.add_roles(role)
-            role = get(guild.roles, name = tuple[3])
+            role = get(guild.roles, name = tuple[1])
             await member.add_roles(role)
             # Updating the record in the database
             c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
@@ -41,78 +51,42 @@ class Events(commands.Cog):
         role = get(guild.roles, name = 'Not-Verified')
         await member.add_roles(role)
         # Sends a dm to the new user explaining that they have to verify
-        dm_message = '''Welcome to the NITKKR'24 server!
-        Before you can see/use all the channels that it has, you'll need to do a quick verification. The process of which is explained in the #welcome channel of the server. Please do not send the command to this dm as it will not be read, instead send it on the #commands channel on the server. If you have any issues with the command, @Priyanshu will help you out personally on the channel. But do try even if you didn't understand.
-        Have fun!'''
+        dm_message = '''Welcome to the server!\n\nBefore you can see/use all the channels that it has, you'll need to do a quick verification. The process of which is explained in the #welcome channel of the server. Please do not send the command to this dm as it will not be read, instead send it on the #commands channel on the server. If you have any issues with the command, @Priyanshu will help you out personally on the channel. But do try even if you didn't understand.\n\nHave fun!'''
         await member.send(dm_message)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        if member.bot or member.guild.id == 336642139381301249:
+        if member.bot:
+            return
+        if not self.data[str(member.guild.id)]['verification']:
+            if channel := self.bot.get_channel(self.data[str(member.guild.id)]['leave_msg_channel']):
+                await channel.send(f'{member.mention} has left the server.')\
             return
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
         # Gets details of user from the database
-        c.execute('SELECT * FROM main where Discord_UID = (:uid)', {'uid': member.id})
+        c.execute('SELECT Guilds, Verified FROM main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = c.fetchone()
-        channel = client.get_channel(783215699707166763)
+        channel = self.bot.get_channel(self.data[str(member.guild.id)]['leave_msg_channel'])
         # Exit if the user was not found
-        if not tuple:
+        if not tuple and channel:
             await channel.send(f'{member.mention} has left the server because they didn\'t know how to verify <a:triggered:803206114623619092>')
             return
         # Fetches the mutual guilds list from the user
-        guilds = json.loads(tuple[10])
+        guilds = json.loads(tuple[0])
         # Removes the guild from the list
         guilds.remove(member.guild.id)
         # Remvoes their ID from the database if they don't have a verified email
         # and this was the only guild they shared with the bot
-        if tuple[11] == 'False' and guilds:
-            guilds = json.dumps(guilds)
-            c.execute('UPDATE main SET Discord_UID = NULL, Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+        if tuple[1] == 'False' and not guilds:
+            c.execute('UPDATE main SET Discord_UID = NULL, Guilds = "[]" where Discord_UID = (:uid)', {'uid': member.id})
             conn.commit()
         # Only removes the guild ID otherwise
         else:
-            guilds = json.dumps(guilds)
-            c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+            c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': json.dumps(guilds)})
             conn.commit()
-        await channel.send(f'{member.mention} has left the server.')
-
-    @commands.Cog.listener()
-    async def on_voice_state_update(self, member, before, after):
-        if member.bot:
-            return
-        if before.channel and before.channel != after.channel:
-            try:
-                with open('db/VCs.json') as f:
-                    data = json.load(f)
-            except FileNotFoundError:
-                data = []
-            if before.channel.id in data:
-                if not len(before.channel.members):
-                    await before.channel.delete()
-                    data.remove(before.channel.id)
-                with open('db/VCs.json', 'w') as f:
-                    json.dump(data, f)
-                return
-        if not after.channel:
-            return
-        if after.channel.id not in [825422681695846430, 825456619211063327]:
-            return
-        if member.nick:
-            member_name = member.nick
-        else:
-            member_name = member.name
-        vc = await member.guild.create_voice_channel(f'{member_name}\'s Party', category=after.channel.category)
-        await member.move_to(vc)
-        try:
-            with open('db/VCs.json') as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            data = []
-        if vc.id not in data:
-            data.append(vc.id)
-            with open('db/VCs.json', 'w') as f:
-                json.dump(data, f)
+        if channel:
+            await channel.send(f'{member.mention} has left the server.')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -138,6 +112,7 @@ class Events(commands.Cog):
             elif errors:
                 await ctx.reply(errors[0])
         print(f'\n{type(error).__name__}, {error.args}\n')
+        raise error
 
 def setup(bot):
     bot.add_cog(Events(bot))
