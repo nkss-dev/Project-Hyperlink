@@ -1,8 +1,7 @@
-import discord, aiohttp, os, sqlite3, json, pytz, asyncio
+import discord, os, sqlite3, json
 from discord.utils import get
 from discord.ext import commands
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -115,112 +114,6 @@ async def memlist(ctx, batch: int=2024):
     )
     await ctx.send(embed=embed)
 
-@client.command(brief='Allows user to tag section/subsection roles')
-async def tag(ctx, content):
-    """**How to use:**
-    Now you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
-    That means that if you're in IT-A, you can tag `IT-A, IT-01, IT-02, ...` but you can NOT tag `IT-B, IT-06, ME-B, CE-01, PI-06, ...`
-
-    **How do I tag? The normal tagging still doesn't work.**
-    Here's how, you will have to precede your message with `%tag ` and type the role tag manually along with the message that you want to send.
-    Examples:
-    `%tag Hey @CS-01 can you solve this?`
-    `%tag @it-a when's the due date of the assignment`
-    Capitalization does NOT matter.
-
-    **PS:** If you're found to abuse this facility, ie. spam tags or tag people for an unimportant reason, then this facility will be revoked for you and you may be banned temporarily. Though I'll try to avoid such things. (And you should too)"""
-
-    sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
-    subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'CE-08', 'CE-09',
-                'CS-01', 'CS-02', 'CS-03', 'CS-04', 'CS-05', 'CS-06',
-                'EC-01', 'EC-02', 'EC-03', 'EC-04', 'EC-05', 'EC-06', 'EC-07', 'EC-08', 'EC-09',
-                'EE-01', 'EE-02', 'EE-03', 'EE-04', 'EE-05', 'EE-06', 'EE-07', 'EE-08', 'EE-09',
-                'IT-01', 'IT-02', 'IT-03', 'IT-04', 'IT-05', 'IT-06',
-                'ME-01', 'ME-02', 'ME-03', 'ME-04', 'ME-05', 'ME-06', 'ME-07', 'ME-08', 'ME-09',
-                'PI-01', 'PI-02', 'PI-03', 'PI-04', 'PI-05', 'PI-06'
-            ]
-
-    bool = False
-    async with aiohttp.ClientSession() as session:
-        # Checks if a webhook already exists for that channel
-        webhooks = await ctx.channel.webhooks()
-        for webhook in webhooks:
-            if webhook.user == client.user:
-                bool = True
-                break
-        # Creates a webhook if none exist
-        if not bool:
-            webhook = await ctx.channel.create_webhook(name='Webhook')
-    if ctx.author.nick:
-        username = ctx.author.nick
-    else:
-        username = str(ctx.author.name)
-    conn = sqlite3.connect('db/details.db')
-    c = conn.cursor()
-    # Gets details of user from the database
-    c.execute('SELECT Verified, Section FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-    tuple = c.fetchone()
-    if tuple[0] == 'False':
-        await ctx.reply('Only members with a verified email can use this command.')
-        raise Exception('Permission Denied (Absence of a verified email)')
-    section = tuple[1]
-    for i in content.split(' '):
-        # Exit if the user tries to ping @everyone or @here
-        if '@everyone' in i or '@here' in i:
-            await ctx.send('You can\'t tag `@everyone` or `@here`')
-            return
-        # Skip to the next iteration if the current word doesn't contain a tag
-        if not i or '@' not in i:
-            continue
-        i = i.replace('\\', '')
-        # Loops through every tag in the word/phrase
-        for j in i.split('@')[1:]:
-            # Checks if a user has been tagged
-            usertag = False
-            for k in ctx.message.mentions:
-                if str(k.id) in j:
-                    usertag = True
-            # Checks if a role has been tagged by its ID
-            if '&' in j and int(j[1:-1]) in [role.id for role in ctx.guild.roles]:
-                content = content.replace('\<@' + j, '@' + ctx.guild.get_role(int(j[1:-1])).name)
-                j = j.replace(j, ctx.guild.get_role(int(j[1:-1])).name)
-            # Skip to the next iteration if tagged section doesn't exist
-            elif j[:4].upper() not in sections and j[:5].upper() not in subsections:
-                continue
-            # Skip to the next iteration if the tag is of a user
-            if usertag:
-                continue
-            # Checks if the user belongs to the tagged section
-            if j and ctx.author.guild_permissions.mention_everyone:
-                if j[3] == '0':
-                    content = content.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                elif j[3].upper() == section[3]:
-                    content = content.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
-            elif j and j[:2].upper() not in section:
-                await ctx.send('You can\'t tag sections other than your own!')
-                return
-            elif j and j[:2].upper() in section:
-                # Checks if the tag is of a SubSection
-                if j[3] == '0':
-                    # Checks if the user belongs to the Section of the SubSection that they attempted to tag
-                    if section[3] == 'A' and (j[4] == '1' or j[4] == '2' or j[4] == '3'):
-                        content = content.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                    elif section[3] == 'B' and (j[4] == '4' or j[4] == '5' or j[4] == '6'):
-                        content = content.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                    elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
-                        content = content.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
-                    else:
-                        await ctx.send('You can\'t tag sections other than your own!')
-                        return
-                elif j[3].upper() == section[3]:
-                    content = content.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
-                else:
-                    await ctx.send('You can\'t tag sections other than your own!')
-                    return
-    # Deletes the sent command and sends the new tagged version
-    await ctx.message.delete()
-    await webhook.send(content.strip(), username=username, avatar_url=ctx.author.avatar_url)
-
 @client.command(brief='Nicks the user to their first name')
 @commands.has_permissions(manage_nicknames=True)
 async def nick(ctx):
@@ -262,49 +155,8 @@ async def restart(ctx):
     await ctx.message.delete()
     await client.close()
 
-async def reminder_loop():
-    await client.wait_until_ready()
-    while not client.is_closed():
-        try:
-            with open('db/reminders.json') as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            data = {}
-        IST = pytz.timezone('Asia/Kolkata')
-        datetime_ist = datetime.now(IST)
-        for i in data.copy():
-            time = IST.localize(datetime.strptime(data[i]['time'], '%Y-%m-%d %H:%M:%S'))
-            if time <= datetime_ist:
-                embed = discord.Embed(
-                    title = 'Reminder',
-                    description = message,
-                    color = discord.Color.blurple()
-                )
-                channel = client.get_channel(data[i]['channel'])
-                if channel:
-                    await channel.send(embed=embed)
-                else:
-                    author = client.get_user(data[i]['author'])
-                    await author.send(embed=embed)
-                if 'False' not in data[i]['repeat']:
-                    if data[i]['repeat'] == 'daily':
-                        time += timedelta(days=1)
-                    elif data[i]['repeat'] == 'weekly':
-                        time += timedelta(days=7)
-                    elif data[i]['repeat'] == 'monthly':
-                        time += timedelta(months=1)
-                    elif data[i]['repeat'] == 'yearly':
-                        time += timedelta(years=1)
-                    data[i]['time'] = time.strftime('%Y-%m-%d %H:%M:%S')
-                else:
-                    del data[i]
-                with open('db/reminders.json', 'w') as f:
-                    json.dump(data, f)
-        await asyncio.sleep(1)
-
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
         client.load_extension(f'cogs.{filename[:-3]}')
 
-client.loop.create_task(reminder_loop())
 client.run(os.getenv('BOT_TOKEN'))
