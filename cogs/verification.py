@@ -5,16 +5,6 @@ from email.message import EmailMessage
 from dotenv import load_dotenv
 load_dotenv()
 
-sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
-subsections = ['CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'CE-08', 'CE-09',
-            'CS-01', 'CS-02', 'CS-03', 'CS-04', 'CS-05', 'CS-06',
-            'EC-01', 'EC-02', 'EC-03', 'EC-04', 'EC-05', 'EC-06', 'EC-07', 'EC-08', 'EC-09',
-            'EE-01', 'EE-02', 'EE-03', 'EE-04', 'EE-05', 'EE-06', 'EE-07', 'EE-08', 'EE-09',
-            'IT-01', 'IT-02', 'IT-03', 'IT-04', 'IT-05', 'IT-06',
-            'ME-01', 'ME-02', 'ME-03', 'ME-04', 'ME-05', 'ME-06', 'ME-07', 'ME-08', 'ME-09',
-            'PI-01', 'PI-02', 'PI-03', 'PI-04', 'PI-05', 'PI-06'
-        ]
-
 class Verify(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -26,6 +16,17 @@ class Verify(commands.Cog):
                 self.data = json.load(f)
         except FileNotFoundError:
             self.data = {}
+
+        self.sections = [
+            'CE-A', 'CE-B', 'CE-C',
+            'CS-A', 'CS-B',
+            'EC-A', 'EC-B', 'EC-C',
+            'EE-A', 'EE-B', 'EE-C',
+            'IT-A', 'IT-B',
+            'ME-A', 'ME-B', 'ME-C',
+            'PI-A', 'PI-B'
+        ]
+
         self.string1 = '''<!DOCTYPE html>
         <html>
         <body class="body" style="padding:0 !important; margin:0 auto !important; display:block !important; min-width:100% !important; width:100% !important; background:#ffffff; -webkit-text-size-adjust:none;">
@@ -189,43 +190,47 @@ class Verify(commands.Cog):
             OTP += sample_set[math.floor(random.random() * 46)]
         return OTP
 
-    async def verify_basic(self, ctx, args):
-        section = args[0]
-        roll_no = int(args[1])
+    async def verify_basic(self, ctx, section, roll_no: int):
         self.c = self.conn.cursor()
         # Gets the record of the given roll number
-        self.c.execute('SELECT * from main where Roll_Number = (:roll)', {'roll': roll_no})
+        self.c.execute('SELECT Section, Subsection, Name, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
         tuple = self.c.fetchone()
         # Exit if roll number doesn't exist
         if not tuple:
-            await ctx.send(f'The requested record was not found, {ctx.author.mention}. Please re-check the entered details and try again')
+            await ctx.reply('The requested record was not found. Please re-check the entered details and try again')
             return
         # Exit if entered section doesn't match an existing section
-        if section not in sections:
-            await ctx.send(f'"{section}" is not an existing section, {ctx.author.mention}.\nPlease re-check the entered details and try again')
+        if section not in self.sections:
+            await ctx.reply(f'\'{section}\' is not an existing section.Please re-check the entered details and try again')
             return
         # Exit if entered section doesn't match the section that the roll number is bound to
-        if section != tuple[2]:
-            await ctx.send(f'The section that you entered does not match that of the roll number that you entered, {ctx.author.mention}.\nPlease re-check the entered details and try again')
+        if section != tuple[0]:
+            await ctx.reply('The section that you entered does not match that of the roll number that you entered. Please re-check the entered details and try again')
             return
         # Exit if the record is already claimed by another user
-        if tuple[9]:
-            await ctx.send(f'The details you entered is of a record already claimed by `{tuple[9]}` {ctx.author.mention}.\nTry another record. If you think this was a mistake, contact a moderator.')
+        if user := self.bot.get_user(tuple[3]):
+            await ctx.reply(f'The details you entered is of a record already claimed by `{user}`. If you think this was a mistake, contact a moderator.')
             return
         # Assigning one SubSection and one Section role to the user
-        role = discord.utils.get(ctx.guild.roles, name = tuple[2])
+        role = discord.utils.get(ctx.guild.roles, name=tuple[0])
         await ctx.author.add_roles(role)
-        role = discord.utils.get(ctx.guild.roles, name = tuple[3])
+        role = discord.utils.get(ctx.guild.roles, name=tuple[1])
         await ctx.author.add_roles(role)
-        await ctx.send(f'Your record was found and verified {ctx.author.mention}!\nYou will now be removed from this channel.')
+        await ctx.reply('Your record was found and verified!\nYou will now be removed from this channel.')
         # Removing the 'Not-Verified' role from the user
         role = discord.utils.get(ctx.guild.roles, name = 'Not-Verified')
         await ctx.author.remove_roles(role)
+        # Fetches the mutual guilds list from the user
+        guilds = json.loads(tuple[4])
+        # Adds the new guild id if it is a new one
+        if ctx.guild.id not in guilds:
+            guilds.append(ctx.guild.id)
+        guilds = json.dumps(guilds)
         # Updating the record in the database
-        self.c.execute('UPDATE main SET Discord_UID = (:uid) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no})
+        self.c.execute('UPDATE main SET Discord_UID = (:uid), Guilds = (:guilds) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no, 'guilds': guilds})
         self.conn.commit()
         # Changing the nick of the user to their first name
-        word = tuple[4].split(' ')[0]
+        word = tuple[2].split(' ')[0]
         await ctx.author.edit(nick = word[:1] + word[1:].lower())
 
     async def verify_email(self, ctx, args):
@@ -246,7 +251,7 @@ class Verify(commands.Cog):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL, os.getenv('PASSWORD'))
             smtp.send_message(msg)
-        await ctx.send(f'Email sent successfully, {ctx.author.mention}!')
+        await ctx.reply(f'Email sent successfully!')
 
     @commands.command(name='verify')
     async def verify(self, ctx, *args):
@@ -257,25 +262,25 @@ class Verify(commands.Cog):
             await ctx.send('You\'re already verified!')
             return
         if not details:
-            await self.verify_basic(ctx, args)
+            await self.verify_basic(ctx, args[0], args[1])
         elif 'False' in details[2]:
             if ctx.channel.slowmode_delay < 5:
-                await ctx.send(f'You can only use this command in a channel which has slowmode enabled, {ctx.author.mention}.')
+                await ctx.reply('You can only use this command in a channel which has slowmode enabled.')
                 return
             if 'code' in args[0].lower():
                 if str(ctx.author.id) in self.data:
                     if self.data[str(ctx.author.id)] == args[1]:
-                        await ctx.send(f'Your email has been verified successfully, {ctx.author.mention}!')
+                        await ctx.reply('Your email has been verified successfully!')
                         del self.data[str(ctx.author.id)]
                         self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
                         self.conn.commit()
                     else:
-                        await ctx.send(f'The code you entered is incorrect, {ctx.author.mention}.')
+                        await ctx.reply(f'The code you entered is incorrect.')
                 return
             if details[1].lower() == args[0].lower():
                 await self.verify_email(ctx, [details[1], details[0]])
             else:
-                await ctx.send(f'The email that you entered does not match your institute email, {ctx.author.mention}. Please try again with a valid email.\nIf you think this was a mistake, contact a mod.')
+                await ctx.reply('The email that you entered does not match your institute email. Please try again with a valid email.\nIf you think this was a mistake, contact a mod.')
 
     def save(self):
         with open('db/codes.json', 'w') as f:
