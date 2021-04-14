@@ -21,17 +21,19 @@ class VoiceChat(commands.Cog):
         if member.bot:
             return
         if before.channel and before.channel != after.channel:
-            if str(before.channel.id) in self.data['party_tchannels']:
-                tc = self.bot.get_channel(self.data['party_tchannels'][str(before.channel.id)])
-                await tc.set_permissions(member, overwrite=None)
-            if before.channel.id in self.data['party_vchannels']:
-                if not before.channel.members:
-                    if str(before.channel.id) in self.data['party_tchannels']:
-                        await self.bot.get_channel(self.data['party_tchannels'][str(before.channel.id)]).delete()
+            if not before.channel.members:
+                if str(before.channel.id) in self.data['party_tchannels']:
+                    await self.bot.get_channel(self.data['party_tchannels'][str(before.channel.id)]).delete()
+                    del self.data['party_tchannels'][str(before.channel.id)]
+                    self.save()
+                if before.channel.id in self.data['party_vchannels']:
                     await before.channel.delete()
                     self.data['party_vchannels'].remove(before.channel.id)
                     self.save()
                 return
+            if str(before.channel.id) in self.data['party_tchannels']:
+                tc = self.bot.get_channel(self.data['party_tchannels'][str(before.channel.id)])
+                await tc.set_permissions(member, overwrite=None)
         if not after.channel:
             return
         if member.nick:
