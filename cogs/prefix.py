@@ -8,11 +8,8 @@ class Prefix(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-        try:
-            with open('db/guilds.json') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.data = {}
+        with open('db/guilds.json') as f:
+            self.data = json.load(f)
 
     @commands.group(name='prefix', brief='Manages the server\'s custom prefixes', invoke_without_command=True)
     async def prefix(self, ctx):

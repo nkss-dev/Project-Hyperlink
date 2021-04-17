@@ -5,12 +5,9 @@ from discord.ext import commands
 class UserInfo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-        try:
-            with open('db/guilds.json', 'r') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.bot.loop.create_task(self.create())
+        # self.bot.loop.create_task(self.create())
+        with open('db/guilds.json', 'r') as f:
+            self.data = json.load(f)
         with open('db/emojis.json', 'r') as f:
             self.emojis = json.load(f)
 
@@ -95,19 +92,6 @@ class UserInfo(commands.Cog):
                 await ctx.send('No moderator role has been set for this guild. Set moderator roles using the `setmod` command.')
                 return False
         return True
-
-    async def create(self):
-        await self.bot.wait_until_ready()
-        default_details = {
-            'prefix': ['%'],
-            'mod_roles': [],
-            'verification': False,
-            'join_msg_channel': 0,
-            'leave_msg_channel': 0,
-            'logging_channel': [0, 0]
-        }
-        self.data = dict([(guild.id, default_details) for guild in self.bot.guilds])
-        self.save()
 
     def save(self):
         with open('db/guilds.json', 'w') as f:

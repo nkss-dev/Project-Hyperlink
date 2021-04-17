@@ -1,20 +1,12 @@
-import discord, json, sqlite3
+import discord, json, sqlite3, re
 from discord.utils import get
 from discord.ext import commands
 
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        try:
-            with open('db/guilds.json') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.data = {}
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'Logged on as {self.bot.user}!\n')
-        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f'@{self.bot.user.name}'))
+        with open('db/guilds.json') as f:
+            self.data = json.load(f)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -60,7 +52,7 @@ class Events(commands.Cog):
             return
         if not self.data[str(member.guild.id)]['verification']:
             if channel := self.bot.get_channel(self.data[str(member.guild.id)]['leave_msg_channel']):
-                await channel.send(f'{member.mention} has left the server.')\
+                await channel.send(f'{member.mention} has left the server.')
             return
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
@@ -93,13 +85,15 @@ class Events(commands.Cog):
         if type(error).__name__ == 'MissingRequiredArgument':
             error_msg = error.args[0].split(' ', 1)
             await ctx.reply(f'\'{error_msg[0]}\' {error_msg[1]}')
-        if type(error).__name__ == 'MissingPermissions':
+        elif type(error).__name__ == 'MissingPermissions':
             await ctx.reply(error.args[0])
         elif type(error).__name__ == 'CommandInvokeError':
             if 'Missing Permissions' in error.args[0]:
                 await ctx.reply('I\'m missing some permissions to execute this command. Please contact a mod to resolve this issue.')
             if 'TypeError' in error.args[0]:
                 print(error)
+        elif type(error).__name__ == 'MessageNotFound':
+            await ctx.reply(error.args[0].replace('"', '\''))
         else:
             errors = []
             for exception in error.args:

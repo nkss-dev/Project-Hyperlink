@@ -5,11 +5,8 @@ from discord.ext import commands
 class Logger(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        try:
-            with open('db/guilds.json') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.data = {}
+        with open('db/guilds.json') as f:
+            self.data = json.load(f)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -53,7 +50,7 @@ class Logger(commands.Cog):
     async def on_message_edit(self, before, after):
         if before.author.bot:
             return
-        channel = self.bot.get_channel(self.data[str(payload.guild_id)]['logging_channel'][1])
+        channel = self.bot.get_channel(self.data[str(before.guild.id)]['logging_channel'][1])
         if not channel:
             return
         if before.content == after.content:

@@ -1,4 +1,4 @@
-import discord, os, sqlite3, json
+import discord, os, sqlite3, json, asyncio
 from discord.utils import get
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -12,6 +12,33 @@ def get_prefix(client, message):
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix=get_prefix, intents=intents)
+
+@client.event
+async def on_ready():
+    print(f'Logged on as {client.user}!\n')
+    await client.change_presence(activity=discord.Game(f'@{client.user.name}'))
+
+    # Creates the guilds.json file if it doesn't exist as it is essential for many cog's functioning
+    try:
+        with open('db/guilds.json') as f:
+            _ = json.load(f)
+    except FileNotFoundError:
+        default_details = {
+            'prefix': ['%'],
+            'mod_roles': [],
+            'verification': False,
+            'join_msg_channel': 0,
+            'leave_msg_channel': 0,
+            'logging_channel': [0, 0]
+        }
+        data = dict([(guild.id, default_details) for guild in client.guilds])
+        with open('db/guilds.json', 'w') as f:
+            json.dump(data, f)
+
+    # Loads all the cogs
+    for filename in os.listdir('./cogs'):
+        if filename.endswith('.py'):
+            client.load_extension(f'cogs.{filename[:-3]}')
 
 @client.command(brief='Segregated display of the number of members')
 async def memlist(ctx, batch: int=2024):
@@ -71,9 +98,5 @@ async def restart(ctx):
     """Restarts the bot. Can only be used by members with the `Manage Server` permission."""
     await ctx.message.delete()
     await client.close()
-
-for filename in os.listdir('./cogs'):
-    if filename.endswith('.py'):
-        client.load_extension(f'cogs.{filename[:-3]}')
 
 client.run(os.getenv('BOT_TOKEN'))

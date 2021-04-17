@@ -11,7 +11,7 @@ class Links(commands.Cog):
         self.c = self.conn.cursor()
 
         try:
-            with open('db/links.json') as f:
+            with open('db/links.json', 'r') as f:
                 self.data = json.load(f)
         except FileNotFoundError:
             self.data = {}
