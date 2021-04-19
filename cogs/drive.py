@@ -105,7 +105,7 @@ class Drive(commands.Cog):
 
     @drive.command(name='refresh')
     async def refresh(self, ctx):
-        self.__init__()
+        self.__init__(self.bot)
         await ctx.send('Drive cache refreshed!')
 
 def setup(bot):
