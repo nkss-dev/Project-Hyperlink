@@ -30,7 +30,6 @@ class VoiceChat(commands.Cog):
                     await before.channel.delete()
                     self.data['party_vchannels'].remove(before.channel.id)
                     self.save()
-                return
             if str(before.channel.id) in self.data['party_tchannels']:
                 tc = self.bot.get_channel(self.data['party_tchannels'][str(before.channel.id)])
                 await tc.set_permissions(member, overwrite=None)
