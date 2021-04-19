@@ -97,11 +97,4 @@ async def invite(ctx):
     )
     await ctx.send(embed=embed)
 
-@client.command(brief='Restarts the bot')
-@commands.has_permissions(manage_guild=True)
-async def restart(ctx):
-    """Restarts the bot. Can only be used by members with the `Manage Server` permission."""
-    await ctx.message.delete()
-    await client.close()
-
 client.run(os.getenv('BOT_TOKEN'))
