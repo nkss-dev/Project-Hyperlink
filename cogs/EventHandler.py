@@ -155,6 +155,8 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        if type(error).__name__ == 'CommandNotFound':
+            return
         if type(error).__name__ == 'MissingRequiredArgument':
             error_msg = error.args[0].split(' ', 1)
             await ctx.reply(f'\'{error_msg[0]}\' {error_msg[1]}')
@@ -163,8 +165,10 @@ class Events(commands.Cog):
         elif type(error).__name__ == 'CommandInvokeError':
             if 'Missing Permissions' in error.args[0]:
                 await ctx.reply('I\'m missing some permissions to execute this command. Please contact a mod to resolve this issue.')
-            if 'TypeError' in error.args[0]:
+            elif 'TypeError' in error.args[0]:
                 print(error)
+            elif 'ExtensionAlreadyLoaded' or 'ExtensionNotLoaded' or 'ExtensionNotFound' in error.args[0]:
+                await ctx.reply(error.args[0].split(': ')[2])
         elif type(error).__name__ == 'MessageNotFound':
             await ctx.reply(error.args[0].replace('"', '\''))
         else:
