@@ -5,7 +5,7 @@ from discord.ext import commands
 class UserInfo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # self.bot.loop.create_task(self.create())
+
         with open('db/guilds.json', 'r') as f:
             self.data = json.load(f)
         with open('db/emojis.json', 'r') as f:
@@ -92,10 +92,6 @@ class UserInfo(commands.Cog):
                 await ctx.send('No moderator role has been set for this guild. Set moderator roles using the `setmod` command.')
                 return False
         return True
-
-    def save(self):
-        with open('db/guilds.json', 'w') as f:
-            json.dump(self.data, f)
 
 def setup(bot):
     bot.add_cog(UserInfo(bot))
