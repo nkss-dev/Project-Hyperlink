@@ -171,6 +171,12 @@ class Events(commands.Cog):
                 await ctx.reply('You need to complete basic verification to use this command.')
             elif 'EmailNotVerified' in error.args[0]:
                 await ctx.reply('Only members with a verified email can use this command.')
+            elif 'AccountAlreadyLinked' in error.args[0]:
+                await ctx.reply('You have already completed the basic level of verification')
+            elif 'UserAlreadyVerified' in error.args[0]:
+                await ctx.reply('You are already verified.')
+            elif 'SlowmodeNotEnabled' in error.args[0]:
+                await ctx.reply('This command is usable only in a channel which has slowmode enabled.')
             elif 'ExtensionAlreadyLoaded' in error.args[0] or 'ExtensionNotLoaded' in error.args[0] or 'ExtensionNotFound' in error.args[0]:
                 await ctx.reply(error.args[0].split(': ')[2])
         elif type(error).__name__ == 'MessageNotFound':
