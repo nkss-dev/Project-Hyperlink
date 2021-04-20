@@ -32,9 +32,10 @@ class Links(commands.Cog):
     async def create(self, ctx):
         self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
         if tuple[0] == 'False':
-            await ctx.reply('Only members with a verified email can use this command.')
-            raise Exception('Permission Denied (Absence of a verified email)')
+            raise Exception('EmailNotVerified')
 
         flag = False
         manager_roles = [ctx.guild.get_role(role) for role in self.data[str(tuple[2])]['manager_roles']]
@@ -46,10 +47,10 @@ class Links(commands.Cog):
             await ctx.reply('You\'re not authorised to use this command.')
             return
 
-        # channel = self.bot.get_channel(self.data[str(tuple[2])][tuple[1]]['channel'])
-        # if ctx.channel.id != channel.id:
-        #     await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
-        #     return
+        channel = self.bot.get_channel(self.data[str(tuple[2])][tuple[1]]['channel'])
+        if ctx.channel.id != channel.id:
+            await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
+            return
 
         datetime_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
         date = datetime_ist.strftime('%d-%m-%Y')
@@ -93,12 +94,15 @@ class Links(commands.Cog):
 
     @commands.group(name='link', brief='Allows certain members to add links to section specific dashboard')
     async def link(self, ctx):
-        # Gets details of user from the database
+        if not ctx.invoked_subcommand:
+            await ctx.reply('Invalid link command passed.')
+            return
         self.c.execute('SELECT Verified, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
         if tuple[0] == 'False':
-            await ctx.reply('Only members with a verified email can use this command.')
-            raise Exception('Permission Denied (Absence of a verified email)')
+            raise Exception('EmailNotVerified')
 
         flag = False
         manager_roles = [ctx.guild.get_role(role) for role in self.data[str(tuple[1])]['manager_roles']]
@@ -110,13 +114,10 @@ class Links(commands.Cog):
             await ctx.reply('You\'re not authorised to use this command.')
             return
 
-        # channel = self.bot.get_channel(self.data[str(tuple[2])][tuple[1]]['channel'])
-        # if ctx.channel != channel:
-        #     await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
-        #     return
-
-        if not ctx.invoked_subcommand:
-            await ctx.reply('Invalid link command passed.')
+        channel = self.bot.get_channel(self.data[str(tuple[2])][tuple[1]]['channel'])
+        if ctx.channel != channel:
+            await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
+            return
 
     @link.command(name='add', brief='Used to add temporary links')
     async def add(self, ctx, time, subject, link='<link not known yet>'):

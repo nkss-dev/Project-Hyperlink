@@ -11,10 +11,11 @@ class Tags(commands.Cog):
         except FileNotFoundError:
             self.data = {}
 
+    async def cog_check(self, ctx):
+        return ctx.guild.id == 783215699707166760
+
     @commands.Cog.listener()
     async def on_message(self, msg):
-        if msg.guild.id == 336642139381301249:
-            return
         name = msg.content
         if msg.author.bot or name not in self.data:
             return
@@ -25,6 +26,14 @@ class Tags(commands.Cog):
     @commands.group(name="tags", invoke_without_command=True)
     async def tags(self, ctx):
         """Tags are used to make shortcuts for messages"""
+
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
+
         await ctx.send(f"`{ctx.prefix}tags create` to make new tags")
 
     @tags.command(name="create")

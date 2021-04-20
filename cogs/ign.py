@@ -15,14 +15,15 @@ class IGN(commands.Cog):
 
     @commands.group(name='ign')
     async def ign(self, ctx):
-        # Gets details of user from the database
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if tuple[0] == 'False':
-            await ctx.reply('Only members with a verified email can use this command.')
-            raise Exception('Permission Denied (Absence of a verified email)')
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid IGN command passed.')
+            return
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
 
     @ign.command(name='add')
     async def add(self, ctx, *args):

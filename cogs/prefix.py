@@ -12,17 +12,17 @@ class Prefix(commands.Cog):
             self.data = json.load(f)
 
     @commands.group(name='prefix', brief='Manages the server\'s custom prefixes', invoke_without_command=True)
+    @commands.has_permissions(manage_guild=True)
     async def prefix(self, ctx):
-        """Manages the server's custom prefixes.
-        If called without a subcommand, this will list the currently set
-        prefixes."""
-        prefixes = self.data[str(ctx.guild.id)]['prefix']
-        embed = discord.Embed(
-            title = 'Prefixes',
-            description = '\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]),
-            color = discord.Color.blurple()
-        )
-        await ctx.send(embed=embed)
+        if not ctx.invoked_subcommand:
+            await ctx.reply('Invalid prefix command passed.')
+            return
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
 
     @prefix.command(name='add', brief='Adds a prefix for this server')
     async def add(self, ctx, prefix):

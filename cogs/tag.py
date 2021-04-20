@@ -27,6 +27,13 @@ class Tag(commands.Cog):
 
         **PS:** If you're found to abuse this facility, ie. spam tags and/or tag people for an unimportant reason, then this facility will be revoked for you and you will face consequences based on the severity of the abuse."""
 
+        self.c.execute('SELECT Verified, Section FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
+
         bool = False
         async with aiohttp.ClientSession() as session:
             # Checks if a webhook already exists for that channel
@@ -42,12 +49,6 @@ class Tag(commands.Cog):
             username = ctx.author.nick
         else:
             username = str(ctx.author.name)
-        # Gets details of user from the database
-        self.c.execute('SELECT Verified, Section FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if tuple[0] == 'False':
-            await ctx.reply('Only members with a verified email can use this command.')
-            raise Exception('Permission Denied (Absence of a verified email)')
         section = tuple[1]
         for i in content.split(' '):
             # Exit if the user tries to ping @everyone or @here

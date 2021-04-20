@@ -53,6 +53,13 @@ class ReactionRoles(commands.Cog):
     async def reactionrole(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid command passed.')
+            return
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
 
     @reactionrole.command(name='add', brief='Adds a reaction role')
     async def add(self, ctx, message: discord.Message, role: discord.Role):

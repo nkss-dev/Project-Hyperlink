@@ -46,34 +46,32 @@ class Drive(commands.Cog):
         if not ctx.invoked_subcommand:
             await ctx.send('Invalid drive command passed.')
             return
-        # Gets details of user from the database
         self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
-        if 'False' in tuple[0]:
-            await ctx.send(f'Only members with a verified email can use this command, {ctx.author.mention}.')
-            raise Exception('PermissionError: Absence of a verified email')
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
 
     @drive.command(name='search')
-    async def search(self, ctx, *args):
-        if not args:
-            await ctx.send('MissingArguement: search content')
-            return
+    async def search(self, ctx, *, content):
+        content = content.split(' ')
         links = {}
         ignored_args = []
-        for arg in args:
-            if len(arg) < 3:
-                ignored_args.append(arg)
+        for keyword in content:
+            if len(keyword) < 3:
+                ignored_args.append(keyword)
                 continue
             for item in self.results.get('files', []):
-                if arg.lower() in item['name'].lower():
+                if keyword.lower() in item['name'].lower():
                     id = item['id']
                     name = item['name']
                     if item['parents'][0] not in links:
                         links[item['parents'][0]] = []
                     links[item['parents'][0]].append(f"[{name}](https://drive.google.com/file/d/{id})")
-        if len(ignored_args) == len(args):
+        if len(ignored_args) == len(content):
             embed = discord.Embed(
-                description = 'The following arguements were ignored:\n"{}"'.format('" "'.join([arg for arg in ignored_args])),
+                description = 'The following arguements were ignored:\n{}'.format(', '.join([arg for arg in ignored_args])),
                 color = discord.Color.blurple()
             )
             embed.set_footer(text='Reason: Arguements must be at least 3 characters long')
@@ -105,6 +103,9 @@ class Drive(commands.Cog):
 
     @drive.command(name='refresh')
     async def refresh(self, ctx):
+        if not await self.bot.is_owner(ctx.author):
+            await ctx.reply('You need to be the owner of this bot to run this command.')
+            return
         self.__init__(self.bot)
         await ctx.send('Drive cache refreshed!')
 
