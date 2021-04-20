@@ -167,10 +167,14 @@ class Events(commands.Cog):
                 await ctx.reply('I\'m missing some permissions to execute this command. Please contact a mod to resolve this issue.')
             elif 'TypeError' in error.args[0]:
                 print(error)
-            elif 'ExtensionAlreadyLoaded' or 'ExtensionNotLoaded' or 'ExtensionNotFound' in error.args[0]:
+            elif 'AccountNotLinked' in error.args[0]:
+                await ctx.reply('You need to complete basic verification to use this command.')
+            elif 'EmailNotVerified' in error.args[0]:
+                await ctx.reply('Only members with a verified email can use this command.')
+            elif 'ExtensionAlreadyLoaded' in error.args[0] or 'ExtensionNotLoaded' in error.args[0] or 'ExtensionNotFound' in error.args[0]:
                 await ctx.reply(error.args[0].split(': ')[2])
         elif type(error).__name__ == 'MessageNotFound':
-            await ctx.reply(error.args[0].replace('"', '\''))
+            await ctx.reply(error.args[0].replace('"', "'"))
         else:
             errors = []
             for exception in error.args:
