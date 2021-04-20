@@ -190,8 +190,27 @@ class Verify(commands.Cog):
             OTP += sample_set[math.floor(random.random() * 46)]
         return OTP
 
-    async def verify_basic(self, ctx, section, roll_no: int):
-        self.c = self.conn.cursor()
+    @commands.group(name='verify', brief='Registers the user in the database')
+    async def verify(self, ctx):
+        if not ctx.invoked_subcommand:
+            await ctx.reply('Invalid verification command passed.')
+            return
+
+        self.c.execute('SELECT Verified from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        details = self.c.fetchone()
+        if details:
+            if details[0] == 'False':
+                if ctx.invoked_subcommand.name == 'basic':
+                    raise Exception('AccountAlreadyLinked')
+                elif not ctx.channel.slowmode_delay:
+                    raise Exception('SlowmodeNotEnabled')
+            if details[0] == 'True':
+                raise Exception('UserAlreadyVerified')
+        if not details and (ctx.invoked_subcommand.name == 'email' or ctx.invoked_subcommand.name == 'code'):
+            raise Exception('EmailNotVerified')
+
+    @verify.command(name='basic', brief='Allows user to link their account to a record in the database')
+    async def basic(self, ctx, section, roll_no: int):
         # Gets the record of the given roll number
         self.c.execute('SELECT Section, Subsection, Name, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
         tuple = self.c.fetchone()
@@ -233,15 +252,21 @@ class Verify(commands.Cog):
         word = tuple[2].split(' ')[0]
         await ctx.author.edit(nick = word[:1] + word[1:].lower())
 
-    async def verify_email(self, ctx, args):
+    @verify.command(name='email', brief='Allows user to verify their email')
+    async def email(self, ctx, email):
+        self.c.execute('SELECT Name, Institute_Email from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+
+        if details[1].lower() != args[0].lower():
+            await ctx.reply('The email that you entered does not match your institute email. Please try again with a valid email.\nIf you think this was a mistake, contact a moderator.')
+
         EMAIL = os.getenv('EMAIL')
         msg = EmailMessage()
         msg['Subject'] = f'Verification of {ctx.author} on {ctx.guild}'
         msg['From'] = EMAIL
-        msg['To'] = args[0]
-        name_capital = args[1].split(' ')
+        msg['To'] = tuple[1]
         name = ''
-        for word in name_capital:
+        for word in tuple[0].split(' '):
             name += word[:1] + word[1:].lower() + ' '
         otp = self.generateotp()
         self.data[str(ctx.author.id)] = otp
@@ -253,34 +278,17 @@ class Verify(commands.Cog):
             smtp.send_message(msg)
         await ctx.reply(f'Email sent successfully!')
 
-    @commands.command(name='verify')
-    async def verify(self, ctx, *args):
-        self.c.execute('SELECT Name, Institute_Email, Verified from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        # Exit if the author is already in the database
-        details = self.c.fetchone()
-        if details and 'True' in details[2]:
-            await ctx.send('You\'re already verified!')
-            return
-        if not details:
-            await self.verify_basic(ctx, args[0], args[1])
-        elif 'False' in details[2]:
-            if ctx.channel.slowmode_delay < 5:
-                await ctx.reply('You can only use this command in a channel which has slowmode enabled.')
-                return
-            if 'code' in args[0].lower():
-                if str(ctx.author.id) in self.data:
-                    if self.data[str(ctx.author.id)] == args[1]:
-                        await ctx.reply('Your email has been verified successfully!')
-                        del self.data[str(ctx.author.id)]
-                        self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
-                        self.conn.commit()
-                    else:
-                        await ctx.reply(f'The code you entered is incorrect.')
-                return
-            if details[1].lower() == args[0].lower():
-                await self.verify_email(ctx, [details[1], details[0]])
+    @verify.command(name='code', brief='Used to input OTP that the user received in order to verify their email')
+    async def code(self, ctx, code):
+        if str(ctx.author.id) in self.data:
+            if self.data[str(ctx.author.id)] == code:
+                del self.data[str(ctx.author.id)]
+                self.save()
+                self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
+                self.conn.commit()
+                await ctx.reply('Your email has been verified successfully!')
             else:
-                await ctx.reply('The email that you entered does not match your institute email. Please try again with a valid email.\nIf you think this was a mistake, contact a mod.')
+                await ctx.reply('The code you entered is incorrect.')
 
     def save(self):
         with open('db/codes.json', 'w') as f:
