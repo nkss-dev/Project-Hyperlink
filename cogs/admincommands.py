@@ -22,6 +22,12 @@ class AdminCommands(commands.Cog):
         self.bot.unload_extension(f'cogs.{extension}')
         await ctx.send(f'\'cogs.{extension}\' unloaded successfully!')
 
+    @commands.command(name='reload', brief='Reloads a cog')
+    async def reload(self, ctx, extension):
+        self.bot.unload_extension(f'cogs.{extension}')
+        self.bot.load_extension(f'cogs.{extension}')
+        await ctx.send(f'\'cogs.{extension}\' reloaded successfully!')
+
     @commands.command(name='restart', brief='Restarts the bot')
     async def restart(self, ctx):
         await ctx.message.delete()
