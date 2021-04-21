@@ -164,7 +164,7 @@ class Events(commands.Cog):
             await ctx.reply(error.args[0])
         elif type(error).__name__ == 'CommandInvokeError':
             if 'Missing Permissions' in error.args[0]:
-                await ctx.reply('I\'m missing some permissions to execute this command. Please contact a mod to resolve this issue.')
+                await ctx.reply('I am missing some permissions to execute this command. Please contact a mod to resolve this issue.')
             elif 'TypeError' in error.args[0]:
                 print(error)
             elif 'AccountNotLinked' in error.args[0]:
@@ -179,6 +179,7 @@ class Events(commands.Cog):
                 await ctx.reply('This command is usable only in a channel which has slowmode enabled.')
             elif 'ExtensionAlreadyLoaded' in error.args[0] or 'ExtensionNotLoaded' in error.args[0] or 'ExtensionNotFound' in error.args[0]:
                 await ctx.reply(error.args[0].split(': ')[2])
+                await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
         elif type(error).__name__ == 'MessageNotFound':
             await ctx.reply(error.args[0].replace('"', "'"))
         else:
