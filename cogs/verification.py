@@ -11,13 +11,14 @@ class Verify(commands.Cog):
 
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
+
         try:
             with open('db/codes.json') as f:
                 self.data = json.load(f)
         except FileNotFoundError:
             self.data = {}
 
-        self.sections = [
+        self.sections = (
             'CE-A', 'CE-B', 'CE-C',
             'CS-A', 'CS-B',
             'EC-A', 'EC-B', 'EC-C',
@@ -25,7 +26,7 @@ class Verify(commands.Cog):
             'IT-A', 'IT-B',
             'ME-A', 'ME-B', 'ME-C',
             'PI-A', 'PI-B'
-        ]
+        )
 
         self.string1 = '''<!DOCTYPE html>
         <html>
@@ -210,7 +211,7 @@ class Verify(commands.Cog):
             raise Exception('EmailNotVerified')
 
     @verify.command(name='basic', brief='Allows user to link their account to a record in the database')
-    async def basic(self, ctx, section, roll_no: int):
+    async def basic(self, ctx, section: str, roll_no: int):
         # Gets the record of the given roll number
         self.c.execute('SELECT Section, Subsection, Name, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
         tuple = self.c.fetchone()
@@ -220,7 +221,7 @@ class Verify(commands.Cog):
             return
         # Exit if entered section doesn't match an existing section
         if section not in self.sections:
-            await ctx.reply(f'\'{section}\' is not an existing section.Please re-check the entered details and try again')
+            await ctx.reply(f'\'{section}\' is not an existing section. Please re-check the entered details and try again')
             return
         # Exit if entered section doesn't match the section that the roll number is bound to
         if section != tuple[0]:
@@ -253,12 +254,13 @@ class Verify(commands.Cog):
         await ctx.author.edit(nick = word[:1] + word[1:].lower())
 
     @verify.command(name='email', brief='Allows user to verify their email')
-    async def email(self, ctx, email):
+    async def email(self, ctx, email: str):
         self.c.execute('SELECT Name, Institute_Email from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
 
-        if details[1].lower() != args[0].lower():
+        if email.lower() != tuple[1]:
             await ctx.reply('The email that you entered does not match your institute email. Please try again with a valid email.\nIf you think this was a mistake, contact a moderator.')
+            return
 
         EMAIL = os.getenv('EMAIL')
         msg = EmailMessage()
@@ -267,7 +269,7 @@ class Verify(commands.Cog):
         msg['To'] = tuple[1]
         name = ''
         for word in tuple[0].split(' '):
-            name += word[:1] + word[1:].lower() + ' '
+            name += f'{word[:1]}{word[1:].lower()} '
         otp = self.generateotp()
         self.data[str(ctx.author.id)] = otp
         self.save()
@@ -279,16 +281,18 @@ class Verify(commands.Cog):
         await ctx.reply(f'Email sent successfully!')
 
     @verify.command(name='code', brief='Used to input OTP that the user received in order to verify their email')
-    async def code(self, ctx, code):
-        if str(ctx.author.id) in self.data:
-            if self.data[str(ctx.author.id)] == code:
-                del self.data[str(ctx.author.id)]
-                self.save()
-                self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
-                self.conn.commit()
-                await ctx.reply('Your email has been verified successfully!')
-            else:
-                await ctx.reply('The code you entered is incorrect.')
+    async def code(self, ctx, code: str):
+        if str(ctx.author.id) not in self.data:
+            await ctx.reply('You did not receive any email yet.')
+            return
+        if self.data[str(ctx.author.id)] == code:
+            del self.data[str(ctx.author.id)]
+            self.save()
+            self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
+            self.conn.commit()
+            await ctx.reply('Your email has been verified successfully!')
+        else:
+            await ctx.reply('The code you entered is incorrect.')
 
     def save(self):
         with open('db/codes.json', 'w') as f:
