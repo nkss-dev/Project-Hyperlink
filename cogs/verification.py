@@ -17,6 +17,8 @@ class Verify(commands.Cog):
                 self.data = json.load(f)
         except FileNotFoundError:
             self.data = {}
+        with open('db/emojis.json') as f:
+            self.emojis = json.load(f)
 
         self.sections = (
             'CE-A', 'CE-B', 'CE-C',
@@ -262,6 +264,7 @@ class Verify(commands.Cog):
             await ctx.reply('The email that you entered does not match your institute email. Please try again with a valid email.\nIf you think this was a mistake, contact a moderator.')
             return
 
+        await ctx.message.add_reaction(self.emojis['loading'])
         EMAIL = os.getenv('EMAIL')
         msg = EmailMessage()
         msg['Subject'] = f'Verification of {ctx.author} on {ctx.guild}'
@@ -279,6 +282,7 @@ class Verify(commands.Cog):
             smtp.login(EMAIL, os.getenv('PASSWORD'))
             smtp.send_message(msg)
         await ctx.reply(f'Email sent successfully!')
+        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
     @verify.command(name='code', brief='Used to input OTP that the user received in order to verify their email')
     async def code(self, ctx, code: str):
