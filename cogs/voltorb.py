@@ -1,4 +1,4 @@
-import random, discord, json
+import discord, json, random, sqlite3
 from discord.ext import commands
 from PIL import Image
 from PIL import ImageFont
@@ -268,11 +268,15 @@ class voltorb_board:
 class VoltorbFlip(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+        self.conn = sqlite3.connect('db/details.db')
+        self.c = self.conn.cursor()
         try:
             with open('db/boards.json') as f:
                 self.data = json.load(f)
         except FileNotFoundError:
             self.data = {}
+
         self.dict = {
             'level': 1,
             'coins': 0,
