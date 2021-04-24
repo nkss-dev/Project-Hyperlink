@@ -18,9 +18,7 @@ def syntax(command):
             params.append(f'[{key}]' if 'NoneType' in str(value) else f'<{key}>')
     params = ' '.join(params)
 
-    if command.help:
-        help = command.help
-    else:
+    if not (help := command.help):
         help = command.brief
 
     return help, aliases, params
@@ -42,7 +40,9 @@ class Help(commands.Cog):
                     field_name = f'{command.parent} {aliases} {params}'
                 else:
                     field_name = f'{aliases} {params}'
-                embed.add_field(name=field_name, value=command.brief, inline=False)
+                if not (help := command.help):
+                    help = command.brief
+                embed.add_field(name=field_name, value=help, inline=False)
             await ctx.send(embed=embed)
         else:
             help, aliases, params = syntax(command)
