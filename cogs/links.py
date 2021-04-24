@@ -97,7 +97,7 @@ class Links(commands.Cog):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid link command passed.')
             return
-        self.c.execute('SELECT Verified, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
         if not tuple:
             raise Exception('AccountNotLinked')
@@ -105,7 +105,7 @@ class Links(commands.Cog):
             raise Exception('EmailNotVerified')
 
         flag = False
-        manager_roles = [ctx.guild.get_role(role) for role in self.data[str(tuple[1])]['manager_roles']]
+        manager_roles = [ctx.guild.get_role(role) for role in self.data[str(tuple[2])]['manager_roles']]
         for manager_role in manager_roles:
             if manager_role in ctx.author.roles:
                 flag = True
