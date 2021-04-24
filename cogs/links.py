@@ -16,17 +16,8 @@ class Links(commands.Cog):
         except FileNotFoundError:
             self.data = {}
 
-        self.sections = [
-            'CE-A', 'CE-B', 'CE-C',
-            'CS-A', 'CS-B',
-            'EC-A', 'EC-B', 'EC-C',
-            'EE-A', 'EE-B', 'EE-C',
-            'IT-A', 'IT-B',
-            'ME-A', 'ME-B', 'ME-C',
-            'PI-A', 'PI-B'
-        ]
-        self.days = ['Monday', 'Tuesday', 'Wednesday', 'Thrusday', 'Friday', 'Saturday', 'Sunday']
-        self.time = ['8:30', '9:25', '10:40', '11:35', '12:30', '1:45', '2:40', '3:35', '4:30', '5:00']
+        self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thrusday', 'Friday', 'Saturday', 'Sunday')
+        self.time = ('8:30', '9:25', '10:40', '11:35', '12:30', '1:45', '2:40', '3:35', '4:30', '5:00')
 
     @commands.command(name='create_embed', brief='Creates the dashboard embed')
     async def create(self, ctx):
