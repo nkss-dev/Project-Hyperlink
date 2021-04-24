@@ -111,7 +111,7 @@ class Links(commands.Cog):
             return
 
     @link.command(name='add', brief='Used to add temporary links')
-    async def add(self, ctx, time, subject, link='<link not known yet>'):
+    async def add(self, ctx, time, subject, *, link='<link not known yet>'):
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
         message = await ctx.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
