@@ -1,5 +1,5 @@
 from __future__ import print_function
-import os.path, discord, sqlite3
+import os.path, discord, sqlite3, json
 from discord.ext import commands
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -12,6 +12,9 @@ class Drive(commands.Cog):
 
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
+
+        with open('db/emojis.json', 'r') as f:
+            self.emojis = json.load(f)
 
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
         creds = None
@@ -106,8 +109,10 @@ class Drive(commands.Cog):
         if not await self.bot.is_owner(ctx.author):
             await ctx.reply('You need to be the owner of this bot to run this command.')
             return
+        await ctx.message.add_reaction(self.emojis['loading'])
         self.__init__(self.bot)
         await ctx.send('Drive cache refreshed!')
+        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
 def setup(bot):
     bot.add_cog(Drive(bot))
