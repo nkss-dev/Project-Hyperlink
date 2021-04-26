@@ -54,8 +54,7 @@ class Drive(commands.Cog):
             raise Exception('EmailNotVerified')
 
     @drive.command(name='search')
-    async def search(self, ctx, *, content):
-        content = content.split(' ')
+    async def search(self, ctx, *content):
         links = {}
         ignored_args = []
         for keyword in content:
