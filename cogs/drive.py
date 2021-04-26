@@ -66,8 +66,8 @@ class Drive(commands.Cog):
                     id = item['id']
                     name = item['name']
                     if item['parents'][0] not in links:
-                        links[item['parents'][0]] = []
-                    links[item['parents'][0]].append(f"[{name}](https://drive.google.com/file/d/{id})")
+                        links[item['parents'][0]] = set()
+                    links[item['parents'][0]].add(f"[{name}](https://drive.google.com/file/d/{id})")
         if len(ignored_args) == len(content):
             embed = discord.Embed(
                 description = 'The following arguements were ignored:\n{}'.format(', '.join([arg for arg in ignored_args])),
