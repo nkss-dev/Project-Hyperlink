@@ -41,9 +41,6 @@ class Drive(commands.Cog):
         self.results = service.files().list(pageSize=1000, fields='files(id, name, parents, mimeType)').execute()
         self.items = self.results.get('files', [])
 
-        # for item in enumerate(self.items):
-        #     print('{:<5}{:<35}{:<95}{:<20}'.format(f'{item[0]+1}.', item[1]['mimeType'], item[1]['name'], item[1]['id']))
-
     @commands.group(name='drive', brief='Allows users to interact with a specific Google drive')
     async def drive(self, ctx):
         if not ctx.invoked_subcommand:
