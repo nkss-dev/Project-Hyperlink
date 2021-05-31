@@ -35,19 +35,19 @@ class IGN(commands.Cog):
         if tuple[0] == 'False':
             raise Exception('EmailNotVerified')
 
-    async def add(self, ctx, *args):
     @ign.command(name='add', brief='Used to add an IGN for a specified game.')
+    async def add(self, ctx, game, ign):
         # Loads the available games from the database
         games = self.data[str(ctx.guild.id)]
         # Exit if the game does not exist in the database
-        if args[0] not in games:
+        if game not in games:
             await ctx.reply(f'The entered game does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
             return
         # Exit if IGN is missing
         if len(args) < 2:
             await ctx.reply('Missing arguements')
             return
-        if '@everyone' in args[1] or '@here' in args[1]:
+        if '@everyone' in ign or '@here' in ign:
             await ctx.reply('It was worth a try.')
             return
         # Gets details of user from the database
@@ -55,10 +55,10 @@ class IGN(commands.Cog):
         tuple = self.c.fetchone()
         igns = json.loads(tuple[0])
         # Adds IGN to the database
-        igns[args[0]] = args[1]
+        igns[game] = ign
         self.c.execute('UPDATE main set IGN = (:ign) where Discord_UID = (:uid)', {'ign': json.dumps(igns), 'uid': ctx.author.id})
         self.conn.commit()
-        await ctx.reply(f'IGN for {args[0]} added successfully.')
+        await ctx.reply(f'IGN for {game} added successfully.')
 
     async def show(self, ctx, *args):
     @ign.command(name='show', brief='Shows the IGN of the entered game (shows for all if none specified). If you want to see another user\'s IGN, type a part of their username (It is case sensitive) before the name of the game, which is also optional.')
