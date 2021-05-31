@@ -41,7 +41,7 @@ class IGN(commands.Cog):
         games = self.data[str(ctx.guild.id)]
         # Exit if the game does not exist in the database
         if game not in games:
-            await ctx.reply(f'The entered game does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
+            await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
             return
         if '@everyone' in ign or '@here' in ign:
             await ctx.reply('It was worth a try.')
@@ -69,8 +69,8 @@ class IGN(commands.Cog):
         # Loads the available games from the database
         games = self.data[str(ctx.guild.id)]
         # Exit if the game does not exist in the database
-        if single and args[0] not in games:
-            await ctx.reply(f'The entered game does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
+        if single and game not in games:
+            await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
             return
         oneself = True
         if len(args) == 1:
@@ -135,7 +135,7 @@ class IGN(commands.Cog):
         games = self.data[str(ctx.guild.id)]
         # Checks if the game exists in the database
         if game not in games:
-            await ctx.reply(f'The entered game does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
+            await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
             return
         if game in igns:
             igns.pop(game)
