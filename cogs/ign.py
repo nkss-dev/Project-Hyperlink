@@ -43,10 +43,6 @@ class IGN(commands.Cog):
         if game not in games:
             await ctx.reply(f'The entered game does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
             return
-        # Exit if IGN is missing
-        if len(args) < 2:
-            await ctx.reply('Missing arguements')
-            return
         if '@everyone' in ign or '@here' in ign:
             await ctx.reply('It was worth a try.')
             return
