@@ -115,8 +115,8 @@ class IGN(commands.Cog):
             embed.set_footer(text=f'Requested by: {ctx.author}', icon_url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
 
-    async def delete(self, ctx, *args):
     @ign.command(name='delete', brief='Deletes the IGN of the entered game. Deletes all IGNs if none entered', aliases=['del'])
+    async def delete(self, ctx, game: str=None):
         # Gets details of user from the database
         self.c.execute('SELECT IGN FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
@@ -125,7 +125,7 @@ class IGN(commands.Cog):
         if not igns:
             await ctx.reply('You have no IGN stored to remove.')
             return
-        if not args:
+        if not game:
             # Remove all existing IGNs of the user from the database
             self.c.execute('UPDATE main SET IGN = "{}" where Discord_UID = (:uid)', {'uid': ctx.author.id})
             self.conn.commit()
