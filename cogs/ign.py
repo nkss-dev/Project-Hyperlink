@@ -13,7 +13,7 @@ class IGN(commands.Cog):
         except FileNotFoundError:
             self.data = {}
 
-    @commands.group(name='ign')
+    @commands.group(name='ign', brief='Shows the list of eligible games for which an IGN can be added.')
     async def ign(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid IGN command passed.')
@@ -25,8 +25,8 @@ class IGN(commands.Cog):
         if tuple[0] == 'False':
             raise Exception('EmailNotVerified')
 
-    @ign.command(name='add')
     async def add(self, ctx, *args):
+    @ign.command(name='add', brief='Used to add an IGN for a specified game.')
         # Loads the available games from the database
         games = self.data[str(ctx.guild.id)]
         if not args:
@@ -62,8 +62,8 @@ class IGN(commands.Cog):
         self.conn.commit()
         await ctx.reply(f'IGN for {args[0]} added successfully.')
 
-    @ign.command(name='show')
     async def show(self, ctx, *args):
+    @ign.command(name='show', brief='Shows the IGN of the entered game (shows for all if none specified). If you want to see another user\'s IGN, type a part of their username (It is case sensitive) before the name of the game, which is also optional.')
         # Setting single to False will show all the IGNs for the requested user
         if not args:
             member = ctx.author
@@ -121,8 +121,8 @@ class IGN(commands.Cog):
             embed.set_footer(text=f'Requested by: {ctx.author}', icon_url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
 
-    @ign.command(name='delete', aliases=['del'])
     async def delete(self, ctx, *args):
+    @ign.command(name='delete', brief='Deletes the IGN of the entered game. Deletes all IGNs if none entered', aliases=['del'])
         # Gets details of user from the database
         self.c.execute('SELECT IGN FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
