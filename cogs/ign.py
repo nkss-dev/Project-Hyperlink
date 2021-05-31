@@ -16,7 +16,17 @@ class IGN(commands.Cog):
     @commands.group(name='ign', brief='Shows the list of eligible games for which an IGN can be added.')
     async def ign(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.reply('Invalid IGN command passed.')
+            games = self.data[str(ctx.guild.id)]
+            msg = ''
+            for i in games:
+                msg += f'\n{i}'
+            # Sends an embed with a list of all available games
+            embed = discord.Embed(
+                title = 'Here is a list of the games that you can add an IGN for:',
+                    description = msg,
+                    color = discord.Colour.blurple()
+                )
+            await ctx.send(embed=embed)
             return
         self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
@@ -29,18 +39,6 @@ class IGN(commands.Cog):
     @ign.command(name='add', brief='Used to add an IGN for a specified game.')
         # Loads the available games from the database
         games = self.data[str(ctx.guild.id)]
-        if not args:
-            msg = ''
-            for i in games:
-                msg += f'\n{i}'
-            # Sends an embed with a list of all available games
-            embed = discord.Embed(
-                title = 'Here is a list of the games that you can add an IGN for:',
-                description = msg,
-                color = discord.Colour.blurple()
-            )
-            await ctx.send(embed=embed)
-            return
         # Exit if the game does not exist in the database
         if args[0] not in games:
             await ctx.reply(f'The entered game does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
