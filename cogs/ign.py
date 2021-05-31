@@ -1,4 +1,4 @@
-import sqlite3, json, os, discord
+import sqlite3, json, os, discord, typing
 from discord.ext import commands
 
 class IGN(commands.Cog):
@@ -56,13 +56,11 @@ class IGN(commands.Cog):
         self.conn.commit()
         await ctx.reply(f'IGN for {game} added successfully.')
 
-    async def show(self, ctx, *args):
     @ign.command(name='show', brief='Shows the IGN of the entered game (shows for all if none specified). If you want to see another user\'s IGN, type a part of their username (It is case sensitive) before the name of the game, which is also optional.')
+    async def show(self, ctx, user: typing.Optional[discord.Member]=None, game: str='all'):
         # Setting single to False will show all the IGNs for the requested user
-        if not args:
-            member = ctx.author
-            single = False
-        elif 'all' in args[0].lower():
+        member = user or ctx.author
+        if game.lower() == 'all':
             single = False
         else:
             single = True
@@ -72,17 +70,7 @@ class IGN(commands.Cog):
         if single and game not in games:
             await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{prefix}ign add`')
             return
-        oneself = True
-        if len(args) == 1:
-            member = ctx.author
-            game = args[0]
-        elif len(args) == 2:
-            member = ctx.guild.get_member_named(args[1])
-            if not member:
-                await ctx.reply(f'Member with the name `{args[1]}` not found!')
-                return
-            game = args[0]
-            oneself = False
+        oneself = ctx.author == member
         # Gets details of user from the database
         self.c.execute('SELECT IGN FROM main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
