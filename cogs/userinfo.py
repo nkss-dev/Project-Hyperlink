@@ -15,7 +15,7 @@ class UserInfo(commands.Cog):
         self.c = self.conn.cursor()
 
     @commands.command(name='profile', brief='Displays details of the user', aliases=['p'])
-    async def profile(self, ctx, member: discord.Member=None):
+    async def profile(self, ctx, *, member: discord.Member=None):
         """Displays details of the user related to the server and the college"""
         member = member or ctx.author
         if not await self.check(ctx, member):
