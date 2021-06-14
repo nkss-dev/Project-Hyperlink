@@ -101,17 +101,37 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        if member.bot:
-            return
         details = self.data[str(member.guild.id)]
+        if 'on_join/leave' not in details:
+            return
+        if member.guild.me.guild_permissions.view_audit_log:
+            async for entry in member.guild.audit_logs(limit=5):
+                if str(entry.target) == str(member):
+                    if entry.action is discord.AuditLogAction.kick:
+                        action = 'kick_msg'
+                        break
+                    elif entry.action is discord.AuditLogAction.ban:
+                        action = 'ban_msg'
+                        break
+                    else:
+                        action = 'leave_msg'
+        else:
+            action = 'leave_msg'
+        channel = self.bot.get_channel(details['on_join/leave'][action][0])
+        if action != 'leave_msg' and (channel := self.bot.get_channel(details['on_join/leave'][action][0])):
+            message = details['on_join/leave'][action][1].replace('{user}', member.mention)
+            message += '\n**Reason:** ' + (entry.reason or 'None')
+            embed = discord.Embed(
+                description = message,
+                color = discord.Color.blurple()
+            )
+            await channel.send(embed=embed)
+            channel = None
         if 'verification' not in details:
-            if 'on_join/leave' in details and (channel := self.bot.get_channel(details['on_join/leave']['leave_msg'][0])):
-                await channel.send(details['on_join/leave']['leave_msg'][1].replace('{user}', member.mention))
             return
         # Gets details of user from the database
         self.c.execute('SELECT Guilds, Verified FROM main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
-        channel = self.bot.get_channel(details['on_join/leave']['leave_msg'][0])
         # Exit if the user was not found
         if not tuple and channel:
             triggered = self.emojis['triggered']
@@ -130,7 +150,13 @@ class Events(commands.Cog):
             self.c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': json.dumps(guilds)})
             self.conn.commit()
         if channel:
-            await channel.send(details['on_join/leave']['leave_msg'][1].replace('{user}', member.mention))
+            message = details['on_join/leave']['leave_msg'][1].replace('{user}', member.mention)
+            message += '\n**Reason:** ' + (entry.reason or 'None')
+            embed = discord.Embed(
+                description = message,
+                color = discord.Color.blurple()
+            )
+            await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
