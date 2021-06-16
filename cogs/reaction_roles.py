@@ -1,4 +1,4 @@
-import discord, json, asyncio, random, math
+import discord, json, asyncio, random, math, sqlite3
 from discord.ext import commands
 
 class ReactionRoles(commands.Cog):
@@ -10,6 +10,8 @@ class ReactionRoles(commands.Cog):
                 self.data = json.load(f)
         except FileNotFoundError:
             self.bot.loop.create_task(self.create())
+        self.conn = sqlite3.connect('db/details.db')
+        self.c = self.conn.cursor()
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
