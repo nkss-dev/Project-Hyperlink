@@ -10,6 +10,12 @@ class ReactionRoles(commands.Cog):
                 self.data = json.load(f)
         except FileNotFoundError:
             self.bot.loop.create_task(self.create())
+        try:
+            with open('db/emojis.json', 'r') as f:
+                self.emojis = json.load(f)['games']
+        except FileNotFoundError:
+            self.enmojis = {}
+
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
@@ -17,7 +23,11 @@ class ReactionRoles(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         flag = False
         for reaction_role in self.data[str(payload.guild_id)]:
-            if [payload.message_id, str(payload.emoji)] == [reaction_role['message_id'], reaction_role['emoji']]:
+            if payload.emoji.is_unicode_emoji():
+                emoji = str(payload.emoji)
+            else:
+                emoji = payload.emoji.id
+            if [payload.message_id, emoji] == [reaction_role['message_id'], reaction_role['emoji']]:
                 flag = True
                 break
         if not flag:
@@ -35,12 +45,15 @@ class ReactionRoles(commands.Cog):
     async def on_raw_reaction_remove(self, payload):
         flag = False
         for reaction_role in self.data[str(payload.guild_id)]:
-            if [payload.message_id, str(payload.emoji)] == [reaction_role['message_id'], reaction_role['emoji']]:
+            if payload.emoji.is_unicode_emoji():
+                emoji = str(payload.emoji)
+            else:
+                emoji = payload.emoji.id
+            if [payload.message_id, emoji] == [reaction_role['message_id'], reaction_role['emoji']]:
                 flag = True
                 break
         if not flag:
             return
-
         guild = self.bot.get_guild(payload.guild_id)
         member = guild.get_member(payload.user_id)
         role = guild.get_role(reaction_role['role_id'])
@@ -64,20 +77,33 @@ class ReactionRoles(commands.Cog):
             raise Exception('EmailNotVerified')
 
     @reactionrole.command(name='add', brief='Adds a reaction role')
-    async def add(self, ctx, message: discord.Message, role: discord.Role):
-        msg = await ctx.reply('React to this message with the reaction you want to use for the reaction role.')
-        def check(reaction, user):
-            return user == ctx.author and reaction.message.id == msg.id
-        try:
-            reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
-        except asyncio.TimeoutError:
-            await ctx.send('Reaction role setup has been cancelled. You took too long to choose a valid reaction.')
-            return
-        await message.add_reaction(reaction.emoji)
+    async def add(self, ctx, message: discord.Message, role: discord.Role, *, game: str=None):
+        if game:
+            if game in self.emojis:
+                reaction = self.emojis[game]
+            else:
+                await ctx.reply(f'{game} is invalid!')
+                return
+        else:
+            msg = await ctx.reply('React to this message with the reaction you want to use for the reaction role.')
+            def check(reaction, user):
+                return user == ctx.author and reaction.message.id == msg.id
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
+                reaction = reaction.emoji
+            except asyncio.TimeoutError:
+                await ctx.send('Reaction role setup has been cancelled. You took too long to choose a valid reaction.')
+                return
+        await message.add_reaction(reaction)
         ID = self.generateID([reaction_role['ID'] for reaction_role in self.data[str(ctx.guild.id)]])
+        if isinstance(reaction, str):
+            if reaction[0] == '<':
+                reaction = int(reaction.split(':')[2][:-1])
+        else:
+            reaction = reaction.id
         dict = {
             "ID": ID,
-            "emoji": str(reaction.emoji),
+            "emoji": reaction,
             "role_id": role.id,
             "type": 1,
             "message_id": message.id,
@@ -90,7 +116,10 @@ class ReactionRoles(commands.Cog):
             color = discord.Color.blurple()
         )
         embed.add_field(name='ID', value=f'`{ID}`')
-        await msg.edit(content=None, embed=embed)
+        if game:
+            await ctx.reply(embed=embed)
+        else:
+            await msg.edit(content=None, embed=embed)
 
     @reactionrole.command(name='remove', brief='Removes a reaction role')
     async def remove(self, ctx, ID: str):
@@ -98,7 +127,12 @@ class ReactionRoles(commands.Cog):
             if ID == reaction_role['ID']:
                 channel = self.bot.get_channel(reaction_role['channel_id'])
                 message = await channel.fetch_message(reaction_role['message_id'])
-                await message.remove_reaction(reaction_role['emoji'], self.bot.user)
+                if isinstance(emoji := reaction_role['emoji'], int):
+                    for game in self.emojis:
+                        if str(emoji) in self.emojis[game]:
+                            emoji = self.emojis[game]
+                            break
+                await message.remove_reaction(emoji, self.bot.user)
                 self.data[str(ctx.guild.id)].remove(reaction_role)
                 self.save()
                 await ctx.send(f'Reaction role with ID `{ID}` removed successfully!')
