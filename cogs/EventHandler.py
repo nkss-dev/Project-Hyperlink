@@ -10,7 +10,7 @@ class Events(commands.Cog):
         with open('db/guilds.json') as f:
             self.data = json.load(f)
         with open('db/emojis.json') as f:
-            self.emojis = json.load(f)
+            self.emojis = json.load(f)['utility']
 
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()

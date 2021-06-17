@@ -6,7 +6,7 @@ class AdminCommands(commands.Cog):
         self.bot = bot
 
         with open('db/emojis.json', 'r') as f:
-            self.emojis = json.load(f)
+            self.emojis = json.load(f)['utility']
 
     async def cog_check(self, ctx):
         if not await self.bot.is_owner(ctx.author):
