@@ -95,7 +95,6 @@ class ReactionRoles(commands.Cog):
     @reactionrole.command(name='remove', brief='Removes a reaction role')
     async def remove(self, ctx, ID: str):
         for reaction_role in self.data[str(ctx.guild.id)]:
-            print(ID, reaction_role['ID'])
             if ID == reaction_role['ID']:
                 channel = self.bot.get_channel(reaction_role['channel_id'])
                 message = await channel.fetch_message(reaction_role['message_id'])
