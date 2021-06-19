@@ -18,7 +18,7 @@ class Verify(commands.Cog):
         except FileNotFoundError:
             self.data = {}
         with open('db/emojis.json') as f:
-            self.emojis = json.load(f)
+            self.emojis = json.load(f)['utility']
 
         self.sections = (
             'CE-A', 'CE-B', 'CE-C',
@@ -238,7 +238,7 @@ class Verify(commands.Cog):
         await ctx.author.add_roles(role)
         role = discord.utils.get(ctx.guild.roles, name=tuple[1])
         await ctx.author.add_roles(role)
-        await ctx.reply('Your record was found and verified!\nYou will now be removed from this channel.')
+        await ctx.reply('Your record was found and verified!\nPlease check the channel list of the server to see the unlocked channels. If you still do not see the channels then please re-launch the app.')
         # Removing the 'Not-Verified' role from the user
         role = discord.utils.get(ctx.guild.roles, name = 'Not-Verified')
         await ctx.author.remove_roles(role)
@@ -281,7 +281,7 @@ class Verify(commands.Cog):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL, os.getenv('PASSWORD'))
             smtp.send_message(msg)
-        await ctx.reply(f'Email sent successfully!')
+        await ctx.reply(f'Please check your institute email for the OTP and enter it here using `{ctx.prefix}verify code [OTP here]`.')
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
     @verify.command(name='code', brief='Used to input OTP that the user received in order to verify their email')
@@ -294,7 +294,7 @@ class Verify(commands.Cog):
             self.save()
             self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
             self.conn.commit()
-            await ctx.reply('Your email has been verified successfully!')
+            await ctx.reply(f"Your email has been verified successfully! {self.emojis['verified']}")
         else:
             await ctx.reply('The code you entered is incorrect.')
 
