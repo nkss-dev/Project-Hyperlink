@@ -16,7 +16,7 @@ client.launch_time = datetime.utcnow()
 
 @client.event
 async def on_ready():
-    print(f'Logged on as {client.user}!\n')
+    print(f'Logged on as {client.user}!')
     await client.change_presence(activity=discord.Game(f'@{client.user.name}'))
 
     default_details = {
@@ -44,6 +44,7 @@ async def on_ready():
     for filename in os.listdir('./cogs'):
         if filename.endswith('.py'):
             client.load_extension(f'cogs.{filename[:-3]}')
+    print(f'Cogs loaded successfully!\n')
 
 @client.command(brief='Segregated display of the number of members')
 async def memlist(ctx, batch: int=2024):
