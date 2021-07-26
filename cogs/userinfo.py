@@ -14,6 +14,15 @@ class UserInfo(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
+    async def cog_check(self, ctx):
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
+        return True
+
     @commands.command(name='profile', brief='Displays details of the user', aliases=['p'])
     async def profile(self, ctx, *, member: discord.Member=None):
         """Displays details of the user related to the server and the college"""

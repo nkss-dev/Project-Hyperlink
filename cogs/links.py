@@ -19,9 +19,8 @@ class Links(commands.Cog):
         self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thrusday', 'Friday', 'Saturday', 'Sunday')
         self.time = ('8:30', '9:25', '10:40', '11:35', '12:30', '1:45', '2:40', '3:35', '4:30', '5:00')
 
-    @commands.command(name='create_embed', brief='Creates the dashboard embed')
-    async def create(self, ctx):
-        self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+    async def cog_check(self, ctx):
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
         if not tuple:
             raise Exception('AccountNotLinked')
@@ -36,13 +35,16 @@ class Links(commands.Cog):
                 break
         if not flag:
             await ctx.reply('You\'re not authorised to use this command.')
-            return
+            return False
+        else:
+            channel = self.bot.get_channel(self.data[str(tuple[2])][tuple[1]]['channel'])
+            if ctx.channel.id != channel.id:
+                await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
+                return False
+            return True
 
-        channel = self.bot.get_channel(self.data[str(tuple[2])][tuple[1]]['channel'])
-        if ctx.channel.id != channel.id:
-            await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
-            return
-
+    @commands.command(name='create_embed', brief='Creates the dashboard embed')
+    async def create(self, ctx):
         datetime_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
         date = datetime_ist.strftime('%d-%m-%Y')
         day = datetime_ist.strftime('%A')
@@ -63,7 +65,7 @@ class Links(commands.Cog):
                 for role in temp:
                     link = link.replace(role[0], role[1])
                 if 'http' not in link:
-                    link += '<link not known yet>'
+                    link += 'Link unavailable'
                 description += f'\n{subject} ({time}):\n{link}\n'
 
         if not flag:
@@ -88,30 +90,9 @@ class Links(commands.Cog):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid link command passed.')
             return
-        self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
-
-        flag = False
-        manager_roles = [ctx.guild.get_role(role) for role in self.data[str(tuple[2])]['manager_roles']]
-        for manager_role in manager_roles:
-            if manager_role in ctx.author.roles:
-                flag = True
-                break
-        if not flag:
-            await ctx.reply('You\'re not authorised to use this command.')
-            return
-
-        channel = self.bot.get_channel(self.data[str(tuple[2])][tuple[1]]['channel'])
-        if ctx.channel != channel:
-            await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
-            return
 
     @link.command(name='add', brief='Used to add temporary links')
-    async def add(self, ctx, time, subject, *, link='<link not known yet>'):
+    async def add(self, ctx, time, subject, *, link='Link unavailable'):
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
         message = await ctx.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
@@ -141,7 +122,7 @@ class Links(commands.Cog):
             await self.edit(message, desc)
 
     @link.command(name='set_default', brief='Used to create a class time', aliases=['sd'])
-    async def setd(self, ctx, name, time, link='<link not known yet>'):
+    async def setd(self, ctx, name, time, link='Link unavailable'):
         pass
 
     @link.command(name='remove_default', brief='Used to remove a class time', aliases=['rd'])

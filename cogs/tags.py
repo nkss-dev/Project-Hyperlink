@@ -12,6 +12,12 @@ class Tags(commands.Cog):
             self.data = {}
 
     async def cog_check(self, ctx):
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
         return ctx.guild.id == 783215699707166760
 
     @commands.Cog.listener()
@@ -28,13 +34,6 @@ class Tags(commands.Cog):
     @commands.group(name="tags", invoke_without_command=True)
     async def tags(self, ctx):
         """Tags are used to make shortcuts for messages"""
-
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
 
         await ctx.send(f"`{ctx.prefix}tags create` to make new tags")
 

@@ -63,18 +63,21 @@ class ReactionRoles(commands.Cog):
             self.data[str(payload.guild_id)].remove(reaction_role)
             self.save()
 
-    @commands.group(name='reactionrole', aliases=['rr'], brief='This adds/removes roles from a user based on reactions to a specified message')
-    @commands.has_permissions(manage_roles=True)
-    async def reactionrole(self, ctx):
-        if not ctx.invoked_subcommand:
-            await ctx.reply('Invalid command passed.')
-            return
+    async def cog_check(self, ctx):
         self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
         if not tuple:
             raise Exception('AccountNotLinked')
         if tuple[0] == 'False':
             raise Exception('EmailNotVerified')
+        return True
+
+    @commands.group(name='reactionrole', aliases=['rr'], brief='This adds/removes roles from a user based on reactions to a specified message')
+    @commands.has_permissions(manage_roles=True)
+    async def reactionrole(self, ctx):
+        if not ctx.invoked_subcommand:
+            await ctx.reply('Invalid command passed.')
+            return
 
     @reactionrole.command(name='add', brief='Adds a reaction role')
     async def add(self, ctx, message: discord.Message, role: discord.Role, *, game: str=None):

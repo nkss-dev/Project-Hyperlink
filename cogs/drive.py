@@ -37,17 +37,20 @@ class Drive(commands.Cog):
 
         self.DRIVE = build('drive', 'v3', credentials=creds)
 
-    @commands.group(name='drive', brief='Allows users to interact with a specific Google drive')
-    async def drive(self, ctx):
-        if not ctx.invoked_subcommand:
-            await ctx.send('Invalid drive command passed.')
-            return
+    async def cog_check(self, ctx):
         self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
         if not tuple:
             raise Exception('AccountNotLinked')
         if tuple[0] == 'False':
             raise Exception('EmailNotVerified')
+        return True
+
+    @commands.group(name='drive', brief='Allows users to interact with a specific Google drive')
+    async def drive(self, ctx):
+        if not ctx.invoked_subcommand:
+            await ctx.send('Invalid drive command passed.')
+            return
 
     @drive.command(name='search')
     async def search(self, ctx, *content):

@@ -13,6 +13,15 @@ class IGN(commands.Cog):
         except FileNotFoundError:
             self.data = {}
 
+    async def cog_check(self, ctx):
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
+        return True
+
     @commands.group(name='ign', brief='Shows the list of eligible games for which an IGN can be added.')
     async def ign(self, ctx):
         if not ctx.invoked_subcommand:
@@ -28,12 +37,6 @@ class IGN(commands.Cog):
                 )
             await ctx.send(embed=embed)
             return
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
 
     @ign.command(name='add', brief='Used to add an IGN for a specified game.')
     async def add(self, ctx, game, ign):

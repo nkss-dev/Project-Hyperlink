@@ -291,6 +291,15 @@ class VoltorbFlip(commands.Cog):
             }
         }
 
+    async def cog_check(self, ctx):
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
+        return True
+
     @commands.group(name='voltorb_start', aliases=['vf', 'vf_start'], invoke_without_command=True)
     async def voltorb_start(self, ctx):
         '''This is a recreatation of the Voltorb Flip game that appears in the Korean and Western releases of Pokémon HeartGold and SoulSilver. The game is a mix between Minesweeper and Picture Cross and the placement of the bombs are given for each row and column. The goal of the game is to uncover all of the 2 and 3 tiles on a given board and move up to higher levels which have higher coin totals.

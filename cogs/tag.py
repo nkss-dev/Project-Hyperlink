@@ -19,19 +19,21 @@ class Tag(commands.Cog):
                     'PI-01', 'PI-02', 'PI-03', 'PI-04', 'PI-05', 'PI-06'
                 )
 
+    async def cog_check(self, ctx):
+        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+        if not tuple:
+            raise Exception('AccountNotLinked')
+        if tuple[0] == 'False':
+            raise Exception('EmailNotVerified')
+        return True
+
     @commands.command(name='tag', brief='Allows user to tag section/subsection roles')
     async def tag(self, ctx, *, content):
         """With this command, you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
         That means that if you're in IT-A, you can tag `IT-A, IT-01, IT-02 and IT-03` but you can NOT tag `IT-B, IT-04, ME-B, CE-01, PI-06, ...`
 
         **PS:** If you're found to abuse this facility, ie. spam tags and/or tag people for an unimportant reason, then this facility will be revoked for you and you will face consequences based on the severity of the abuse."""
-
-        self.c.execute('SELECT Verified, Section FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
 
         bool = False
         async with aiohttp.ClientSession() as session:
