@@ -1,5 +1,5 @@
 from __future__ import print_function
-import os.path, discord, sqlite3, json
+import os.path, discord, sqlite3, json, aiohttp
 from discord.ext import commands
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -35,10 +35,10 @@ class Drive(commands.Cog):
             with open('db/token.json', 'w') as token:
                 token.write(creds.to_json())
 
-        service = build('drive', 'v3', credentials=creds)
+        self.DRIVE = build('drive', 'v3', credentials=creds)
 
         # Call the Drive v3 API
-        self.results = service.files().list(pageSize=1000, fields='files(id, name, parents, mimeType)').execute()
+        self.results = self.DRIVE.files().list(pageSize=1000, fields='files(id, name, parents, mimeType)').execute()
         self.items = self.results.get('files', [])
 
     @commands.group(name='drive', brief='Allows users to interact with a specific Google drive')
@@ -55,50 +55,75 @@ class Drive(commands.Cog):
 
     @drive.command(name='search')
     async def search(self, ctx, *content):
-        links = {}
+        bool = False
+        async with aiohttp.ClientSession() as session:
+            # Checks if a webhook already exists for that channel
+            webhooks = await ctx.channel.webhooks()
+            for webhook in webhooks:
+                if webhook.user == self.bot.user:
+                    bool = True
+                    break
+            # Creates a webhook if none exist
+            if not bool:
+                webhook = await channel.create_webhook(name='Webhook')
+
+        folder_links = {}
+        file_links = {}
         ignored_args = []
         for keyword in content:
             if len(keyword) < 3:
                 ignored_args.append(keyword)
                 continue
-            for item in self.results.get('files', []):
+            for item in self.items:
                 if keyword.lower() in item['name'].lower():
                     id = item['id']
                     name = item['name']
+                    links = file_links if item['mimeType'] != 'application/vnd.google-apps.folder' else folder_links
                     if item['parents'][0] not in links:
                         links[item['parents'][0]] = set()
                     links[item['parents'][0]].add(f"[{name}](https://drive.google.com/file/d/{id})")
-        if len(ignored_args) == len(content):
-            embed = discord.Embed(
+                    if item['mimeType'] != 'application/vnd.google-apps.folder':
+                        file_links = links
+                    else:
+                        folder_links = links
+
+        embeds = []
+        if ignored_args:
+            ignored_embed = discord.Embed(
                 description = 'The following arguements were ignored:\n{}'.format(', '.join([arg for arg in ignored_args])),
                 color = discord.Color.blurple()
             )
-            embed.set_footer(text='Reason: Arguements must be at least 3 characters long')
-            await ctx.send(embed=embed)
-            return
-        if not links:
+            ignored_embed.set_footer(text='Reason: Arguments must be at least 3 characters long')
+            embeds.append(ignored_embed)
+            if len(ignored_args) == len(content):
+                await ctx.send(embed=embed)
+                return
+
+        if not folder_links and not file_links:
             await ctx.send('Could not find anything. Sorry.')
             return
-        description = ''
-        for parent in links:
-            for file in self.results.get('files', []):
-                if file.get('id') == parent:
-                    break
-            description += '\n' + file.get('name') + ':\n'
-            for link in links[parent]:
-                description += link + '\n'
-        embed = discord.Embed(
-            description = description,
-            color = discord.Color.blurple()
+
+        for i, embed_name, links in zip(range(2), ['Folders', 'Files'], [folder_links, file_links]):
+            description = ''
+            for parent in links:
+                data = self.DRIVE.files().get(fileId=parent).execute()
+                description += f"\n{data['name']}:\n"
+                for link in links[parent]:
+                    description += f'{link}\n'
+
+            if description:
+                embed = discord.Embed(
+                    title = embed_name,
+                    description = description,
+                    color = discord.Color.blurple()
+                )
+                embeds.insert(i, embed)
+
+        await webhook.send(
+            embeds=embeds,
+            username=self.bot.user.name,
+            avatar_url=self.bot.user.avatar_url
         )
-        await ctx.send(embed=embed)
-        if ignored_args:
-            embed = discord.Embed(
-                description = 'The following arguements were ignored:\n"{}"'.format('" "'.join([arg for arg in ignored_args])),
-                color = discord.Color.blurple()
-            )
-            embed.set_footer(text='Reason: Arguements must be at least 3 characters long')
-            await ctx.send(embed=embed)
 
     @drive.command(name='refresh')
     async def refresh(self, ctx):
