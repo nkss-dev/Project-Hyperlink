@@ -37,10 +37,6 @@ class Drive(commands.Cog):
 
         self.DRIVE = build('drive', 'v3', credentials=creds)
 
-        # Call the Drive v3 API
-        self.results = self.DRIVE.files().list(pageSize=1000, fields='files(id, name, parents, mimeType)').execute()
-        self.items = self.results.get('files', [])
-
     @commands.group(name='drive', brief='Allows users to interact with a specific Google drive')
     async def drive(self, ctx):
         if not ctx.invoked_subcommand:
