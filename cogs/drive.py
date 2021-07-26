@@ -74,18 +74,27 @@ class Drive(commands.Cog):
             if len(keyword) < 3:
                 ignored_args.append(keyword)
                 continue
-            for item in self.items:
-                if keyword.lower() in item['name'].lower():
-                    id = item['id']
-                    name = item['name']
-                    links = file_links if item['mimeType'] != 'application/vnd.google-apps.folder' else folder_links
-                    if item['parents'][0] not in links:
-                        links[item['parents'][0]] = set()
-                    links[item['parents'][0]].add(f"[{name}](https://drive.google.com/file/d/{id})")
-                    if item['mimeType'] != 'application/vnd.google-apps.folder':
+
+            page_token = None
+            while True:
+                response = self.DRIVE.files().list(
+                    q=f"name contains '{keyword}'",
+                    spaces='drive',
+                    fields='nextPageToken, files(id, name, parents, mimeType)',
+                    pageToken=page_token
+                ).execute()
+                for file in response.get('files', []):
+                    links = file_links if file.get('mimeType') != 'application/vnd.google-apps.folder' else folder_links
+                    if file.get('parents')[0] not in links:
+                        links[file.get('parents')[0]] = set()
+                    links[file.get('parents')[0]].add(f"[{file.get('name')}](https://drive.google.com/file/d/{file.get('id')})")
+                    if file.get('mimeType') != 'application/vnd.google-apps.folder':
                         file_links = links
                     else:
                         folder_links = links
+                page_token = response.get('nextPageToken', None)
+                if page_token is None:
+                    break
 
         embeds = []
         if ignored_args:
