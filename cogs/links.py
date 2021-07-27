@@ -107,7 +107,7 @@ class Links(commands.Cog):
             times = [class_time.split(')')[0] for class_time in description.split('(')[2:]]
             subjects = [lecture.split(' (')[0] for lecture in description.split('\n')[2:] if '(' in lecture]
             for lecture, class_time in zip(subjects, times):
-                if datetime.strptime(time, '%I:%M%p') < datetime.strptime(class_time, '%I:%M%p'):
+                if datetime.strptime(time, '%I:%M%p') <= datetime.strptime(class_time, '%I:%M%p'):
                     description = description.replace(f'{lecture} ({class_time})', f'{subject} ({time}):\n{link}\n\n{lecture} ({class_time})')
                     break
         await self.edit(message, description)
@@ -120,8 +120,11 @@ class Links(commands.Cog):
         description = message.embeds[0].description
         if f'{subject} ({time}):' in description:
             desc = description.split(f'\n\n{subject} ({time}):\n')
-            link = desc[1].split('\n', 1)[1]
-            desc = f'{desc[0]}\n{link}'
+            try:
+                remainder = desc[1].split('\n', 1)[1]
+            except:
+                remainder = ''
+            desc = f'{desc[0]}\n{remainder}'
             await self.edit(message, desc)
 
     @link.command(name='set_default', brief='Used to create a class time', aliases=['sd'])
