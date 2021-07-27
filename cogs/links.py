@@ -43,15 +43,11 @@ class Links(commands.Cog):
                 return False
             return True
 
-    @commands.command(name='create_embed', brief='Creates the dashboard embed')
-    async def create(self, ctx):
-        self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-
+    async def create(self, ctx, tuple):
         datetime_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
         date = datetime_ist.strftime('%d-%m-%Y')
         day = datetime_ist.strftime('%A')
-        timetable = self.data[str(tuple[2])][tuple[1]][day]
+        timetable = self.data[str(tuple[1])][tuple[0]][day]
         description = f'**Upcoming Classes:**\n({date})\n\n'
         flag = False
         for lecture in timetable:
@@ -78,8 +74,7 @@ class Links(commands.Cog):
             description = description,
             color = discord.Color.blurple()
         )
-        self.data[str(tuple[2])][tuple[1]]['message'] = (await ctx.send(embed=embed)).id
-        self.save()
+        return embed
 
     async def edit(self, embed: discord.Message, description):
         new_embed = discord.Embed(
@@ -94,10 +89,19 @@ class Links(commands.Cog):
             await ctx.reply('Invalid link command passed.')
             return
 
+    @link.command(name='create', brief='Creates the dashboard embed')
+    async def init(self, ctx):
+        self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+
+        self.data[str(tuple[1])][tuple[0]]['message'] = (await ctx.send(embed=await self.create(ctx, tuple))).id
+        self.save()
+
     @link.command(name='add', brief='Used to add temporary links')
     async def add(self, ctx, time, subject, *, link='Link unavailable'):
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
+
         message = await ctx.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
         description = message.embeds[0].description
         if f'{subject} ({time}):' in description:
@@ -116,6 +120,7 @@ class Links(commands.Cog):
     async def remove(self, ctx, time, subject):
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
+
         message = await ctx.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
         description = message.embeds[0].description
         if f'{subject} ({time}):' in description:
