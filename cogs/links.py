@@ -20,7 +20,7 @@ class Links(commands.Cog):
         self.time = ('8:30', '9:25', '10:40', '11:35', '12:30', '1:45', '2:40', '3:35', '4:30', '5:00')
 
     async def cog_check(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
         if not tuple:
             raise Exception('AccountNotLinked')
@@ -45,6 +45,9 @@ class Links(commands.Cog):
 
     @commands.command(name='create_embed', brief='Creates the dashboard embed')
     async def create(self, ctx):
+        self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+
         datetime_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
         date = datetime_ist.strftime('%d-%m-%Y')
         day = datetime_ist.strftime('%A')
