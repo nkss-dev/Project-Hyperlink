@@ -1,6 +1,6 @@
 import discord, sqlite3, json, pytz
-from discord.ext import commands
-from discord.utils import get
+from discord.ext import commands, tasks
+from discord.utils import get, sleep_until
 from datetime import datetime
 
 class Links(commands.Cog):
@@ -18,6 +18,8 @@ class Links(commands.Cog):
 
         self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thrusday', 'Friday', 'Saturday', 'Sunday')
         self.time = ('8:30', '9:25', '10:40', '11:35', '12:30', '1:45', '2:40', '3:35', '4:30', '5:00')
+
+        self.link_update_loop.start()
 
     async def cog_check(self, ctx):
         self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
@@ -43,7 +45,9 @@ class Links(commands.Cog):
                 return False
             return True
 
-    async def create(self, ctx, tuple):
+    async def create(self, tuple):
+        guild = self.bot.get_guild(self.data[str(tuple[1])]['server_ID'][0])
+
         datetime_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
         date = datetime_ist.strftime('%d-%m-%Y')
         day = datetime_ist.strftime('%A')
@@ -59,7 +63,7 @@ class Links(commands.Cog):
                 temp = []
                 for i in range(len(link)):
                     if link[i] == '@' and link[i+1] != '&':
-                        temp.append([link[i:i+6], get(ctx.guild.roles, name=link[i+1:i+6]).mention])
+                        temp.append([link[i:i+6], get(guild.roles, name=link[i+1:i+6]).mention])
 
                 for role in temp:
                     link = link.replace(role[0], role[1])
@@ -70,11 +74,7 @@ class Links(commands.Cog):
         if not flag:
             description += 'No class times inputted'
 
-        embed = discord.Embed(
-            description = description,
-            color = discord.Color.blurple()
-        )
-        return embed
+        return description
 
     async def edit(self, embed: discord.Message, description):
         new_embed = discord.Embed(
@@ -94,7 +94,12 @@ class Links(commands.Cog):
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
 
-        self.data[str(tuple[1])][tuple[0]]['message'] = (await ctx.send(embed=await self.create(ctx, tuple))).id
+        embed = discord.Embed(
+            description = await self.create(tuple),
+            color = discord.Color.blurple()
+        )
+
+        self.data[str(tuple[1])][tuple[0]]['message'] = (await ctx.send(embed=embed)).id
         self.save()
 
     @link.command(name='add', brief='Used to add temporary links')
@@ -147,6 +152,36 @@ class Links(commands.Cog):
     @link.command(name='perm_link_remove', brief='Used to remove permanent links', aliases=['plr'])
     async def perm_link_remove(self, ctx, subject, subsection=None):
         pass
+
+    @tasks.loop(hours=24)
+    async def link_update_loop(self):
+        while True:
+            try:
+                with open('db/links.json') as f:
+                    data = json.load(f)
+                break
+            except FileNotFoundError:
+                continue
+        for batch in self.data:
+            for section in self.data[batch]:
+                if isinstance(self.data[batch][section], list):
+                    continue
+                channel = self.bot.get_channel(self.data[batch][section]['channel'])
+                if channel:
+                    try:
+                        message = await channel.fetch_message(self.data[batch][section]['message'])
+                        await self.edit(message, await self.create((section, batch)))
+                    except:
+                        pass
+
+    @link_update_loop.before_loop
+    async def wait_until_12am(self):
+        IST = pytz.timezone('Asia/Kolkata')
+        now = datetime.now(IST)
+        next_run = now.replace(hour=20, minute=0, second=0)
+        if next_run < now:
+            next_run += timedelta(days=1)
+        await sleep_until(next_run)
 
     def save(self):
         with open('db/links.json', 'w') as f:
