@@ -110,8 +110,13 @@ class Links(commands.Cog):
         message = await ctx.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
         description = message.embeds[0].description
         if f'{subject} ({time}):' in description:
-            old_link = description.split(f'{subject} ({time}):\n')[1].split('\n')[0]
-            description = description.replace(f'{subject} ({time}):\n{old_link}', f'{subject} ({time}):\n{link}')
+            old_link = description.split(f'{subject} ({time}):\n', 1)[1].split('\n', 1)[0]
+            old = f'{subject} ({time}):\n{old_link}'
+            if 'only:' in old_link:
+                new = f"{subject} ({time}):\n{old_link.split(': ')[0]}: {link}"
+            else:
+                new = f'{subject} ({time}):\n{link}'
+            description = description.replace(old, new)
         else:
             times = [class_time.split(')')[0] for class_time in description.split('(')[2:]]
             subjects = [lecture.split(' (')[0] for lecture in description.split('\n')[2:] if '(' in lecture]
