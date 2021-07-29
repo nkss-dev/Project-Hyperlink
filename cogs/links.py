@@ -1,7 +1,7 @@
 import discord, sqlite3, json, pytz
 from discord.ext import commands, tasks
 from discord.utils import get, sleep_until
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class Links(commands.Cog):
     def __init__(self, bot):
@@ -48,7 +48,7 @@ class Links(commands.Cog):
     async def create(self, tuple):
         guild = self.bot.get_guild(self.data[str(tuple[1])]['server_ID'][0])
 
-        datetime_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
+        datetime_ist = datetime.now(pytz.timezone('Asia/Kolkata')) + timedelta(hours=4)
         date = datetime_ist.strftime('%d-%m-%Y')
         day = datetime_ist.strftime('%A')
         timetable = self.data[str(tuple[1])][tuple[0]][day]
