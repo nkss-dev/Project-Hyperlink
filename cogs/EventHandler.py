@@ -15,6 +15,14 @@ class Events(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
+        self.custom_errors = {
+            'AccountNotLinked': 'You need to complete basic verification to use this command.',
+            'AccountAlreadyLinked': 'You have already completed the basic level of verification.',
+            'EmailNotVerified': 'Only members with a verified email can use this command.',
+            'EmailAlreadyVerified': 'You are already verified.',
+            'MissingModeratorRoles': 'This command needs for a moderator role to be set for this guild.',
+        }
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if re.fullmatch(f'<@!?{self.bot.user.id}>', message.content):
@@ -182,44 +190,48 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
-            return
-        if isinstance(error, commands.MissingRequiredArgument):
-            error_msg = error.args[0].split(' ', 1)
-            await ctx.reply(f'\'{error_msg[0]}\' {error_msg[1]}')
-        elif isinstance(error, commands.MissingPermissions):
-            await ctx.reply(error.args[0])
+            pass
+
+        elif isinstance(error, commands.UserInputError):
+            if isinstance(error, commands.MissingRequiredArgument):
+                await ctx.reply(f"'{error.argument}' is a required argument that is missing.")
+
+            elif isinstance(error, commands.BadArgument):
+                if isinstance(error, commands.MessageNotFound):
+                    await ctx.reply(error)
+
+                else:
+                    await ctx.reply(error)
+
+        elif isinstance(error, commands.CheckFailure):
+            if isinstance(error, commands.NotOwner):
+                await ctx.reply('This command is for the bot owner only.')
+
+            elif isinstance(error, commands.MissingPermissions):
+                await ctx.reply(error)
+
+            elif isinstance(error, commands.BotMissingPermissions):
+                await ctx.reply(error)
+
+            elif isinstance(error, commands.MissingAnyRole):
+                error.missing_roles = ', '.join([ctx.guild.get_role(role).mention for role in error.missing_roles])
+                embed = discord.Embed(
+                    description = f'You are missing at least one of the required roles: {error.missing_roles}',
+                    color = discord.Color.blurple()
+                )
+                await ctx.reply(embed=embed)
+
+            elif str(error) in self.custom_errors:
+                await ctx.reply(self.custom_errors[str(error)])
+
         elif isinstance(error, commands.CommandInvokeError):
-            if 'Missing Permissions' in error.args[0]:
+            if isinstance(error.original, discord.errors.Forbidden):
                 await ctx.reply('I am missing some permissions to execute this command. Please contact a mod to resolve this issue.')
-            elif 'TypeError' in error.args[0]:
-                print(error)
-            elif 'AccountNotLinked' in error.args[0]:
-                await ctx.reply('You need to complete basic verification to use this command.')
-            elif 'EmailNotVerified' in error.args[0]:
-                await ctx.reply('Only members with a verified email can use this command.')
-            elif 'AccountAlreadyLinked' in error.args[0]:
-                await ctx.reply('You have already completed the basic level of verification')
-            elif 'UserAlreadyVerified' in error.args[0]:
-                await ctx.reply('You are already verified.')
-            elif 'SlowmodeNotEnabled' in error.args[0]:
-                await ctx.reply('This command is usable only in a channel which has slowmode enabled.')
-            elif 'ExtensionAlreadyLoaded' in error.args[0] or 'ExtensionNotLoaded' in error.args[0] or 'ExtensionNotFound' in error.args[0]:
-                await ctx.reply(error.args[0].split(': ')[2])
+
+            elif isinstance(error.original, commands.ExtensionError):
+                await ctx.reply(error.original)
                 await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
-        elif isinstance(error, commands.MessageNotFound):
-            await ctx.reply(error.args[0].replace('"', "'"))
-        else:
-            errors = []
-            for exception in error.args:
-                if 'Converting to ' in exception:
-                    _, instance, _, param, _ = exception.split('"')
-                    errors.append('The {} parameter must be of the type \'{}\'.'.format(param, instance))
-            if len(errors) > 1:
-                errors = '\n'.join([f'{exception[0] + 1}. {exception[1]}' for exception in enumerate(errors)])
-                await ctx.reply('The following errors occured while parsing your command:\n\n{}'.format(errors))
-            elif errors:
-                await ctx.reply(errors[0])
-        print(f'\n{type(error).__name__}, {error.args}\n')
+
         raise error
 
 def setup(bot):
