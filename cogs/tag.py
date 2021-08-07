@@ -20,13 +20,7 @@ class Tag(commands.Cog):
                 )
 
     async def cog_check(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
-        return True
+        return self.bot.verificationCheck(ctx)
 
     @commands.command(name='tag', brief='Allows user to tag section/subsection roles')
     async def tag(self, ctx, *, content):

@@ -22,28 +22,19 @@ class Links(commands.Cog):
         self.link_update_loop.start()
 
     async def cog_check(self, ctx):
-        self.c.execute('SELECT Verified, Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
-
-        flag = False
-        manager_roles = [ctx.guild.get_role(role) for role in self.data[str(tuple[2])]['manager_roles']]
-        for manager_role in manager_roles:
-            if manager_role in ctx.author.roles:
-                flag = True
-                break
-        if not flag:
-            await ctx.reply('You\'re not authorised to use this command.')
+        if not self.bot.verificationCheck(ctx):
             return False
-        else:
-            channel = self.bot.get_channel(self.data[str(tuple[2])][tuple[1]]['channel'])
-            if ctx.channel.id != channel.id:
-                await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
-                return False
-            return True
+
+        self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
+        tuple = self.c.fetchone()
+
+        await commands.has_any_role(*self.data[str(tuple[1])]['manager_roles']).predicate(ctx)
+
+        channel = self.bot.get_channel(self.data[str(tuple[1])][tuple[0]]['channel'])
+        if channel != ctx.channel:
+            await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
+            return False
+        return True
 
     async def create(self, tuple):
         guild = self.bot.get_guild(self.data[str(tuple[1])]['server_ID'][0])

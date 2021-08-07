@@ -38,13 +38,7 @@ class Drive(commands.Cog):
         self.DRIVE = build('drive', 'v3', credentials=creds)
 
     async def cog_check(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
-        return True
+        return self.bot.verificationCheck(ctx)
 
     @commands.group(name='drive', brief='Allows users to interact with a specific Google drive')
     async def drive(self, ctx):

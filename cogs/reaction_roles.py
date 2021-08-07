@@ -64,16 +64,11 @@ class ReactionRoles(commands.Cog):
             self.save()
 
     async def cog_check(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
-        return True
+        return await self.bot.moderatorCheck(ctx)
 
     @commands.group(name='reactionrole', aliases=['rr'], brief='This adds/removes roles from a user based on reactions to a specified message')
     @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def reactionrole(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid command passed.')

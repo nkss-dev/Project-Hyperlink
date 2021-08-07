@@ -12,7 +12,6 @@ def get_prefix(client, message):
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix=get_prefix, intents=intents)
-client.launch_time = datetime.utcnow()
 
 @client.event
 async def on_ready():

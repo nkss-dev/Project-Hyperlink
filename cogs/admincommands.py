@@ -9,11 +9,7 @@ class AdminCommands(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     async def cog_check(self, ctx):
-        if not await self.bot.is_owner(ctx.author):
-            await ctx.reply('You need to be the owner of this bot to run this command.')
-            return False
-        else:
-            return True
+        await commands.is_owner().predicate(ctx)
 
     @commands.command(name='load', brief='Loads a cog')
     async def load(self, ctx, extension):

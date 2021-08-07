@@ -12,13 +12,8 @@ class Tags(commands.Cog):
             self.data = {}
 
     async def cog_check(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
-        return ctx.guild.id == 783215699707166760
+        if not self.bot.verificationCheck(ctx):
+            return False
 
     @commands.Cog.listener()
     async def on_message(self, msg):

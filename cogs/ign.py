@@ -14,13 +14,7 @@ class IGN(commands.Cog):
             self.data = {}
 
     async def cog_check(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
-        return True
+        return self.bot.verificationCheck(ctx)
 
     @commands.group(name='ign', brief='Shows the list of eligible games for which an IGN can be added.')
     async def ign(self, ctx):

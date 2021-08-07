@@ -12,15 +12,11 @@ class Prefix(commands.Cog):
             self.data = json.load(f)
 
     async def cog_check(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
+        return self.bot.verificationCheck(ctx)
 
     @commands.group(name='prefix', brief='Manages the server\'s custom prefixes', invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
     async def prefix(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid prefix command passed.')
