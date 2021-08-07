@@ -133,15 +133,5 @@ class Drive(commands.Cog):
             avatar_url=self.bot.user.avatar_url
         )
 
-    @drive.command(name='refresh')
-    async def refresh(self, ctx):
-        if not await self.bot.is_owner(ctx.author):
-            await ctx.reply('You need to be the owner of this bot to run this command.')
-            return
-        await ctx.message.add_reaction(self.emojis['loading'])
-        self.__init__(self.bot)
-        await ctx.send('Drive cache refreshed!')
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
-
 def setup(bot):
     bot.add_cog(Drive(bot))
