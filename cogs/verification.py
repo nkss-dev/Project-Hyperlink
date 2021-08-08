@@ -204,13 +204,11 @@ class Verify(commands.Cog):
         if details:
             if details[0] == 'False':
                 if ctx.invoked_subcommand.name == 'basic':
-                    raise Exception('AccountAlreadyLinked')
-                elif not ctx.channel.slowmode_delay:
-                    raise Exception('SlowmodeNotEnabled')
-            if details[0] == 'True':
-                raise Exception('UserAlreadyVerified')
+                    raise commands.CheckFailure('AccountAlreadyLinked')
+            else:
+                raise commands.CheckFailure('UserAlreadyVerified')
         if not details and (ctx.invoked_subcommand.name == 'email' or ctx.invoked_subcommand.name == 'code'):
-            raise Exception('EmailNotVerified')
+            raise commands.CheckFailure('EmailNotVerified')
 
     @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
