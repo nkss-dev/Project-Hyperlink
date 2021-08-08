@@ -193,7 +193,7 @@ class Verify(commands.Cog):
             OTP += sample_set[math.floor(random.random() * 46)]
         return OTP
 
-    @commands.group(name='verify', brief='Registers the user in the database')
+    @commands.group(brief='Registers the user in the database')
     async def verify(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid verification command passed.')
@@ -212,7 +212,7 @@ class Verify(commands.Cog):
         if not details and (ctx.invoked_subcommand.name == 'email' or ctx.invoked_subcommand.name == 'code'):
             raise Exception('EmailNotVerified')
 
-    @verify.command(name='basic', brief='Allows user to link their account to a record in the database')
+    @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
         # Gets the record of the given roll number
         self.c.execute('SELECT Section, Subsection, Name, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
@@ -255,7 +255,7 @@ class Verify(commands.Cog):
         word = tuple[2].split(' ')[0]
         await ctx.author.edit(nick = word[:1] + word[1:].lower())
 
-    @verify.command(name='email', brief='Allows user to verify their email')
+    @verify.command(brief='Allows user to verify their email')
     async def email(self, ctx, email: str):
         self.c.execute('SELECT Name, Institute_Email from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
@@ -284,7 +284,7 @@ class Verify(commands.Cog):
         await ctx.reply(f'Please check your institute email for the OTP and enter it here using `{ctx.prefix}verify code [OTP here]`.')
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
-    @verify.command(name='code', brief='Used to input OTP that the user received in order to verify their email')
+    @verify.command(brief='Used to input OTP that the user received in order to verify their email')
     async def code(self, ctx, code: str):
         if str(ctx.author.id) not in self.data:
             await ctx.reply('You did not receive any email yet.')

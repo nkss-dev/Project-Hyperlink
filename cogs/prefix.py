@@ -14,7 +14,7 @@ class Prefix(commands.Cog):
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)
 
-    @commands.group(name='prefix', brief='Manages the server\'s custom prefixes', invoke_without_command=True)
+    @commands.group(brief='Manages the server\'s custom prefixes', invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def prefix(self, ctx):
@@ -22,7 +22,7 @@ class Prefix(commands.Cog):
             await ctx.reply('Invalid prefix command passed.')
             return
 
-    @prefix.command(name='add', brief='Adds a prefix for this server')
+    @prefix.command(brief='Adds a prefix for this server')
     async def add(self, ctx, prefix):
         prefixes = self.data[str(ctx.guild.id)]['prefix']
         if prefix in prefixes:
@@ -33,7 +33,7 @@ class Prefix(commands.Cog):
         self.save()
         await ctx.send(f'{prefix} added')
 
-    @prefix.command(name='remove', brief='Removes a prefix from the server')
+    @prefix.command(brief='Removes a prefix from the server')
     async def remove(self, ctx, prefix):
         prefixes = self.data[str(ctx.guild.id)]['prefix']
         if prefix not in prefixes:
@@ -44,13 +44,13 @@ class Prefix(commands.Cog):
         self.save()
         await ctx.send(f'{prefix} removed')
 
-    @prefix.command(name='clear', brief='Removes all prefixes')
+    @prefix.command(brief='Removes all prefixes')
     async def clear(self, ctx):
         self.data[str(ctx.guild.id)]['prefix'] = []
         self.save()
         await ctx.send(f'All prefixes have been removed')
 
-    @prefix.command(name='set', brief='Removes all custom prefixes and sets to the specified prefix')
+    @prefix.command(brief='Removes all custom prefixes and sets to the specified prefix')
     async def set(self, ctx, prefix):
         self.data[str(ctx.guild.id)]['prefix'] = [prefix]
         self.save()

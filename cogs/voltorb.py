@@ -294,7 +294,7 @@ class VoltorbFlip(commands.Cog):
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)
 
-    @commands.group(name='voltorb_start', aliases=['vf', 'vf_start'], invoke_without_command=True)
+    @commands.group(aliases=['vf', 'vf_start'], invoke_without_command=True)
     async def voltorb_start(self, ctx):
         '''This is a recreatation of the Voltorb Flip game that appears in the Korean and Western releases of Pokémon HeartGold and SoulSilver. The game is a mix between Minesweeper and Picture Cross and the placement of the bombs are given for each row and column. The goal of the game is to uncover all of the 2 and 3 tiles on a given board and move up to higher levels which have higher coin totals.
 
@@ -311,7 +311,7 @@ class VoltorbFlip(commands.Cog):
         await self.v1.run(ctx=ctx)
         self.save(ctx.author.id)
 
-    @voltorb_start.command(name='flip', aliases=['f'])
+    @voltorb_start.command(aliases=['f'])
     async def flip(self, ctx):
         self.v1 = self.load(ctx.author.id)
         if self.v1.win:
@@ -323,7 +323,7 @@ class VoltorbFlip(commands.Cog):
         await self.v1.flip(ctx=ctx)
         self.save(ctx.author.id)
 
-    @voltorb_start.command(name='resume', aliases=['r'])
+    @voltorb_start.command(aliases=['r'])
     async def resume(self, ctx):
         self.v1 = self.load(ctx.author.id)
         if self.v1.win:
@@ -336,7 +336,7 @@ class VoltorbFlip(commands.Cog):
         await self.v1.resume(ctx=ctx)
         self.save(ctx.author.id)
 
-    @voltorb_start.command(name='advance', aliases=['a'])
+    @voltorb_start.command(aliases=['a'])
     async def advance(self, ctx):
         self.v1 = self.load(ctx.author.id)
         if self.v1.win:
@@ -350,7 +350,7 @@ class VoltorbFlip(commands.Cog):
         else:
             await ctx.send(f'You didn\'t win your current match yet, {ctx.author.mention}. If you would like to restart, type `{prefix}restart`')
 
-    @voltorb_start.command(name='quit', aliases=['q'])
+    @voltorb_start.command(aliases=['q'])
     async def quit(self, ctx):
         if str(ctx.author.id) not in self.data:
             await ctx.send(f'You didn\'t start playing, {ctx.author.mention}. Type `{prefix}vf_start` to get started.')

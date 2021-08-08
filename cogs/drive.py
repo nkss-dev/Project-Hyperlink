@@ -40,13 +40,13 @@ class Drive(commands.Cog):
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)
 
-    @commands.group(name='drive', brief='Allows users to interact with a specific Google drive')
+    @commands.group(brief='Allows users to interact with a specific Google Drive')
     async def drive(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.send('Invalid drive command passed.')
             return
 
-    @drive.command(name='search')
+    @drive.command(brief='Used to send search queries to the Drive')
     async def search(self, ctx, *content):
         bool = False
         async with aiohttp.ClientSession() as session:

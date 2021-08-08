@@ -74,7 +74,7 @@ class Links(commands.Cog):
         )
         await embed.edit(embed=new_embed)
 
-    @commands.group(name='link', brief='Allows certain members to add links to section specific dashboard')
+    @commands.group(brief='Allows certain members to add links to section specific dashboard')
     async def link(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid link command passed.')
@@ -93,7 +93,7 @@ class Links(commands.Cog):
         self.data[str(tuple[1])][tuple[0]]['message'] = (await ctx.send(embed=embed)).id
         self.save()
 
-    @link.command(name='add', brief='Used to add temporary links')
+    @link.command(brief='Used to add temporary links')
     async def add(self, ctx, time, subject, *, link='Link unavailable'):
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
@@ -117,7 +117,7 @@ class Links(commands.Cog):
                     break
         await self.edit(message, description)
 
-    @link.command(name='remove', brief='Used to remove temporary links')
+    @link.command(brief='Used to remove temporary links')
     async def remove(self, ctx, time, subject):
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
@@ -142,11 +142,11 @@ class Links(commands.Cog):
         pass
 
     @link.command(name='perm_link_add', brief='Used to add permanent links', aliases=['pla'])
-    async def perm_link_add(self, ctx, link, subject, subsection=None):
+    async def pla(self, ctx, link, subject, subsection=None):
         pass
 
     @link.command(name='perm_link_remove', brief='Used to remove permanent links', aliases=['plr'])
-    async def perm_link_remove(self, ctx, subject, subsection=None):
+    async def plr(self, ctx, subject, subsection=None):
         pass
 
     @tasks.loop(hours=24)

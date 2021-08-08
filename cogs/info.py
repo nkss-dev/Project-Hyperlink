@@ -18,7 +18,7 @@ class Info(commands.Cog):
     def cog_check(self, ctx):
         return self.bot.basicVerificationCheck(ctx)
 
-    @commands.command(name='profile', brief='Displays details of the user', aliases=['p'])
+    @commands.command(brief='Displays details of the user', aliases=['p'])
     async def profile(self, ctx, *, member: discord.Member=None):
         """Displays details of the user related to the server and the college"""
         member = member or ctx.author
@@ -59,7 +59,7 @@ class Info(commands.Cog):
         embed.set_footer(text = f'Joined at: {join_date}')
         await ctx.send(embed=embed)
 
-    @commands.command(name='nick', brief='Nicks a user to their first name')
+    @commands.command(brief='Nicks a user to their first name')
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.check(verificationCheck)
     async def nick(self, ctx, member: discord.Member=None):

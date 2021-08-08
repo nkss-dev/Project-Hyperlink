@@ -22,7 +22,7 @@ class Tag(commands.Cog):
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)
 
-    @commands.command(name='tag', brief='Allows user to tag section/subsection roles')
+    @commands.command(brief='Allows user to tag section/subsection roles')
     async def tag(self, ctx, *, content):
         """With this command, you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
         That means that if you're in IT-A, you can tag `IT-A, IT-01, IT-02 and IT-03` but you can NOT tag `IT-B, IT-04, ME-B, CE-01, PI-06, ...`

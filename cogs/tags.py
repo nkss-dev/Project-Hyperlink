@@ -26,13 +26,13 @@ class Tags(commands.Cog):
 
         await msg.channel.send(data)
 
-    @commands.group(name="tags", invoke_without_command=True)
+    @commands.group(invoke_without_command=True)
     async def tags(self, ctx):
         """Tags are used to make shortcuts for messages"""
 
         await ctx.send(f"`{ctx.prefix}tags create` to make new tags")
 
-    @tags.command(name="create")
+    @tags.command()
     async def create(self, ctx, name, *, content):
         """Create a new tag"""
         author = ctx.author.id
@@ -48,7 +48,7 @@ class Tags(commands.Cog):
         self.save()
         await ctx.send("It is safe with me now")
 
-    @tags.command(name="edit")
+    @tags.command()
     async def edit(self, ctx, name, *, content):
         """Edit an existing tag"""
         author = ctx.author.id
@@ -70,7 +70,7 @@ class Tags(commands.Cog):
         self.save()
         await ctx.send("tag edited.")
 
-    @tags.command(name="clone")
+    @tags.command()
     async def clone(self, ctx, new_name, name):
         """Clones an existing tag"""
         author = ctx.author.id
@@ -87,7 +87,7 @@ class Tags(commands.Cog):
         self.save()
         await ctx.send("tag cloned.")
 
-    @tags.command(name="delete")
+    @tags.command()
     async def delete(self, ctx, name):
         """Delete the given tag. Only author can delete the tag"""
         if name not in self.data:
@@ -103,7 +103,7 @@ class Tags(commands.Cog):
         await ctx.send("tag deleted")
         self.save()
 
-    @tags.command(name="get")
+    @tags.command()
     async def get(self, ctx, name):
         """Get the tag. use this if your tag conflicts with a builtin command"""
         if name not in self.data:

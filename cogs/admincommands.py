@@ -11,21 +11,21 @@ class AdminCommands(commands.Cog):
     async def cog_check(self, ctx):
         await commands.is_owner().predicate(ctx)
 
-    @commands.command(name='load', brief='Loads a cog')
+    @commands.command(brief='Loads a cog')
     async def load(self, ctx, extension):
         await ctx.message.add_reaction(self.emojis['loading'])
         self.bot.load_extension(f'cogs.{extension}')
         await ctx.send(f'\'cogs.{extension}\' loaded successfully!')
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
-    @commands.command(name='unload', brief='Unloads a cog')
+    @commands.command(brief='Unloads a cog')
     async def unload(self, ctx, extension):
         await ctx.message.add_reaction(self.emojis['loading'])
         self.bot.unload_extension(f'cogs.{extension}')
         await ctx.send(f'\'cogs.{extension}\' unloaded successfully!')
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
-    @commands.command(name='reload', brief='Reloads a cog')
+    @commands.command(brief='Reloads a cog')
     async def reload(self, ctx, extension):
         await ctx.message.add_reaction(self.emojis['loading'])
         self.bot.unload_extension(f'cogs.{extension}')
@@ -33,7 +33,7 @@ class AdminCommands(commands.Cog):
         await ctx.send(f'\'cogs.{extension}\' reloaded successfully!')
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
-    @commands.command(name='restart', brief='Restarts the bot')
+    @commands.command(brief='Restarts the bot')
     async def restart(self, ctx):
         await ctx.message.delete()
         await self.bot.close()

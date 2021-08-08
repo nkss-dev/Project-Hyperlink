@@ -16,7 +16,7 @@ class IGN(commands.Cog):
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)
 
-    @commands.group(name='ign', brief='Shows the list of eligible games for which an IGN can be added.')
+    @commands.group(brief='Shows the list of eligible games for which an IGN can be added.')
     async def ign(self, ctx):
         if not ctx.invoked_subcommand:
             games = self.data[str(ctx.guild.id)]
@@ -32,7 +32,7 @@ class IGN(commands.Cog):
             await ctx.send(embed=embed)
             return
 
-    @ign.command(name='add', brief='Used to add an IGN for a specified game.')
+    @ign.command(brief='Used to add an IGN for a specified game.')
     async def add(self, ctx, game, ign):
         # Loads the available games from the database
         games = self.data[str(ctx.guild.id)]
@@ -53,7 +53,7 @@ class IGN(commands.Cog):
         self.conn.commit()
         await ctx.reply(f'IGN for {game} added successfully.')
 
-    @ign.command(name='show', brief='Shows the IGN of the entered game (shows for all if none specified). If you want to see another user\'s IGN, type a part of their username (It is case sensitive) before the name of the game, which is also optional.')
+    @ign.command(brief='Shows the IGN of the entered game (shows for all if none specified). If you want to see another user\'s IGN, type a part of their username (It is case sensitive) before the name of the game, which is also optional.')
     async def show(self, ctx, user: typing.Optional[discord.Member]=None, game: str='all'):
         # Setting single to False will show all the IGNs for the requested user
         member = user or ctx.author
@@ -100,7 +100,7 @@ class IGN(commands.Cog):
             embed.set_footer(text=f'Requested by: {ctx.author}', icon_url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
 
-    @ign.command(name='delete', brief='Deletes the IGN of the entered game. Deletes all IGNs if none entered', aliases=['del'])
+    @ign.command(brief='Deletes the IGN of the entered game. Deletes all IGNs if none entered', aliases=['del'])
     async def delete(self, ctx, game: str=None):
         # Gets details of user from the database
         self.c.execute('SELECT IGN FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})

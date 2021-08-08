@@ -66,7 +66,7 @@ class ReactionRoles(commands.Cog):
     async def cog_check(self, ctx):
         return await self.bot.moderatorCheck(ctx)
 
-    @commands.group(name='reactionrole', aliases=['rr'], brief='This adds/removes roles from a user based on reactions to a specified message')
+    @commands.group(brief='This adds/removes roles from a user based on reactions to a specified message', aliases=['rr'])
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def reactionrole(self, ctx):
@@ -74,7 +74,7 @@ class ReactionRoles(commands.Cog):
             await ctx.reply('Invalid command passed.')
             return
 
-    @reactionrole.command(name='add', brief='Adds a reaction role')
+    @reactionrole.command(brief='Adds a reaction role')
     async def add(self, ctx, message: discord.Message, role: discord.Role, *, game: str=None):
         if game:
             if game in self.emojis:
@@ -119,7 +119,7 @@ class ReactionRoles(commands.Cog):
         else:
             await msg.edit(content=None, embed=embed)
 
-    @reactionrole.command(name='remove', brief='Removes a reaction role')
+    @reactionrole.command(brief='Removes a reaction role')
     async def remove(self, ctx, ID: str):
         for reaction_role in self.data[str(ctx.guild.id)]:
             if ID == reaction_role['ID']:
