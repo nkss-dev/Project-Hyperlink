@@ -5,14 +5,16 @@ from discord.ext import commands
 class Logger(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        with open('db/guilds.json') as f:
-            self.data = json.load(f)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         if message.author.bot:
             return
-        channel = self.bot.get_channel(self.data[str(message.guild.id)]['logging_channel'][0])
+
+        with open('db/guilds.json') as f:
+            guild_data = json.load(f)
+
+        channel = self.bot.get_channel(guild_data[str(message.guild.id)]['logging_channel'][0])
         if not channel:
             return
         embed = discord.Embed(
@@ -36,9 +38,13 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
-        channel = self.bot.get_channel(self.data[str(payload.guild_id)]['logging_channel'][0])
+        with open('db/guilds.json') as f:
+            guild_data = json.load(f)
+
+        channel = self.bot.get_channel(guild_data[str(payload.guild_id)]['logging_channel'][0])
         if not channel:
             return
+
         embed = discord.Embed(
             description = f'{len(payload.cached_messages)} messages were deleted in {payload.cached_messages[0].channel.mention}',
             color = discord.Color.from_rgb(255, 0, 0)
@@ -50,7 +56,11 @@ class Logger(commands.Cog):
     async def on_message_edit(self, before, after):
         if before.author.bot:
             return
-        channel = self.bot.get_channel(self.data[str(before.guild.id)]['logging_channel'][1])
+
+        with open('db/guilds.json') as f:
+            guild_data = json.load(f)
+
+        channel = self.bot.get_channel(guild_data[str(before.guild.id)]['logging_channel'][1])
         if not channel:
             return
         if before.content == after.content:

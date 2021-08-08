@@ -8,19 +8,19 @@ class Prefix(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-        with open('db/guilds.json') as f:
-            self.data = json.load(f)
-
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)
 
-    @commands.group(brief='Manages the server\'s custom prefixes', invoke_without_command=True)
+    @commands.group(brief='Manages the server\'s custom prefixes')
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def prefix(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply('Invalid prefix command passed.')
             return
+
+        with open('db/guilds.json') as f:
+            self.data = json.load(f)
 
     @prefix.command(brief='Adds a prefix for this server')
     async def add(self, ctx, prefix):
