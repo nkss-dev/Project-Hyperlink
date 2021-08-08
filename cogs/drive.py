@@ -58,7 +58,7 @@ class Drive(commands.Cog):
                     break
             # Creates a webhook if none exist
             if not bool:
-                webhook = await channel.create_webhook(name='Webhook')
+                webhook = await ctx.channel.create_webhook(name='Webhook')
 
         folder_links = {}
         file_links = {}
