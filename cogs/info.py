@@ -1,5 +1,4 @@
 import discord, json, sqlite3
-from datetime import datetime
 from discord.ext import commands
 
 def verificationCheck(ctx):
@@ -21,9 +20,11 @@ class Info(commands.Cog):
     @commands.command(brief='Displays details of the user', aliases=['p'])
     async def profile(self, ctx, *, member: discord.Member=None):
         """Displays details of the user related to the server and the college"""
+
         member = member or ctx.author
-        if not await self.check(ctx, member):
-            return
+        if member != ctx.author:
+            await self.bot.moderatorCheck(ctx)
+
         # Gets details of requested user from the database
         self.c.execute('SELECT Roll_Number, Section, SubSection, Name, Institute_Email, Verified FROM main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
@@ -137,7 +138,7 @@ class Info(commands.Cog):
 
     @commands.command(brief='Gives invites of some servers', aliases=['inv'])
     async def invite(self, ctx):
-        servers = ['NITKKR\'24: https://discord.gg/4eF7R6afqv',
+        servers = ['NITKKR\'24: https://discord.gg/nitkkr-24',
             'kkr++: https://discord.gg/epaTW7tjYR'
         ]
         embed = discord.Embed(
