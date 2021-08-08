@@ -93,6 +93,8 @@ class Links(commands.Cog):
         self.data[str(tuple[1])][tuple[0]]['message'] = (await ctx.send(embed=embed)).id
         self.save()
 
+        await ctx.message.delete()
+
     @link.command(brief='Used to add temporary links')
     async def add(self, ctx, time, subject, *, link='Link unavailable'):
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
@@ -116,6 +118,7 @@ class Links(commands.Cog):
                     description = description.replace(f'{lecture} ({class_time})', f'{subject} ({time}):\n{link}\n\n{lecture} ({class_time})')
                     break
         await self.edit(message, description)
+        await ctx.message.delete()
 
     @link.command(brief='Used to remove temporary links')
     async def remove(self, ctx, time, subject):
@@ -132,6 +135,7 @@ class Links(commands.Cog):
                 remainder = ''
             desc = f'{desc[0]}\n{remainder}'
             await self.edit(message, desc)
+            await ctx.message.delete()
 
     @link.command(name='set_default', brief='Used to create a class time', aliases=['sd'])
     async def setd(self, ctx, name, time, link='Link unavailable'):
