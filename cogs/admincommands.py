@@ -9,7 +9,7 @@ class AdminCommands(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     async def cog_check(self, ctx):
-        await commands.is_owner().predicate(ctx)
+        return await commands.is_owner().predicate(ctx)
 
     @commands.command(brief='Loads a cog')
     async def load(self, ctx, extension):
