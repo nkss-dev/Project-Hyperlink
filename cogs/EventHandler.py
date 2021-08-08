@@ -183,7 +183,7 @@ class Events(commands.Cog):
         del self.data[str(guild.id)]
         self.save()
 
-    def save():
+    def save(self):
         with open('db/guilds.json', 'w') as f:
             json.dump(self.data, f)
 
