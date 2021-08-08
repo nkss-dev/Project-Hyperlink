@@ -168,14 +168,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        default_details = {
-            'prefix': ['%'],
-            'mod_roles': [],
-            'verification': {},
-            'bot_role': 0,
-            'logging_channel': [0, 0]
-        }
-        self.data[guild.id] = default_details
+        self.data[str(guild.id)] = self.bot.default_guild_details
         self.save()
 
     @commands.Cog.listener()
