@@ -112,6 +112,8 @@ class Events(commands.Cog):
         details = self.data[str(member.guild.id)]
         if 'on_join/leave' not in details:
             return
+
+        action = 'leave_msg'
         if member.guild.me.guild_permissions.view_audit_log:
             async for entry in member.guild.audit_logs(limit=5):
                 if str(entry.target) == str(member):
@@ -121,10 +123,7 @@ class Events(commands.Cog):
                     elif entry.action is discord.AuditLogAction.ban:
                         action = 'ban_msg'
                         break
-                    else:
-                        action = 'leave_msg'
-        else:
-            action = 'leave_msg'
+
         channel = self.bot.get_channel(details['on_join/leave'][action][0])
         if action != 'leave_msg' and (channel := self.bot.get_channel(details['on_join/leave'][action][0])):
             message = details['on_join/leave'][action][1].replace('{user}', member.mention)
