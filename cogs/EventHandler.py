@@ -157,7 +157,7 @@ class Events(commands.Cog):
             self.c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': json.dumps(guilds)})
             self.conn.commit()
         if channel:
-            message = details['on_join/leave']['leave_msg'][1].replace('{user}', member.mention)
+            message = details['on_join/leave'][action][1].replace('{user}', member.mention)
             message += '\n**Reason:** ' + (entry.reason or 'None')
             embed = discord.Embed(
                 description = message,
