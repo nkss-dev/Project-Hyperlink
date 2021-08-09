@@ -278,8 +278,8 @@ class Verify(commands.Cog):
         msg['From'] = EMAIL
         msg['To'] = tuple[1]
         msg.set_content(
-            f'{self.string1}{name}{self.string2}{otp}{self.string3}
-            {ctx.guild}{self.string4}{otp}{self.string5}',
+            f'''{self.string1}{name}{self.string2}{otp}{self.string3}
+            {ctx.guild}{self.string4}{otp}{self.string5}''',
             subtype='html'
         )
 
