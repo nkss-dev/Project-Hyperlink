@@ -265,24 +265,34 @@ class Verify(commands.Cog):
             return
 
         await ctx.message.add_reaction(self.emojis['loading'])
+
+        # Setting variables for the email
         EMAIL = os.getenv('EMAIL')
+        PASSWORD = os.getenv('PASSWORD')
+        name = tuple[0].capitalize().strip()
+        otp = self.generateotp()
+
+        # Creating the email
         msg = EmailMessage()
         msg['Subject'] = f'Verification of {ctx.author} on {ctx.guild}'
         msg['From'] = EMAIL
         msg['To'] = tuple[1]
-        name = ''
-        for word in tuple[0].split(' '):
-            name += f'{word[:1]}{word[1:].lower()} '
-        otp = self.generateotp()
-        self.data[str(ctx.author.id)] = otp
-        self.save()
-        msg.set_content(f'{self.string1}{name.strip()}{self.string2}{otp}{self.string3}{ctx.guild}{self.string4}{otp}{self.string5}', subtype='html')
+        msg.set_content(
+            f'{self.string1}{name}{self.string2}{otp}{self.string3}
+            {ctx.guild}{self.string4}{otp}{self.string5}',
+            subtype='html'
+        )
 
+        # Sending the email
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL, os.getenv('PASSWORD'))
+            smtp.login(EMAIL, PASSWORD)
             smtp.send_message(msg)
+
         await ctx.reply(f'Please check your institute email for the OTP and enter it here using `{ctx.prefix}verify code [OTP here]`.')
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+
+        self.data[str(ctx.author.id)] = otp
+        self.save()
 
     @verify.command(brief='Used to input OTP that the user received in order to verify their email')
     @commands.check(basicVerificationCheck)
@@ -290,11 +300,16 @@ class Verify(commands.Cog):
         if str(ctx.author.id) not in self.data:
             await ctx.reply('You did not receive any email yet.')
             return
+
         if self.data[str(ctx.author.id)] == code:
+            # Deletes the code
             del self.data[str(ctx.author.id)]
             self.save()
+
+            # Marks user as verified in the database
             self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
             self.conn.commit()
+
             await ctx.reply(f"Your email has been verified successfully! {self.emojis['verified']}")
         else:
             await ctx.reply('The code you entered is incorrect.')
