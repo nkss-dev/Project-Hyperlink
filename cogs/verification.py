@@ -250,9 +250,9 @@ class Verify(commands.Cog):
         # Updating the record in the database
         self.c.execute('UPDATE main SET Discord_UID = (:uid), Guilds = (:guilds) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no, 'guilds': guilds})
         self.conn.commit()
-        # Changing the nick of the user to their first name
-        word = tuple[2].split(' ')[0]
-        await ctx.author.edit(nick = word[:1] + word[1:].lower())
+
+        first_name = tuple[2].split(' ', 1)[0].capitalize()
+        await ctx.author.edit(nick=first_name)
 
     @verify.command(brief='Allows user to verify their email')
     @commands.check(basicVerificationCheck)

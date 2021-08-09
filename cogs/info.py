@@ -47,7 +47,7 @@ class Info(commands.Cog):
             status += self.emojis['not-verified']
         # Creating the embed
         embed = discord.Embed(
-            title = ' '.join([word[:1] + word[1:].lower() for word in tuple[3].split(' ')]) + status,
+            title = f'{tuple[3].capitalize()}{status}',
             description = f'**Roll Number:** {tuple[0]}'
             + f'\n**Section:** {tuple[1]}{tuple[2][4:]}'
             + f'\n**Roles:** {user_roles}'
@@ -88,8 +88,8 @@ class Info(commands.Cog):
             return
 
         old_nick = member.nick
-        first_name = tuple[0].split(' ', 1)[0]
-        await member.edit(nick = first_name[:1] + first_name[1:].lower())
+        first_name = tuple[0].split(' ', 1)[0].capitalize()
+        await member.edit(nick=first_name)
         embed = discord.Embed(
             description = f'{member.mention}\'s nick changed from `{old_nick}` to `{member.nick}` successfully.',
             color = discord.Color.blurple()
