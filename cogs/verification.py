@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.utils import get
 from email.message import EmailMessage
 from dotenv import load_dotenv
+from l10n import l10n
 load_dotenv()
 
 def basicVerificationCheck(ctx):
@@ -199,7 +200,7 @@ class Verify(commands.Cog):
     @commands.group(brief='Registers the user in the database')
     async def verify(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.reply('Invalid verification command passed.')
+            await ctx.reply(l10n.format_value('verify-invalid-command'))
             return
 
         self.c.execute('SELECT Verified from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
@@ -218,26 +219,26 @@ class Verify(commands.Cog):
         tuple = self.c.fetchone()
         # Exit if roll number doesn't exist
         if not tuple:
-            await ctx.reply('The requested record was not found. Please re-check the entered details and try again')
+            await ctx.reply(l10n.format_value('verify-basic-record-notfound'))
             return
         # Exit if entered section doesn't match an existing section
         if section not in self.sections:
-            await ctx.reply(f'\'{section}\' is not an existing section. Please re-check the entered details and try again')
+            await ctx.reply(l10n.format_value('verify-basic-section-notfound', {'section': section}))
             return
         # Exit if entered section doesn't match the section that the roll number is bound to
         if section != tuple[0]:
-            await ctx.reply('The section that you entered does not match that of the roll number that you entered. Please re-check the entered details and try again')
+            await ctx.reply(l10n.format_value('verify-basic-section-mismatch'))
             return
         # Exit if the record is already claimed by another user
         if user := self.bot.get_user(tuple[3]):
-            await ctx.reply(f'The details you entered is of a record already claimed by `{user}`. If you think this was a mistake, contact a moderator.')
+            await ctx.reply(l10n.format_value('verify-basic-already-claimed', {'user': f'{user}' }))
             return
         # Assigning one SubSection and one Section role to the user
         role = discord.utils.get(ctx.guild.roles, name=tuple[0])
         await ctx.author.add_roles(role)
         role = discord.utils.get(ctx.guild.roles, name=tuple[1])
         await ctx.author.add_roles(role)
-        await ctx.reply('Your record was found and verified!\nPlease check the channel list of the server to see the unlocked channels. If you still do not see the channels then please re-launch the app.')
+        await ctx.reply(l10n.format_value('verify-basic-success'))
         # Removing the 'Not-Verified' role from the user
         role = discord.utils.get(ctx.guild.roles, name = 'Not-Verified')
         await ctx.author.remove_roles(role)
@@ -261,7 +262,7 @@ class Verify(commands.Cog):
         tuple = self.c.fetchone()
 
         if email.lower() != tuple[1]:
-            await ctx.reply('The email that you entered does not match your institute email. Please try again with a valid email.\nIf you think this was a mistake, contact a moderator.')
+            await ctx.reply(l10n.format_value('verify-email-mismatch'))
             return
 
         await ctx.message.add_reaction(self.emojis['loading'])
@@ -288,7 +289,7 @@ class Verify(commands.Cog):
             smtp.login(EMAIL, PASSWORD)
             smtp.send_message(msg)
 
-        await ctx.reply(f'Please check your institute email for the OTP and enter it here using `{ctx.prefix}verify code [OTP here]`.')
+        await ctx.reply(l10n.format_value("verify-check-email", { 'prefix': ctx.prefix }))
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
         self.data[str(ctx.author.id)] = otp
@@ -298,7 +299,7 @@ class Verify(commands.Cog):
     @commands.check(basicVerificationCheck)
     async def code(self, ctx, code: str):
         if str(ctx.author.id) not in self.data:
-            await ctx.reply('You did not receive any email yet.')
+            await ctx.reply(l10n.format_value("verify-not-received"))
             return
 
         if self.data[str(ctx.author.id)] == code:
@@ -310,9 +311,9 @@ class Verify(commands.Cog):
             self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
             self.conn.commit()
 
-            await ctx.reply(f"Your email has been verified successfully! {self.emojis['verified']}")
+            await ctx.reply(l10n.format_value("verify-email-success", {'emoji': self.emojis['verified'] }))
         else:
-            await ctx.reply('The code you entered is incorrect.')
+            await ctx.reply(l10n.format_value("verify-code-incorrect"))
 
     def save(self):
         with open('db/codes.json', 'w') as f:
