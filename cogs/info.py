@@ -69,10 +69,12 @@ class Info(commands.Cog):
         if member and member != ctx.author:
             if not member.guild_permissions.manage_nicknames:
                 raise commands.MissingPermissions((discord.Permissions.manage_nicknames))
+                raise commands.MissingPermissions([discord.Permissions.manage_nicknames])
 
         else:
             if not (member := ctx.author).guild_permissions.change_nickname:
                 raise commands.MissingPermissions((discord.Permissions.change_nickname))
+                raise commands.MissingPermissions([discord.Permissions.change_nickname])
 
         self.c.execute('SELECT Name from main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
