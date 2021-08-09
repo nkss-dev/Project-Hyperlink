@@ -1,7 +1,15 @@
-import discord, sqlite3, json, smtplib, os, math, random
+import json
+import math
+import os
+import random
+import sqlite3
+
 from discord.ext import commands
 from discord.utils import get
+
+import smtplib
 from email.message import EmailMessage
+
 from dotenv import load_dotenv
 load_dotenv()
 
