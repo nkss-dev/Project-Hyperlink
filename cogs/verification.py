@@ -5,6 +5,9 @@ from email.message import EmailMessage
 from dotenv import load_dotenv
 load_dotenv()
 
+def basicVerificationCheck(ctx):
+    return ctx.bot.basicVerificationCheck(ctx)
+
 class Verify(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -207,8 +210,6 @@ class Verify(commands.Cog):
                     raise commands.CheckFailure('AccountAlreadyLinked')
             else:
                 raise commands.CheckFailure('UserAlreadyVerified')
-        if not details and (ctx.invoked_subcommand.name == 'email' or ctx.invoked_subcommand.name == 'code'):
-            raise commands.CheckFailure('EmailNotVerified')
 
     @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
@@ -254,6 +255,7 @@ class Verify(commands.Cog):
         await ctx.author.edit(nick = word[:1] + word[1:].lower())
 
     @verify.command(brief='Allows user to verify their email')
+    @commands.check(basicVerificationCheck)
     async def email(self, ctx, email: str):
         self.c.execute('SELECT Name, Institute_Email from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
@@ -283,6 +285,7 @@ class Verify(commands.Cog):
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
     @verify.command(brief='Used to input OTP that the user received in order to verify their email')
+    @commands.check(basicVerificationCheck)
     async def code(self, ctx, code: str):
         if str(ctx.author.id) not in self.data:
             await ctx.reply('You did not receive any email yet.')
