@@ -1,6 +1,6 @@
 import os, json
 from discord import Intents
-from discord.ext import commands
+from discord.ext.commands import Bot
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,7 +10,7 @@ def get_prefix(client, message):
         prefixes = json.load(f)
     return prefixes[str(message.guild.id)]['prefix']
 
-client = commands.Bot(command_prefix=get_prefix, intents=Intents.all())
+client = Bot(command_prefix=get_prefix, intents=Intents.all())
 
 @client.event
 async def on_ready():
