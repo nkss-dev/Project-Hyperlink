@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_prefix(client, message):
-    with open('db/guilds.json', 'r') as f:
+    with open('db/guilds.json') as f:
         prefixes = json.load(f)
     return prefixes[str(message.guild.id)]['prefix']
 
@@ -24,7 +24,7 @@ async def on_ready():
     }
 
     try:
-        with open('db/guilds.json', 'r') as f:
+        with open('db/guilds.json') as f:
             details = json.load(f)
         for guild in details:
             for key in client.default_guild_details:
@@ -39,9 +39,16 @@ async def on_ready():
             json.dump(data, f)
 
     # Loads all the cogs
-    for filename in os.listdir('./cogs'):
+    errors = []
+    for i, filename in enumerate(os.listdir('./cogs'), start=1):
         if filename.endswith('.py'):
-            client.load_extension(f'cogs.{filename[:-3]}')
-    print('Cogs loaded successfully!\n')
+            try:
+                client.load_extension(f'cogs.{filename[:-3]}')
+            except Exception as error:
+                errors.append(error)
+    i -= 1
+    print(f'{i-len(errors)}/{i} cogs loaded successfully!')
+    for error in errors:
+        print(error)
 
 client.run(os.getenv('BOT_TOKEN'))
