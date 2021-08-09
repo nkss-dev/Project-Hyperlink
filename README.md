@@ -7,6 +7,7 @@ A moderation bot made specifically to be used in NITKKR only servers
 - discord 1.7+
 - googleapiclient (for [drive.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/drive.py))
 - python.dotenv
+- fluent.runtime
 
 ## Running a local instance
 
