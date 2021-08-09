@@ -66,14 +66,13 @@ class Info(commands.Cog):
     async def nick(self, ctx, member: discord.Member=None):
         """Enter a member to change their name or leave it blank to change your own"""
 
-        if member and member != ctx.author:
-            if not member.guild_permissions.manage_nicknames:
-                raise commands.MissingPermissions((discord.Permissions.manage_nicknames))
+        member = member or ctx.author
+        if member != ctx.author:
+            if not ctx.author.guild_permissions.manage_nicknames:
                 raise commands.MissingPermissions([discord.Permissions.manage_nicknames])
 
         else:
-            if not (member := ctx.author).guild_permissions.change_nickname:
-                raise commands.MissingPermissions((discord.Permissions.change_nickname))
+            if not member.guild_permissions.change_nickname:
                 raise commands.MissingPermissions([discord.Permissions.change_nickname])
 
         self.c.execute('SELECT Name from main where Discord_UID = (:uid)', {'uid': member.id})
