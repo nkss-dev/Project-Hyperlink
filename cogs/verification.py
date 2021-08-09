@@ -5,7 +5,7 @@ import random
 import sqlite3
 
 from discord.ext import commands
-from discord.utils import get
+from discord import utils
 
 import smtplib
 from email.message import EmailMessage
@@ -241,13 +241,13 @@ class Verify(commands.Cog):
             await ctx.reply(f'The details you entered is of a record already claimed by `{user}`. If you think this was a mistake, contact a moderator.')
             return
         # Assigning one SubSection and one Section role to the user
-        role = discord.utils.get(ctx.guild.roles, name=tuple[0])
+        role = utils.get(ctx.guild.roles, name=tuple[0])
         await ctx.author.add_roles(role)
-        role = discord.utils.get(ctx.guild.roles, name=tuple[1])
+        role = utils.get(ctx.guild.roles, name=tuple[1])
         await ctx.author.add_roles(role)
         await ctx.reply('Your record was found and verified!\nPlease check the channel list of the server to see the unlocked channels. If you still do not see the channels then please re-launch the app.')
         # Removing the 'Not-Verified' role from the user
-        role = discord.utils.get(ctx.guild.roles, name = 'Not-Verified')
+        role = utils.get(ctx.guild.roles, name = 'Not-Verified')
         await ctx.author.remove_roles(role)
         # Fetches the mutual guilds list from the user
         guilds = json.loads(tuple[4])
