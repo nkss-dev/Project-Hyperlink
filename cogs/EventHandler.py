@@ -186,7 +186,7 @@ class Events(commands.Cog):
 
         elif isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):
-                await ctx.reply(f"'{error.argument}' is a required argument that is missing.")
+                await ctx.reply(f"'{error.param}' is a required argument that is missing.")
 
             elif isinstance(error, commands.BadArgument):
                 if isinstance(error, commands.MessageNotFound):
