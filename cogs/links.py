@@ -90,6 +90,12 @@ class Links(commands.Cog):
             color = discord.Color.blurple()
         )
 
+        try:
+            old_message = await ctx.channel.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
+            await old_message.delete()
+        except:
+            pass
+
         self.data[str(tuple[1])][tuple[0]]['message'] = (await ctx.send(embed=embed)).id
         self.save()
 
