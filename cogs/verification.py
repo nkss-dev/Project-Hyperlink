@@ -121,7 +121,7 @@ class Verify(commands.Cog):
         # Setting variables for the email
         EMAIL = os.getenv('EMAIL')
         PASSWORD = os.getenv('PASSWORD')
-        name = tuple[0].capitalize().strip()
+        name = tuple[0].title().strip()
         otp = self.generateotp()
 
         # Creating the email

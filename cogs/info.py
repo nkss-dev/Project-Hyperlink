@@ -47,7 +47,7 @@ class Info(commands.Cog):
             status += self.emojis['not-verified']
         # Creating the embed
         embed = discord.Embed(
-            title = f'{tuple[3].capitalize()}{status}',
+            title = f'{tuple[3].title()}{status}',
             description = f'**Roll Number:** {tuple[0]}'
             + f'\n**Section:** {tuple[1]}{tuple[2][4:]}'
             + f'\n**Roles:** {user_roles}'
