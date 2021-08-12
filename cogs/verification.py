@@ -1,9 +1,10 @@
 import json
-import math
 import os
-import random
 import sqlite3
 from utils.l10n import l10n
+
+from math import floor
+from random import random
 
 from discord.ext import commands
 from discord import utils
@@ -46,7 +47,7 @@ class Verify(commands.Cog):
         sample_set = '01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         OTP = ''
         for i in range(5):
-            OTP += sample_set[math.floor(random.random() * 46)]
+            OTP += sample_set[floor(random() * 46)]
         return OTP
 
     @commands.group(brief='Registers the user in the database')
