@@ -80,7 +80,11 @@ class IGN(commands.Cog):
             if oneself:
                 await ctx.reply('You have no IGN stored to show!')
             else:
-                await ctx.reply(f'`{member}` has no IGN stored to show.')
+                embed = discord.Embed(
+                    description = f'{member.mention} has not stored any IGN yet.',
+                    color = member.top_role.color
+                )
+                await ctx.reply(embed=embed)
             return
         if single:
             if game in igns:
@@ -88,7 +92,11 @@ class IGN(commands.Cog):
             elif oneself:
                 await ctx.reply(f'You have no IGN stored for {game} to show!')
             else:
-                await ctx.reply(f'`{member}` has no IGN stored for {game} to show.')
+                embed = discord.Embed(
+                    description = f'{member.mention} has no IGN stored for {game} to show.',
+                    color = member.top_role.color
+                )
+                await ctx.reply(embed=embed)
             return
         ign = ''
         for game in igns:
