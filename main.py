@@ -1,8 +1,10 @@
-import os, json
+import json
+
 from discord import Intents
 from discord.ext.commands import Bot
-from dotenv import load_dotenv
 
+import os
+from dotenv import load_dotenv
 load_dotenv()
 
 def get_prefix(client, message):

@@ -1,5 +1,8 @@
-import discord, json
+import json
+
 from datetime import datetime
+
+from discord import Embed, Color
 from discord.ext import commands
 
 class Logger(commands.Cog):
@@ -17,9 +20,9 @@ class Logger(commands.Cog):
         channel = self.bot.get_channel(guild_data[str(message.guild.id)]['logging_channel'][0])
         if not channel:
             return
-        embed = discord.Embed(
+        embed = Embed(
             description = f'Message deleted in {message.channel.mention}',
-            color = discord.Color.from_rgb(255, 0, 0)
+            color = Color.from_rgb(255, 0, 0)
         )
         embed.set_author(name=message.author, icon_url=message.author.avatar_url)
         if not message.content:
@@ -45,9 +48,9 @@ class Logger(commands.Cog):
         if not channel:
             return
 
-        embed = discord.Embed(
+        embed = Embed(
             description = f'{len(payload.cached_messages)} messages were deleted in {payload.cached_messages[0].channel.mention}',
-            color = discord.Color.from_rgb(255, 0, 0)
+            color = Color.from_rgb(255, 0, 0)
         )
         embed.timestamp = datetime.utcnow()
         await channel.send(embed=embed)
@@ -65,9 +68,9 @@ class Logger(commands.Cog):
             return
         if before.content == after.content:
             return
-        embed = discord.Embed(
+        embed = Embed(
             description = f'Message edited in {before.channel.mention} - [Jump to message]({before.jump_url})',
-            color = discord.Color.from_rgb(255, 255, 0)
+            color = Color.from_rgb(255, 255, 0)
         )
         embed.set_author(name=before.author, icon_url=before.author.avatar_url)
         if not before.content:

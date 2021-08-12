@@ -1,8 +1,14 @@
-import discord, json, random, sqlite3
+import json
+import sqlite3
+
+import discord
 from discord.ext import commands
+
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+
+from random import choice
 
 prefix = '%'
 row = ['a', 'b', 'c', 'd', 'e']
@@ -116,7 +122,7 @@ class voltorb_board:
         ch = '000000111111112223'
 
         for i in range(5):
-            self.board.append([int(random.choice(ch)) for _ in range(5)])
+            self.board.append([int(choice(ch)) for _ in range(5)])
 
         bg = Image.open('sprites/board.png')
         font = ImageFont.truetype('arial.ttf', 120)

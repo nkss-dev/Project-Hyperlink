@@ -1,4 +1,6 @@
-import discord, json
+import json
+
+from discord import PermissionOverwrite
 from discord.ext import commands
 
 class VoiceChat(commands.Cog):
@@ -45,8 +47,8 @@ class VoiceChat(commands.Cog):
             return
         if after.channel.id in self.data['text_enabled_channels'] or (self.data['allow_text'][str(member.guild.id)] and after.channel.id in self.data['party_vchannels']):
             overwrites = {
-                member.guild.default_role: discord.PermissionOverwrite(read_messages=False, read_message_history=False),
-                member: discord.PermissionOverwrite(read_messages=True)
+                member.guild.default_role: PermissionOverwrite(read_messages=False, read_message_history=False),
+                member: PermissionOverwrite(read_messages=True)
             }
             tc = await member.guild.create_text_channel(f'party of {member_name}', overwrites=overwrites, category=after.channel.category)
             self.data['party_tchannels'][str(after.channel.id)] = tc.id

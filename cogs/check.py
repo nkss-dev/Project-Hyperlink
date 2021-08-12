@@ -1,4 +1,6 @@
-import json, sqlite3
+import json
+import sqlite3
+
 from datetime import datetime
 from discord.ext import commands
 

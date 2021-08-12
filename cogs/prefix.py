@@ -1,4 +1,6 @@
-import discord, sqlite3, json
+import json
+import sqlite3
+
 from discord.ext import commands
 
 class Prefix(commands.Cog):

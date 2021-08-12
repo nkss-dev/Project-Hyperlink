@@ -1,5 +1,10 @@
-import sqlite3, json, os, discord, typing
+import json
+import sqlite3
+
+import discord
 from discord.ext import commands
+
+from typing import Optional
 
 class IGN(commands.Cog):
     def __init__(self, bot):
@@ -63,7 +68,7 @@ class IGN(commands.Cog):
         await ctx.reply(f'IGN for {allowed_game} added successfully.')
 
     @ign.command(brief='Shows the IGN of the entered game (shows for all if none specified). If you want to see another user\'s IGN, type a part of their username (It is case sensitive) before the name of the game, which is also optional.')
-    async def show(self, ctx, user: typing.Optional[discord.Member]=None, game: str='all'):
+    async def show(self, ctx, user: Optional[discord.Member]=None, game: str='all'):
         member = user or ctx.author
 
         if game.lower() == 'all':

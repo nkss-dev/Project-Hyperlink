@@ -1,7 +1,12 @@
-import discord, json, sqlite3, re
+import json
+import sqlite3
+
 from datetime import datetime
-from discord.utils import get
+from re import fullmatch
+
+import discord
 from discord.ext import commands
+from discord.utils import get
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -25,7 +30,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if re.fullmatch(f'<@!?{self.bot.user.id}>', message.content):
+        if fullmatch(f'<@!?{self.bot.user.id}>', message.content):
             embed = discord.Embed(
             title = 'Bot Details',
             color = discord.Color.blurple()

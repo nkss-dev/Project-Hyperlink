@@ -1,7 +1,8 @@
-import discord
-from typing import Optional
-from discord.utils import get
+from discord import Embed, Color
 from discord.ext import commands
+from discord.utils import get
+
+from typing import Optional
 
 def syntax(command):
     aliases = [str(command), *command.aliases]
@@ -30,9 +31,9 @@ class Help(commands.Cog):
 
     async def cmd_help(self, ctx, command):
         if command.cog:
-            embed = discord.Embed(
+            embed = Embed(
                 title = f'{command.cog.qualified_name} Help!',
-                color = discord.Color.blurple()
+                color = Color.blurple()
             )
             for command in command.cog.walk_commands():
                 _, aliases, params = syntax(command)
@@ -46,10 +47,10 @@ class Help(commands.Cog):
             await ctx.send(embed=embed)
         else:
             help, aliases, params = syntax(command)
-            embed = discord.Embed(
+            embed = Embed(
                 title = f'{command} {params}',
                 description = help,
-                color = discord.Color.blurple()
+                color = Color.blurple()
             )
             if '|' in aliases:
                 aliases = aliases.replace(f'{command}|', '')
@@ -59,10 +60,10 @@ class Help(commands.Cog):
     @commands.command(name='help')
     async def help(self, ctx, cmd: Optional[str]):
         if not cmd:
-            embed = discord.Embed(
+            embed = Embed(
                 title = 'Commands Help!',
                 description = f'For help with a specific command, type {ctx.prefix}help <command>',
-                color = discord.Color.blurple()
+                color = Color.blurple()
             )
             embed.set_thumbnail(url=self.bot.user.avatar_url)
             for command in self.bot.commands:
@@ -73,10 +74,10 @@ class Help(commands.Cog):
             if command := get(self.bot.commands, name=cmd):
                 await self.cmd_help(ctx, command)
             else:
-                embed = discord.Embed(
+                embed = Embed(
                     title = 'Command not found',
                     description = f'Unknown command `{cmd}`',
-                    color = discord.Color.from_rgb(255, 165, 0)
+                    color = Color.from_rgb(255, 165, 0)
                 )
                 await ctx.send(embed=embed)
 

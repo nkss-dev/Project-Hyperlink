@@ -1,5 +1,13 @@
-import discord, json, asyncio, random, math, sqlite3
+import json
+import sqlite3
+
+from asyncio import TimeoutError
+
+import discord
 from discord.ext import commands
+
+from math import floor
+from random import random
 
 class ReactionRoles(commands.Cog):
     def __init__(self, bot):
@@ -89,7 +97,7 @@ class ReactionRoles(commands.Cog):
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
                 reaction = reaction.emoji
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.send('Reaction role setup has been cancelled. You took too long to choose a valid reaction.')
                 return
         await message.add_reaction(reaction)
@@ -141,7 +149,7 @@ class ReactionRoles(commands.Cog):
         sample_set = '01234567890123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         ID = ''
         for _ in range(5):
-            ID += sample_set[math.floor(random.random() * 72)]
+            ID += sample_set[floor(random() * 72)]
         if ID in IDs:
             return self.generateID(IDs)
         else:

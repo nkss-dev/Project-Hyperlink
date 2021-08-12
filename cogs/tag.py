@@ -1,5 +1,7 @@
-import discord, sqlite3, aiohttp
-from discord.utils import get
+import aiohttp
+import sqlite3
+
+from discord import utils
 from discord.ext import commands
 
 class Tag(commands.Cog):
@@ -74,9 +76,9 @@ class Tag(commands.Cog):
                 # Checks if the user belongs to the tagged section
                 if j and ctx.author.guild_permissions.mention_everyone:
                     if j[3] == '0':
-                        content = content.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                        content = content.replace('@' + j[:5], utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
                     elif j[3].upper() == section[3]:
-                        content = content.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
+                        content = content.replace('@' + j[:4], utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
                 elif j and j[:2].upper() not in section:
                     await ctx.send('You can\'t tag sections other than your own!')
                     return
@@ -85,16 +87,16 @@ class Tag(commands.Cog):
                     if j[3] == '0':
                         # Checks if the user belongs to the Section of the SubSection that they attempted to tag
                         if section[3] == 'A' and (j[4] == '1' or j[4] == '2' or j[4] == '3'):
-                            content = content.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                            content = content.replace('@' + j[:5], utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
                         elif section[3] == 'B' and (j[4] == '4' or j[4] == '5' or j[4] == '6'):
-                            content = content.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                            content = content.replace('@' + j[:5], utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
                         elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
-                            content = content.replace('@' + j[:5], discord.utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
+                            content = content.replace('@' + j[:5], utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
                         else:
                             await ctx.send('You can\'t tag sections other than your own!')
                             return
                     elif j[3].upper() == section[3]:
-                        content = content.replace('@' + j[:4], discord.utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
+                        content = content.replace('@' + j[:4], utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
                     else:
                         await ctx.send('You can\'t tag sections other than your own!')
                         return

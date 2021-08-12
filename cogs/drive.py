@@ -1,6 +1,13 @@
 from __future__ import print_function
-import os.path, discord, sqlite3, json, aiohttp
+
+import aiohttp
+import json
+import os.path
+import sqlite3
+
+from discord import Embed, Color
 from discord.ext import commands
+
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -91,9 +98,9 @@ class Drive(commands.Cog):
 
         embeds = []
         if ignored_args:
-            ignored_embed = discord.Embed(
+            ignored_embed = Embed(
                 description = 'The following arguements were ignored:\n{}'.format(', '.join([arg for arg in ignored_args])),
-                color = discord.Color.blurple()
+                color = Color.blurple()
             )
             ignored_embed.set_footer(text='Reason: Arguments must be at least 3 characters long')
             embeds.append(ignored_embed)
@@ -114,10 +121,10 @@ class Drive(commands.Cog):
                     description += f'{link}\n'
 
             if description:
-                embed = discord.Embed(
+                embed = Embed(
                     title = embed_name,
                     description = description,
-                    color = discord.Color.blurple()
+                    color = Color.blurple()
                 )
                 embeds.insert(i, embed)
 

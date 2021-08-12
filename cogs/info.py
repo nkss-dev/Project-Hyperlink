@@ -1,4 +1,7 @@
-import discord, json, sqlite3
+import json
+import sqlite3
+
+import discord
 from discord.ext import commands
 
 def verificationCheck(ctx):

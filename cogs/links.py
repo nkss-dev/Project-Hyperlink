@@ -1,7 +1,12 @@
-import discord, sqlite3, json, pytz
+import json
+import sqlite3
+
+from datetime import datetime, timedelta
+from pytz import timezone
+
+import discord
 from discord.ext import commands, tasks
 from discord.utils import get, sleep_until
-from datetime import datetime, timedelta
 
 class Links(commands.Cog):
     def __init__(self, bot):
@@ -39,7 +44,7 @@ class Links(commands.Cog):
     async def create(self, tuple):
         guild = self.bot.get_guild(self.data[str(tuple[1])]['server_ID'][0])
 
-        datetime_ist = datetime.now(pytz.timezone('Asia/Kolkata')) + timedelta(hours=4)
+        datetime_ist = datetime.now(timezone('Asia/Kolkata')) + timedelta(hours=4)
         date = datetime_ist.strftime('%d-%m-%Y')
         day = datetime_ist.strftime('%A')
         timetable = self.data[str(tuple[1])][tuple[0]][day]
@@ -182,7 +187,7 @@ class Links(commands.Cog):
 
     @link_update_loop.before_loop
     async def wait_until_12am(self):
-        IST = pytz.timezone('Asia/Kolkata')
+        IST = timezone('Asia/Kolkata')
         now = datetime.now(IST)
         next_run = now.replace(hour=20, minute=0, second=0)
         if next_run < now:
