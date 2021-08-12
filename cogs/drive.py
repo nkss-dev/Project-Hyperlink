@@ -77,12 +77,17 @@ class Drive(commands.Cog):
 
             page_token = None
             while True:
-                response = self.DRIVE.files().list(
-                    q=f"name contains '{keyword}'",
-                    spaces='drive',
-                    fields='nextPageToken, files(id, name, parents, mimeType)',
-                    pageToken=page_token
-                ).execute()
+                try:
+                    response = self.DRIVE.files().list(
+                        q=f"name contains '{keyword}'",
+                        spaces='drive',
+                        fields='nextPageToken, files(id, name, parents, mimeType)',
+                        pageToken=page_token
+                    ).execute()
+                except googleapiclient.errors.HttpError:
+                    await ctx.reply('One of the entered arguments caused an error.')
+                    return
+
                 for file in response.get('files', []):
                     links = file_links if file.get('mimeType') != 'application/vnd.google-apps.folder' else folder_links
                     if file.get('parents')[0] not in links:
