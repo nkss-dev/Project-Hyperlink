@@ -79,7 +79,7 @@ class IGN(commands.Cog):
         # Exit if no IGN exists
         if not igns:
             if oneself:
-                await ctx.reply('You have no IGN stored to show!')
+                await ctx.reply(f'Store some IGNs first using `{ctx.prefix}ign add`')
             else:
                 embed = discord.Embed(
                     description = f'{member.mention} has not stored any IGN yet.',
