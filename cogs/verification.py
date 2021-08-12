@@ -25,11 +25,8 @@ class Verify(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-        try:
-            with open('db/codes.json') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.data = {}
+        with open('db/codes.json') as f:
+            self.data = json.load(f)
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
