@@ -105,7 +105,7 @@ class Drive(commands.Cog):
             ignored_embed.set_footer(text='Reason: Arguments must be at least 3 characters long')
             embeds.append(ignored_embed)
             if len(ignored_args) == len(content):
-                await ctx.send(embed=embed)
+                await ctx.send(embed=ignored_embed)
                 return
 
         if not folder_links and not file_links:
