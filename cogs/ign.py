@@ -40,7 +40,13 @@ class IGN(commands.Cog):
         # Loads the available games from the database
         games = self.data
         # Exit if the game does not exist in the database
-        if game not in games:
+
+        flag = False
+        for allowed_game in games:
+            if game.lower() == allowed_game.lower():
+                flag = True
+                break
+        if not flag:
             await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{ctx.prefix}ign`')
             return
         if '@everyone' in ign or '@here' in ign:
@@ -51,11 +57,11 @@ class IGN(commands.Cog):
         tuple = self.c.fetchone()
         igns = json.loads(tuple[0])
         # Adds IGN to the database
-        igns[game] = ign
+        igns[allowed_game] = ign
         self.c.execute('UPDATE main set IGN = (:ign) where Discord_UID = (:uid)', {'ign': json.dumps(igns), 'uid': ctx.author.id})
         self.conn.commit()
-        await ctx.reply(f'IGN for {game} added successfully.')
 
+        await ctx.reply(f'IGN for {allowed_game} added successfully.')
     @ign.command(brief='Shows the IGN of the entered game (shows for all if none specified). If you want to see another user\'s IGN, type a part of their username (It is case sensitive) before the name of the game, which is also optional.')
     async def show(self, ctx, user: typing.Optional[discord.Member]=None, game: str='all'):
         # Setting single to False will show all the IGNs for the requested user
@@ -82,8 +88,17 @@ class IGN(commands.Cog):
                 await ctx.reply(embed=embed)
             return
         if single:
-            if game in igns:
-                await ctx.reply(embed=discord.Embed(description=igns[game],color=member.top_role.color))
+            flag = False
+            for ign in igns:
+                if game.lower() == ign.lower():
+                    flag = True
+                    break
+            if flag:
+                embed = discord.Embed(
+                    description = igns[ign],
+                    color = member.top_role.color
+                )
+                await ctx.reply(embed=embed)
             elif oneself:
                 await ctx.reply(f'You have no IGN stored for {game} to show!')
             else:
@@ -122,10 +137,16 @@ class IGN(commands.Cog):
             self.conn.commit()
             await ctx.reply('Removed all existing IGNs successfully.')
             return
-        if game in igns:
-            igns.pop(game)
+
+        flag = False
+        for ign in igns:
+            if game.lower() == ign.lower():
+                flag = True
+                break
+        if flag:
+            igns.pop(ign)
         else:
-            await ctx.reply(f'You have no IGN stored for {game} to remove.')
+            await ctx.reply(f'You have no IGN stored for {ign} to remove.')
             return
         # Remove requested IGN of the user from the database
         self.c.execute('UPDATE main SET IGN = (:ign) where Discord_UID = (:uid)', {'ign': json.dumps(igns), 'uid': ctx.author.id})
