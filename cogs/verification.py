@@ -55,6 +55,7 @@ class Verify(commands.Cog):
 
         self.c.execute('SELECT Verified from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         details = self.c.fetchone()
+
         if details:
             if details[0] == 'False':
                 if ctx.invoked_subcommand.name == 'basic':
@@ -64,40 +65,43 @@ class Verify(commands.Cog):
 
     @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
-        # Gets the record of the given roll number
         self.c.execute('SELECT Section, Subsection, Name, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
         tuple = self.c.fetchone()
-        # Exit if roll number doesn't exist
+
         if not tuple:
             await ctx.reply(l10n.format_value('verify-basic-record-notfound'))
             return
-        # Exit if entered section doesn't match an existing section
+
         if section not in self.sections:
             await ctx.reply(l10n.format_value('verify-basic-section-notfound', {'section': section}))
             return
-        # Exit if entered section doesn't match the section that the roll number is bound to
+
         if section != tuple[0]:
             await ctx.reply(l10n.format_value('verify-basic-section-mismatch'))
             return
-        # Exit if the record is already claimed by another user
+
         if user := self.bot.get_user(tuple[3]):
             await ctx.reply(l10n.format_value('verify-basic-already-claimed', {'user': f'{user}'}))
             return
-        # Assigning one SubSection and one Section role to the user
+
+        # Assigning section/sub-section roles to the user
         role = utils.get(ctx.guild.roles, name=tuple[0])
         await ctx.author.add_roles(role)
         role = utils.get(ctx.guild.roles, name=tuple[1])
         await ctx.author.add_roles(role)
-        await ctx.reply(l10n.format_value('verify-basic-success'))
-        role = utils.get(ctx.guild.roles, name = 'Not-Verified')
+
+        # Removing restricting role
+        role = utils.get(ctx.guild.roles, name='Not-Verified')
         await ctx.author.remove_roles(role)
-        # Fetches the mutual guilds list from the user
+
+        await ctx.reply(l10n.format_value('verify-basic-success'))
+
+        # Input changes to the database
         guilds = json.loads(tuple[4])
-        # Adds the new guild id if it is a new one
         if ctx.guild.id not in guilds:
             guilds.append(ctx.guild.id)
         guilds = json.dumps(guilds)
-        # Updating the record in the database
+
         self.c.execute('UPDATE main SET Discord_UID = (:uid), Guilds = (:guilds) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no, 'guilds': guilds})
         self.conn.commit()
 
@@ -151,7 +155,6 @@ class Verify(commands.Cog):
             return
 
         if self.data[str(ctx.author.id)] == code:
-            # Deletes the code
             del self.data[str(ctx.author.id)]
             self.save()
 
