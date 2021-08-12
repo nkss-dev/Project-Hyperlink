@@ -7,11 +7,14 @@ class IGN(commands.Cog):
 
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
+
         try:
             with open('db/games.json') as f:
                 self.data = json.load(f)
         except FileNotFoundError:
-            self.data = {}
+            with open('db/games.json', 'w') as f:
+                json.dump([], f)
+            self.data = []
 
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)
@@ -19,7 +22,7 @@ class IGN(commands.Cog):
     @commands.group(brief='Shows the list of eligible games for which an IGN can be added.')
     async def ign(self, ctx):
         if not ctx.invoked_subcommand:
-            games = self.data[str(ctx.guild.id)]
+            games = self.data
             msg = ''
             for i in games:
                 msg += f'\n{i}'
@@ -35,7 +38,7 @@ class IGN(commands.Cog):
     @ign.command(brief='Used to add an IGN for a specified game.')
     async def add(self, ctx, game, ign):
         # Loads the available games from the database
-        games = self.data[str(ctx.guild.id)]
+        games = self.data
         # Exit if the game does not exist in the database
         if game not in games:
             await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{ctx.prefix}ign`')
@@ -62,7 +65,7 @@ class IGN(commands.Cog):
         else:
             single = True
         # Loads the available games from the database
-        games = self.data[str(ctx.guild.id)]
+        games = self.data
         # Exit if the game does not exist in the database
         if single and game not in games:
             await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{ctx.prefix}ign`')
@@ -117,7 +120,7 @@ class IGN(commands.Cog):
             await ctx.reply('Removed all existing IGNs successfully.')
             return
         # Loads the available games from the database
-        games = self.data[str(ctx.guild.id)]
+        games = self.data
         # Checks if the game exists in the database
         if game not in games:
             await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{ctx.prefix}ign`')
