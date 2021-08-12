@@ -64,12 +64,7 @@ class IGN(commands.Cog):
             single = False
         else:
             single = True
-        # Loads the available games from the database
-        games = self.data
-        # Exit if the game does not exist in the database
-        if single and game not in games:
-            await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{ctx.prefix}ign`')
-            return
+
         oneself = ctx.author == member
         # Gets details of user from the database
         self.c.execute('SELECT IGN FROM main where Discord_UID = (:uid)', {'uid': member.id})
@@ -126,12 +121,6 @@ class IGN(commands.Cog):
             self.c.execute('UPDATE main SET IGN = "{}" where Discord_UID = (:uid)', {'uid': ctx.author.id})
             self.conn.commit()
             await ctx.reply('Removed all existing IGNs successfully.')
-            return
-        # Loads the available games from the database
-        games = self.data
-        # Checks if the game exists in the database
-        if game not in games:
-            await ctx.reply(f'The game, `{game}`, does not exist in the database. If you want it added, contact a moderator.\nFor a list of available games, type `{ctx.prefix}ign`')
             return
         if game in igns:
             igns.pop(game)
