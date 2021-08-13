@@ -60,16 +60,16 @@ class Events(commands.Cog):
         guild = member.guild
         details = self.data[str(guild.id)]
         if member.bot:
-            if bot_role := member.guild.get_role((details['bot_role'])):
+            if bot_role := guild.get_role((details['bot_role'])):
                 await member.add_roles(bot_role)
             return
         if 'on_join/leave' in details:
             if channel := self.bot.get_channel(details['on_join/leave']['join_msg'][0]):
                 await channel.send(details['on_join/leave']['join_msg'][1].replace('{user}', member.mention))
             if dm := details['on_join/leave']['private_dm']:
-                await member.send(dm.replace('{server}', member.guild.name))
+                await member.send(dm.replace('{server}', guild.name))
             for role in details['on_join/leave']['new_roles']:
-                if new_role := member.guild.get_role(role):
+                if new_role := guild.get_role(role):
                     await member.add_roles(new_role)
                 else:
                     details['on_join/leave']['new_roles'].remove(role)
