@@ -27,7 +27,9 @@ class IGN(commands.Cog):
     @commands.group(brief='Shows the list of eligible games for which an IGN can be added.')
     async def ign(self, ctx):
         if not ctx.invoked_subcommand:
-            games = self.data
+            if not games := self.data:
+                await ctx.reply('No games have been added yet')
+
             msg = ''
             for i in games:
                 msg += f'\n{i}'
