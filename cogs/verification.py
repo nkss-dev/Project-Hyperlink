@@ -1,7 +1,7 @@
 import json
 import os
 import sqlite3
-from utils.l10n import l10n
+from utils.l10n import get_l10n
 
 from math import floor
 from random import random
@@ -50,7 +50,7 @@ class Verify(commands.Cog):
     @commands.group(brief='Registers the user in the database')
     async def verify(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.reply(l10n.format_value('verify-invalid-command'))
+            await ctx.reply(self.l10n.format_value('verify-invalid-command'))
             return
 
         self.c.execute('SELECT Verified from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
@@ -63,25 +63,27 @@ class Verify(commands.Cog):
             else:
                 raise commands.CheckFailure('UserAlreadyVerified')
 
+        self.l10n = get_l10n(ctx.guild.id, 'verification')
+
     @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
         self.c.execute('SELECT Section, Subsection, Name, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
         tuple = self.c.fetchone()
 
         if not tuple:
-            await ctx.reply(l10n.format_value('verify-basic-record-notfound'))
+            await ctx.reply(self.l10n.format_value('verify-basic-record-notfound'))
             return
 
         if section not in self.sections:
-            await ctx.reply(l10n.format_value('verify-basic-section-notfound', {'section': section}))
+            await ctx.reply(self.l10n.format_value('verify-basic-section-notfound', {'section': section}))
             return
 
         if section != tuple[0]:
-            await ctx.reply(l10n.format_value('verify-basic-section-mismatch'))
+            await ctx.reply(self.l10n.format_value('verify-basic-section-mismatch'))
             return
 
         if user := self.bot.get_user(tuple[3]):
-            await ctx.reply(l10n.format_value('verify-basic-already-claimed', {'user': f'{user}'}))
+            await ctx.reply(self.l10n.format_value('verify-basic-already-claimed', {'user': f'{user}'}))
             return
 
         # Assigning section/sub-section roles to the user
@@ -94,7 +96,7 @@ class Verify(commands.Cog):
         role = utils.get(ctx.guild.roles, name='Not-Verified')
         await ctx.author.remove_roles(role)
 
-        await ctx.reply(l10n.format_value('verify-basic-success'))
+        await ctx.reply(self.l10n.format_value('verify-basic-success'))
 
         # Input changes to the database
         guilds = json.loads(tuple[4])
@@ -115,7 +117,7 @@ class Verify(commands.Cog):
         tuple = self.c.fetchone()
 
         if email.lower() != tuple[1]:
-            await ctx.reply(l10n.format_value('verify-email-mismatch'))
+            await ctx.reply(self.l10n.format_value('verify-email-mismatch'))
             return
 
         await ctx.message.add_reaction(self.emojis['loading'])
@@ -132,7 +134,7 @@ class Verify(commands.Cog):
         msg['From'] = EMAIL
         msg['To'] = tuple[1]
         msg.set_content(
-            l10n.format_value('verify-email-HTML', {'user': name, 'otp': otp, 'guild': ctx.guild.name, 'prefix': ctx.prefix}),
+            self.l10n.format_value('verify-email-HTML', {'user': name, 'otp': otp, 'guild': ctx.guild.name, 'prefix': ctx.prefix}),
             subtype='html'
         )
 
@@ -141,7 +143,7 @@ class Verify(commands.Cog):
             smtp.login(EMAIL, PASSWORD)
             smtp.send_message(msg)
 
-        await ctx.reply(l10n.format_value('verify-check-email', { 'prefix': ctx.prefix }))
+        await ctx.reply(self.l10n.format_value('verify-check-email', { 'prefix': ctx.prefix }))
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
         self.data[str(ctx.author.id)] = otp
@@ -151,7 +153,7 @@ class Verify(commands.Cog):
     @commands.check(basicVerificationCheck)
     async def code(self, ctx, code: str):
         if str(ctx.author.id) not in self.data:
-            await ctx.reply(l10n.format_value('verify-not-received'))
+            await ctx.reply(self.l10n.format_value('verify-not-received'))
             return
 
         if self.data[str(ctx.author.id)] == code:
@@ -162,9 +164,9 @@ class Verify(commands.Cog):
             self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
             self.conn.commit()
 
-            await ctx.reply(l10n.format_value('verify-email-success', {'emoji': self.emojis['verified']}))
+            await ctx.reply(self.l10n.format_value('verify-email-success', {'emoji': self.emojis['verified']}))
         else:
-            await ctx.reply(l10n.format_value('verify-code-incorrect'))
+            await ctx.reply(self.l10n.format_value('verify-code-incorrect'))
 
     def save(self):
         with open('db/codes.json', 'w') as f:
