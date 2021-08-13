@@ -7,5 +7,5 @@ def get_l10n(guild_id, filename):
     with open('db/guilds.json') as f:
         guild_data = json.load(f)
 
-    language = guild_data[str(guild_id)].get('language', 'en-UK')
+    language = guild_data[str(guild_id)].get('language', 'en-gb')
     return FluentLocalization([language], [f'{filename}.ftl'], loader)
