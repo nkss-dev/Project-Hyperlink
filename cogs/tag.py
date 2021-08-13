@@ -11,15 +11,25 @@ class Tag(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-        self.sections = ('CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B')
-        self.subsections = ('CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'CE-08', 'CE-09',
-                    'CS-01', 'CS-02', 'CS-03', 'CS-04', 'CS-05', 'CS-06',
-                    'EC-01', 'EC-02', 'EC-03', 'EC-04', 'EC-05', 'EC-06', 'EC-07', 'EC-08', 'EC-09',
-                    'EE-01', 'EE-02', 'EE-03', 'EE-04', 'EE-05', 'EE-06', 'EE-07', 'EE-08', 'EE-09',
-                    'IT-01', 'IT-02', 'IT-03', 'IT-04', 'IT-05', 'IT-06',
-                    'ME-01', 'ME-02', 'ME-03', 'ME-04', 'ME-05', 'ME-06', 'ME-07', 'ME-08', 'ME-09',
-                    'PI-01', 'PI-02', 'PI-03', 'PI-04', 'PI-05', 'PI-06'
-                )
+        self.sections = (
+            'CE-A', 'CE-B', 'CE-C',
+            'CS-A', 'CS-B',
+            'EC-A', 'EC-B', 'EC-C',
+            'EE-A', 'EE-B', 'EE-C',
+            'IT-A', 'IT-B',
+            'ME-A', 'ME-B', 'ME-C',
+            'PI-A', 'PI-B'
+        )
+
+        self.subsections = (
+            'CE-01', 'CE-02', 'CE-03', 'CE-04', 'CE-05', 'CE-06', 'CE-07', 'CE-08', 'CE-09',
+            'CS-01', 'CS-02', 'CS-03', 'CS-04', 'CS-05', 'CS-06',
+            'EC-01', 'EC-02', 'EC-03', 'EC-04', 'EC-05', 'EC-06', 'EC-07', 'EC-08', 'EC-09',
+            'EE-01', 'EE-02', 'EE-03', 'EE-04', 'EE-05', 'EE-06', 'EE-07', 'EE-08', 'EE-09',
+            'IT-01', 'IT-02', 'IT-03', 'IT-04', 'IT-05', 'IT-06',
+            'ME-01', 'ME-02', 'ME-03', 'ME-04', 'ME-05', 'ME-06', 'ME-07', 'ME-08', 'ME-09',
+            'PI-01', 'PI-02', 'PI-03', 'PI-04', 'PI-05', 'PI-06'
+        )
 
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)
