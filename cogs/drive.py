@@ -50,7 +50,7 @@ class Drive(commands.Cog):
     @commands.group(brief='Allows users to interact with a specific Google Drive')
     async def drive(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.send('Invalid drive command passed.')
+            await ctx.reply('Invalid drive command passed.')
             return
 
     @drive.command(brief='Used to send search queries to the Drive')
@@ -110,11 +110,11 @@ class Drive(commands.Cog):
             ignored_embed.set_footer(text='Reason: Arguments must be at least 3 characters long')
             embeds.append(ignored_embed)
             if len(ignored_args) == len(content):
-                await ctx.send(embed=ignored_embed)
+                await ctx.reply(embed=ignored_embed)
                 return
 
         if not folder_links and not file_links:
-            await ctx.send('Could not find anything. Sorry.')
+            await ctx.reply('Could not find anything. Sorry.')
             return
 
         for i, embed_name, links in zip(range(2), ['Folders', 'Files'], [folder_links, file_links]):
