@@ -2,7 +2,7 @@ import json
 
 from discord.ext import commands
 
-class AdminCommands(commands.Cog):
+class OwnerOnly(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -40,4 +40,4 @@ class AdminCommands(commands.Cog):
         await self.bot.close()
 
 def setup(bot):
-    bot.add_cog(AdminCommands(bot))
+    bot.add_cog(OwnerOnly(bot))
