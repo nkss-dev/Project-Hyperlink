@@ -32,7 +32,7 @@ class Check(commands.Cog):
         if not tuple:
             raise commands.CheckFailure('AccountNotLinked')
         if tuple[0] == 'False':
-            raise commands.CheckFailure('EmailNotVerified')
+            raise commands.CheckFailure('UserNotVerified')
         return True
 
     async def moderatorCheck(self, ctx):

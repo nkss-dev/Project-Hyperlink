@@ -23,8 +23,8 @@ class Events(commands.Cog):
         self.custom_errors = {
             'AccountNotLinked': 'You need to complete basic verification to use this command.',
             'AccountAlreadyLinked': 'You have already completed the basic level of verification.',
-            'EmailNotVerified': 'Only members with a verified email can use this command.',
-            'EmailAlreadyVerified': 'You are already verified.',
+            'UserNotVerified': 'Only members with a verified email can use this command.',
+            'UserAlreadyVerified': 'You are already verified.',
             'MissingModeratorRoles': 'This command needs for a moderator role to be set for this guild.',
         }
 
