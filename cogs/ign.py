@@ -27,11 +27,12 @@ class IGN(commands.Cog):
     @commands.group(brief='Shows the list of eligible games for which an IGN can be added.')
     async def ign(self, ctx):
         if not ctx.invoked_subcommand:
-            if not games := self.data:
-                await ctx.reply('No games have been added yet')
+            if not self.data:
+                await ctx.reply(self.l10n.format_value('game-notfound'))
+                return
 
             msg = ''
-            for i in games:
+            for i in self.data:
                 msg += f'\n{i}'
             # Sends an embed with a list of all available games
             embed = discord.Embed(
@@ -44,10 +45,8 @@ class IGN(commands.Cog):
 
     @ign.command(brief='Used to add an IGN for a specified game.')
     async def add(self, ctx, game, ign):
-        games = self.data
-
         flag = False
-        for allowed_game in games:
+        for allowed_game in self.data:
             if game.lower() == allowed_game.lower():
                 flag = True
                 break
