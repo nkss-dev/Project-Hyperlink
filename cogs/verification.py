@@ -49,6 +49,8 @@ class Verify(commands.Cog):
 
     @commands.group(brief='Registers the user in the database')
     async def verify(self, ctx):
+        self.l10n = get_l10n(ctx.guild.id, 'verification')
+
         if not ctx.invoked_subcommand:
             await ctx.reply(self.l10n.format_value('verify-invalid-command'))
             return
@@ -62,8 +64,6 @@ class Verify(commands.Cog):
                     raise commands.CheckFailure('AccountAlreadyLinked')
             else:
                 raise commands.CheckFailure('UserAlreadyVerified')
-
-        self.l10n = get_l10n(ctx.guild.id, 'verification')
 
     @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
