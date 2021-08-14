@@ -12,8 +12,6 @@ class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        with open('db/guilds.json') as f:
-            self.data = json.load(f)
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
@@ -32,12 +30,18 @@ class Events(commands.Cog):
     async def on_message(self, message):
         if fullmatch(f'<@!?{self.bot.user.id}>', message.content):
             embed = discord.Embed(
-            title = 'Bot Details',
-            color = discord.Color.blurple()
+                title = 'Bot Details',
+                color = discord.Color.blurple()
             )
 
-            prefixes = self.data[str(message.guild.id)]['prefix']
-            embed.add_field(name='Prefixes', value='\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]), inline=False)
+            with open('db/guilds.json') as f:
+                prefixes = json.load(f)[str(message.guild.id)]['prefix']
+
+            embed.add_field(
+                name = 'Prefixes',
+                value = '\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]),
+                inline = False
+            )
 
             delta_uptime = datetime.utcnow() - self.bot.launch_time
             hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
@@ -58,11 +62,16 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         guild = member.guild
+
+        with open('db/guilds.json') as f:
+            self.data = json.load(f)
         details = self.data[str(guild.id)]
+
         if member.bot:
             if bot_role := guild.get_role((details['bot_role'])):
                 await member.add_roles(bot_role)
             return
+
         if 'on_join/leave' in details:
             if channel := self.bot.get_channel(details['on_join/leave']['join_msg'][0]):
                 await channel.send(details['on_join/leave']['join_msg'][1].replace('{user}', member.mention))
