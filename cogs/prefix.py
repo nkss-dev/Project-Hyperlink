@@ -41,6 +41,11 @@ class Prefix(commands.Cog):
         if prefix not in prefixes:
             await ctx.reply(f'{prefix} does not exist!')
             return
+
+        if len(prefixes) == 1:
+            await ctx.reply('This is the only remaining prefix. Add more after removing this one.')
+            return
+
         prefixes.remove(prefix)
         self.data[str(ctx.guild.id)]['prefix'] = prefixes
         self.save()
