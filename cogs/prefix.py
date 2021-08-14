@@ -1,4 +1,5 @@
 import json
+from utils.l10n import get_l10n
 
 from discord.ext import commands
 
@@ -7,6 +8,7 @@ class Prefix(commands.Cog):
         self.bot = bot
 
     async def cog_check(self, ctx):
+        self.l10n = get_l10n(ctx.guild.id, 'prefix')
         return self.bot.verificationCheck(ctx)
 
     @commands.group(brief='Manages the server\'s custom prefixes')
@@ -14,7 +16,7 @@ class Prefix(commands.Cog):
     @commands.bot_has_permissions(manage_guild=True)
     async def prefix(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.reply('Invalid prefix command passed.')
+            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
         with open('db/guilds.json') as f:
@@ -23,36 +25,41 @@ class Prefix(commands.Cog):
     @prefix.command(brief='Adds a prefix for this server')
     async def add(self, ctx, prefix):
         prefixes = self.data[str(ctx.guild.id)]['prefix']
+
         if prefix in prefixes:
-            await ctx.reply(f'{prefix} already exists!')
+            await ctx.reply(self.l10n.format_value('prefix-exists-true', {'prefix': prefix}))
             return
+
         prefixes.append(prefix)
         self.data[str(ctx.guild.id)]['prefix'] = prefixes
         self.save()
-        await ctx.send(f'{prefix} added')
+
+        await ctx.reply(self.l10n.format_value('add-success', {'prefix': prefix}))
 
     @prefix.command(brief='Removes a prefix from the server')
     async def remove(self, ctx, prefix):
         prefixes = self.data[str(ctx.guild.id)]['prefix']
+
         if prefix not in prefixes:
-            await ctx.reply(f'{prefix} does not exist!')
+            await ctx.reply(self.l10n.format_value('prefix-exists-false', {'prefix': prefix}))
             return
 
         if len(prefixes) == 1:
-            await ctx.reply('This is the only remaining prefix. Add more after removing this one.')
+            await ctx.reply(self.l10n.format_value('atleast-one-required'))
             return
 
         prefixes.remove(prefix)
         self.data[str(ctx.guild.id)]['prefix'] = prefixes
         self.save()
-        await ctx.send(f'{prefix} removed')
 
+        await ctx.reply(self.l10n.format_value('remove-success', {'prefix': prefix}))
 
     @prefix.command(brief='Removes all custom prefixes and sets to the specified prefix')
     async def set(self, ctx, prefix):
         self.data[str(ctx.guild.id)]['prefix'] = [prefix]
         self.save()
-        await ctx.send(f'Prefix for this server is now {prefix}')
+
+        await ctx.reply(self.l10n.format_value('guild-prefix'))
 
     def save(self):
         with open('db/guilds.json', 'w') as f:
