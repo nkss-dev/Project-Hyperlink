@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.utils import get
 
 from typing import Optional
+from utils.l10n import get_l10n
 
 def syntax(command):
     aliases = [str(command), *command.aliases]
@@ -31,7 +32,7 @@ class Help(commands.Cog):
     async def cmd_help(self, ctx, command):
         if command.cog:
             embed = Embed(
-                title = f'{command.cog.qualified_name} Help!',
+                title = self.l10n.format_value('help-cog-title', {'name': command.cog.qualified_name}),
                 color = Color.blurple()
             )
 
@@ -58,15 +59,18 @@ class Help(commands.Cog):
 
             if '|' in aliases:
                 aliases = aliases.replace(f'{command}|', '')
-                embed.add_field(name='Aliases', value=f'`{aliases}`')
+                embed.add_field(name=self.l10n.format_value('help-alias'), value=f'`{aliases}`')
+
             await ctx.send(embed=embed)
 
     @commands.command(name='help')
     async def help(self, ctx, cmd: Optional[str]):
+        self.l10n = get_l10n(ctx.guild.id, 'help')
+
         if not cmd:
             embed = Embed(
-                title = 'Commands Help!',
-                description = f'For help with a specific command, type {ctx.prefix}help <command>',
+                title = self.l10n.format_value('help-title'),
+                description = self.l10n.format_value('help-desc', {'prefix': ctx.prefix}),
                 color = Color.blurple()
             )
             embed.set_thumbnail(url=self.bot.user.avatar_url)
@@ -81,8 +85,8 @@ class Help(commands.Cog):
                 await self.cmd_help(ctx, command)
             else:
                 embed = Embed(
-                    title = 'Command not found',
-                    description = f'Unknown command `{cmd}`',
+                    title = self.l10n.format_value('help-notfound-title'),
+                    description = self.l10n.format_value('help-notfound-desc', {'cmd': cmd}),
                     color = Color.from_rgb(255, 165, 0)
                 )
                 await ctx.send(embed=embed)
