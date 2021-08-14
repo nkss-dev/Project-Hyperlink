@@ -52,7 +52,7 @@ class Verify(commands.Cog):
         self.l10n = get_l10n(ctx.guild.id, 'verification')
 
         if not ctx.invoked_subcommand:
-            await ctx.reply(self.l10n.format_value('verify-invalid-command'))
+            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
         self.c.execute('SELECT Verified from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
