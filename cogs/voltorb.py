@@ -1,7 +1,6 @@
 import json
-import sqlite3
 
-import discord
+from discord import Embed, File
 from discord.ext import commands
 
 from PIL import Image
@@ -21,9 +20,9 @@ class voltorb_embed:
 
     async def run(self, ctx):
         self.vol = voltorb_board(self.vol, f'boards/{ctx.author.id}.png')
-        thumb = discord.File('sprites/voltorb.gif', filename='voltorb.gif')
-        board = discord.File(f'boards/{ctx.author.id}.png', filename='board.png')
-        embed = discord.Embed(
+        thumb = File('sprites/voltorb.gif', filename='voltorb.gif')
+        board = File(f'boards/{ctx.author.id}.png', filename='board.png')
+        embed = Embed(
             title = 'Voltorb Flip',
             colour = ctx.author.top_role.color
         )
@@ -69,9 +68,9 @@ class voltorb_embed:
         except ValueError:
             self.win = True
             self.total += self.coins*int(coins[:-1])
-        thumb = discord.File('sprites/voltorb.gif', filename='voltorb.gif')
-        board = discord.File(f'boards/{ctx.author.id}.png', filename='board.png')
-        embed = discord.Embed(
+        thumb = File('sprites/voltorb.gif', filename='voltorb.gif')
+        board = File(f'boards/{ctx.author.id}.png', filename='board.png')
+        embed = Embed(
             title = 'Voltorb Flip',
             colour = ctx.author.top_role.color
         )
@@ -275,8 +274,6 @@ class VoltorbFlip(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
         try:
             with open('db/boards.json') as f:
                 self.data = json.load(f)
@@ -305,13 +302,6 @@ class VoltorbFlip(commands.Cog):
         '''This is a recreatation of the Voltorb Flip game that appears in the Korean and Western releases of Pokémon HeartGold and SoulSilver. The game is a mix between Minesweeper and Picture Cross and the placement of the bombs are given for each row and column. The goal of the game is to uncover all of the 2 and 3 tiles on a given board and move up to higher levels which have higher coin totals.
 
         The numbers on the side and bottom of the game board denote the sum of the tiles and how many bombs are present in that row/column, respectively. Each tile you flip multiplies your collected coins by that value. Once you uncover all of the 2 and 3 tiles, all of the coins you gained this level will be added to your total and you'll go up one level to a max of 7. If you flip over a Voltorb, you lose all your coins from the current level and risk going down to a lower level.'''
-
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        if not tuple:
-            raise Exception('AccountNotLinked')
-        if tuple[0] == 'False':
-            raise Exception('EmailNotVerified')
 
         self.v1 = self.load(ctx.author.id)
         await self.v1.run(ctx=ctx)

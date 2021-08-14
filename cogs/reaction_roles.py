@@ -1,5 +1,4 @@
 import json
-import sqlite3
 
 from asyncio import TimeoutError
 
@@ -23,9 +22,6 @@ class ReactionRoles(commands.Cog):
                 self.emojis = json.load(f)['games']
         except FileNotFoundError:
             self.enmojis = {}
-
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):

@@ -1,14 +1,10 @@
 import json
-import sqlite3
 
 from discord.ext import commands
 
 class Prefix(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
 
     async def cog_check(self, ctx):
         return self.bot.verificationCheck(ctx)

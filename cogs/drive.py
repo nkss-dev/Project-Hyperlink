@@ -3,7 +3,6 @@ from __future__ import print_function
 import aiohttp
 import json
 import os.path
-import sqlite3
 
 from discord import Embed, Color
 from discord.ext import commands
@@ -16,9 +15,6 @@ from google.oauth2.credentials import Credentials
 class Drive(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
 
         with open('db/emojis.json', 'r') as f:
             self.emojis = json.load(f)

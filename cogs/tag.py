@@ -1,5 +1,4 @@
 import aiohttp
-import sqlite3
 
 from discord import utils
 from discord.ext import commands
@@ -7,9 +6,6 @@ from discord.ext import commands
 class Tag(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
 
         self.sections = (
             'CE-A', 'CE-B', 'CE-C',
