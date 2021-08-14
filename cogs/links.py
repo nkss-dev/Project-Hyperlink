@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from utils.l10n import get_l10n
 
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -30,6 +31,8 @@ class Links(commands.Cog):
         if not self.bot.verificationCheck(ctx):
             return False
 
+        self.l10n = get_l10n(ctx.guild.id, 'links')
+
         self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
         tuple = self.c.fetchone()
 
@@ -37,7 +40,7 @@ class Links(commands.Cog):
 
         channel = self.bot.get_channel(self.data[str(tuple[1])][tuple[0]]['channel'])
         if channel != ctx.channel:
-            await ctx.reply(f'To prevent section specific links from being accessible to everyone, this command can only be run in specified channels ({channel.mention} in your case).')
+            await ctx.reply(self.l10n.format_value('link-protection', {'channel': channel.mention}))
             return False
         return True
 
@@ -48,7 +51,8 @@ class Links(commands.Cog):
         date = datetime_ist.strftime('%d-%m-%Y')
         day = datetime_ist.strftime('%A')
         timetable = self.data[str(tuple[1])][tuple[0]][day]
-        description = f'**Upcoming Classes:**\n({date})\n\n'
+        description = self.l10n.format_value('link-embed-title', {'date': date})
+
         flag = False
         for lecture in timetable:
             time = lecture['time']
@@ -64,11 +68,11 @@ class Links(commands.Cog):
                 for role in temp:
                     link = link.replace(role[0], role[1])
                 if 'http' not in link:
-                    link += 'Link unavailable'
+                    link += self.l10n.format_value('link-notfound')
                 description += f'\n{subject} ({time}):\n{link}\n'
 
         if not flag:
-            description += 'No class times inputted'
+            description += self.l10n.format_value('links-notfound')
 
         return description
 
@@ -82,7 +86,7 @@ class Links(commands.Cog):
     @commands.group(brief='Allows certain members to add links to section specific dashboard')
     async def link(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.reply('Invalid link command passed.')
+            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
     @link.command(name='create', brief='Creates the dashboard embed')
@@ -113,13 +117,16 @@ class Links(commands.Cog):
 
         message = await ctx.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
         description = message.embeds[0].description
+
         if f'{subject} ({time}):' in description:
             old_link = description.split(f'{subject} ({time}):\n', 1)[1].split('\n', 1)[0]
             old = f'{subject} ({time}):\n{old_link}'
-            if 'only:' in old_link:
+
+            if self.l10n.format_value('section-check') in old_link:
                 new = f"{subject} ({time}):\n{old_link.split(': ')[0]}: {link}"
             else:
                 new = f'{subject} ({time}):\n{link}'
+
             description = description.replace(old, new)
         else:
             times = [class_time.split(')')[0] for class_time in description.split('(')[2:]]
@@ -133,7 +140,7 @@ class Links(commands.Cog):
                     break
 
             if not flag:
-                description = description.replace('No class times inputted', '')
+                description = description.replace(self.l10n.format_value('links-notfound'), '')
                 description += f'{subject} ({time}):\n{link}'
 
         await self.edit(message, description)
@@ -151,7 +158,7 @@ class Links(commands.Cog):
             try:
                 remainder = desc[1].split('\n', 1)[1]
             except:
-                remainder = '\nNo class times inputted'
+                remainder = f"\n{self.l10n.format_value('links-notfound')}"
 
             desc = f'{desc[0]}\n{remainder}'
 
