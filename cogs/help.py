@@ -16,11 +16,10 @@ def syntax(command):
 
     for key, value in command.params.items():
         if key not in ('self', 'ctx'):
-            params.append(f'[{key}]' if 'NoneType' in str(value) else f'<{key}>')
+            params.append(f'[{key}]' if str(value) == None else f'<{key}>')
     params = ' '.join(params)
 
-    if not (help := command.help):
-        help = command.brief
+    help = command.help or command.brief
 
     return help, aliases, params
 
@@ -35,14 +34,18 @@ class Help(commands.Cog):
                 title = f'{command.cog.qualified_name} Help!',
                 color = Color.blurple()
             )
+
             for command in command.cog.walk_commands():
                 _, aliases, params = syntax(command)
+
                 if command.parent:
                     field_name = f'{command.parent} {aliases} {params}'
                 else:
                     field_name = f'{aliases} {params}'
+
                 if not (help := command.help):
                     help = command.brief
+
                 embed.add_field(name=field_name, value=help, inline=False)
             await ctx.send(embed=embed)
         else:
@@ -52,6 +55,7 @@ class Help(commands.Cog):
                 description = help,
                 color = Color.blurple()
             )
+
             if '|' in aliases:
                 aliases = aliases.replace(f'{command}|', '')
                 embed.add_field(name='Aliases', value=f'`{aliases}`')
@@ -66,9 +70,11 @@ class Help(commands.Cog):
                 color = Color.blurple()
             )
             embed.set_thumbnail(url=self.bot.user.avatar_url)
+
             for command in self.bot.commands:
                 _, aliases, params = syntax(command)
                 embed.add_field(name=f'{aliases} {params}', value=command.brief, inline=False)
+
             await ctx.send(embed=embed)
         else:
             if command := get(self.bot.commands, name=cmd):
