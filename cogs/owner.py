@@ -1,4 +1,5 @@
 import json
+from utils.l10n import get_l10n
 
 from discord.ext import commands
 
@@ -15,23 +16,35 @@ class OwnerOnly(commands.Cog):
     @commands.command(brief='Loads a cog')
     async def load(self, ctx, extension):
         await ctx.message.add_reaction(self.emojis['loading'])
+
         self.bot.load_extension(f'cogs.{extension}')
-        await ctx.send(f'\'cogs.{extension}\' loaded successfully!')
+
+        l10n = get_l10n(ctx.guild.id, 'owner')
+        await ctx.send(l10n.format_value('load-successful', {'ext': extension}))
+
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
     @commands.command(brief='Unloads a cog')
     async def unload(self, ctx, extension):
         await ctx.message.add_reaction(self.emojis['loading'])
+
         self.bot.unload_extension(f'cogs.{extension}')
-        await ctx.send(f'\'cogs.{extension}\' unloaded successfully!')
+
+        l10n = get_l10n(ctx.guild.id, 'owner')
+        await ctx.send(l10n.format_value('unload-successful', {'ext': extension}))
+
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
     @commands.command(brief='Reloads a cog')
     async def reload(self, ctx, extension):
         await ctx.message.add_reaction(self.emojis['loading'])
+
         self.bot.unload_extension(f'cogs.{extension}')
         self.bot.load_extension(f'cogs.{extension}')
-        await ctx.send(f'\'cogs.{extension}\' reloaded successfully!')
+
+        l10n = get_l10n(ctx.guild.id, 'owner')
+        await ctx.send(l10n.format_value('reload-successful', {'ext': extension}))
+
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
     @commands.command(brief='Restarts the bot')
