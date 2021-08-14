@@ -3,6 +3,7 @@ from __future__ import print_function
 import aiohttp
 import json
 import os.path
+from utils.l10n import get_l10n
 
 from discord import Embed, Color
 from discord.ext import commands
@@ -16,7 +17,7 @@ class Drive(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        with open('db/emojis.json', 'r') as f:
+        with open('db/emojis.json') as f:
             self.emojis = json.load(f)
 
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -41,12 +42,13 @@ class Drive(commands.Cog):
         self.DRIVE = build('drive', 'v3', credentials=creds)
 
     async def cog_check(self, ctx):
+        self.l10n = get_l10n(ctx.guild.id, 'drive')
         return self.bot.verificationCheck(ctx)
 
     @commands.group(brief='Allows users to interact with a specific Google Drive')
     async def drive(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.reply('Invalid drive command passed.')
+            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
     @drive.command(brief='Used to send search queries to the Drive')
@@ -81,7 +83,7 @@ class Drive(commands.Cog):
                         pageToken=page_token
                     ).execute()
                 except googleapiclient.errors.HttpError:
-                    await ctx.reply('One of the entered arguments caused an error.')
+                    await ctx.reply(self.l10n.format_value('search-error'))
                     return
 
                 for file in response.get('files', []):
@@ -100,20 +102,26 @@ class Drive(commands.Cog):
         embeds = []
         if ignored_args:
             ignored_embed = Embed(
-                description = 'The following arguements were ignored:\n{}'.format(', '.join([arg for arg in ignored_args])),
+                description = self.l10n.format_value('ignored-args', {'args': ', '.join([arg for arg in ignored_args])}),
                 color = Color.blurple()
             )
-            ignored_embed.set_footer(text='Reason: Arguments must be at least 3 characters long')
+            ignored_embed.set_footer(text=self.l10n.format_value('ignored-args-reason'))
             embeds.append(ignored_embed)
+
             if len(ignored_args) == len(content):
                 await ctx.reply(embed=ignored_embed)
                 return
 
         if not folder_links and not file_links:
-            await ctx.reply('Could not find anything. Sorry.')
+            await ctx.reply(self.l10n.format_value('search-result-notfound'))
             return
 
-        for i, embed_name, links in zip(range(2), ['Folders', 'Files'], [folder_links, file_links]):
+        embed_title = (
+            self.l10n.format_value('folders'),
+            self.l10n.format_value('files')
+        )
+
+        for i, embed_name, links in zip(range(2), embed_title, (folder_links, file_links)):
             description = ''
             for parent in links:
                 data = self.DRIVE.files().get(fileId=parent).execute()
@@ -132,7 +140,7 @@ class Drive(commands.Cog):
         await webhook.send(
             embeds=embeds,
             username=self.bot.user.name,
-            avatar_url=self.bot.user.avatar_url
+            avatar_url=self.bot.user.avatar.url
         )
 
 def setup(bot):
