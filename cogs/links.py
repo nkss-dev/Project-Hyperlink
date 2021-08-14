@@ -151,8 +151,10 @@ class Links(commands.Cog):
             try:
                 remainder = desc[1].split('\n', 1)[1]
             except:
-                remainder = ''
+                remainder = '\nNo class times inputted'
+
             desc = f'{desc[0]}\n{remainder}'
+
             await self.edit(message, desc)
             await ctx.message.delete()
 
