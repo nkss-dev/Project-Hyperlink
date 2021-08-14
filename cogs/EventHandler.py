@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from utils.l10n import get_l10n
 
 from datetime import datetime
 from re import fullmatch
@@ -29,8 +30,10 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if fullmatch(f'<@!?{self.bot.user.id}>', message.content):
+            l10n = get_l10n(message.guild.id, 'EventHandler')
+
             embed = discord.Embed(
-                title = 'Bot Details',
+                title = l10n.format_value('details-title'),
                 color = discord.Color.blurple()
             )
 
@@ -38,7 +41,7 @@ class Events(commands.Cog):
                 prefixes = json.load(f)[str(message.guild.id)]['prefix']
 
             embed.add_field(
-                name = 'Prefixes',
+                name = l10n.format_value('prefix'),
                 value = '\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]),
                 inline = False
             )
@@ -47,15 +50,25 @@ class Events(commands.Cog):
             hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
             minutes, seconds = divmod(remainder, 60)
             days, hours = divmod(hours, 24)
-            embed.add_field(name='Uptime', value=f'{days}d, {hours}h, {minutes}m, {seconds}s', inline=False)
+            embed.add_field(
+                name = l10n.format_value('uptime'),
+                value = f'{days}d, {hours}h, {minutes}m, {seconds}s',
+                inline = False
+            )
 
-            ping_msg = await message.channel.send('Initiated!')
+            ping_msg = await message.channel.send(l10n.format_value('ping-initiate'))
             start = datetime.utcnow()
-            await ping_msg.edit(content='Calculating ping...')
+            await ping_msg.edit(content=l10n.format_value('ping-calc'))
             delta_uptime = (datetime.utcnow() - start)
-            embed.add_field(name='Response Latency', value=f'```{int(delta_uptime.total_seconds()*1000)}ms```')
 
-            embed.add_field(name='Websocket Latency', value=f'```{int(self.bot.latency*1000)}ms```')
+            embed.add_field(
+                name = l10n.format_value('ping-r-latency'),
+                value = f'```{int(delta_uptime.total_seconds()*1000)}ms```'
+            )
+            embed.add_field(
+                name = l10n.format_value('ping-w-latency'),
+                value = f'```{int(self.bot.latency*1000)}ms```'
+            )
 
             await ping_msg.edit(content=None, embed=embed)
 
@@ -116,14 +129,19 @@ class Events(commands.Cog):
             # Sends a dm to the new user explaining that they have to verify
             welcome_channel = self.bot.get_channel(details['verification']['welcome_channel'])
             commands_channel = self.bot.get_channel(details['verification']['commands_channel'])
-            dm_message = f'Before you can see/use all the channels that it has, you will need to do a quick verification, the process of which is explained in {welcome_channel.mention}. Send the verification command in {commands_channel.mention}. If you have any issues with the command, contact a moderator on the server (or {guild.owner.mention}). Do try to verify even if you didn\'t understand it fully, the moderators will help you out if need be.'
 
+            l10n = get_l10n(guild.id, 'EventHandler')
+            keys = {
+                'instruction-channel': welcome_channel.mention,
+                'command-channel': commands_channel.mention,
+                'owner': guild.owner.mention
+            }
             embed = discord.Embed(
-                title = f'Welcome to {guild}!',
-                description = dm_message,
+                title = l10n.format_value('dm-title', {'guild': guild.name}),
+                description = l10n.format_value('dm-description', keys),
                 color = discord.Color.blurple()
             )
-            embed.set_footer(text='Have fun!')
+            embed.set_footer(text=l10n.format_value('dm-footer'))
 
             await member.send(embed=embed)
 
@@ -136,6 +154,8 @@ class Events(commands.Cog):
         details = self.data[str(member.guild.id)]
         if not details.get('on_join/leave'):
             return
+
+        l10n = get_l10n(member.guild.id, 'EventHandler')
 
         action = 'leave_msg'
         if member.guild.me.guild_permissions.view_audit_log:
@@ -152,7 +172,7 @@ class Events(commands.Cog):
         channel = self.bot.get_channel(details['on_join/leave'][action][0])
         if action != 'leave_msg' and (channel := self.bot.get_channel(details['on_join/leave'][action][0])):
             message = details['on_join/leave'][action][1].replace('{user}', member.mention)
-            message += '\n**Reason:** ' + (entry.reason or 'None')
+            message += l10n.format_value('leave-reason', {'reason': entry.reason or 'None'})
 
             embed = discord.Embed(
                 description = message,
@@ -168,8 +188,11 @@ class Events(commands.Cog):
         tuple = self.c.fetchone()
 
         if not tuple and channel:
-            triggered = self.emojis['triggered']
-            await channel.send(f'{member.mention} has left the server because they didn\'t know how to verify {triggered}')
+            keys = {
+                'member': member.mention,
+                'emoji': self.emojis['triggered']
+            }
+            await channel.send(l10n.format_value('leave-verification-notfound', keys))
             return
 
         # Removing the guild ID from the user's details
@@ -188,7 +211,8 @@ class Events(commands.Cog):
         # Sends exit message to the server's channel
         if channel:
             message = details['on_join/leave'][action][1].replace('{user}', member.mention)
-            message += '\n**Reason:** ' + (entry.reason or 'None')
+            message += l10n.format_value('leave-reason', {'reason': entry.reason or 'None'})
+
             embed = discord.Embed(
                 description = message,
                 color = discord.Color.blurple()
@@ -211,12 +235,14 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        l10n = get_l10n(ctx.guild.id, 'EventHandler')
+
         if isinstance(error, commands.CommandNotFound):
             pass
 
         elif isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):
-                await ctx.reply(f"'{error.param}' is a required argument that is missing.")
+                await ctx.reply(l10n.format_value('UserInputError-MissingRequiredArgument', {'arg': error.param.name}))
 
             elif isinstance(error, commands.BadArgument):
                 if isinstance(error, commands.MessageNotFound):
@@ -227,7 +253,7 @@ class Events(commands.Cog):
 
         elif isinstance(error, commands.CheckFailure):
             if isinstance(error, commands.NotOwner):
-                await ctx.reply('This command is for the bot owner only.')
+                await ctx.reply(l10n.format_value('CheckFailure-NotOwner'))
 
             elif isinstance(error, commands.MissingPermissions):
                 await ctx.reply(error)
@@ -236,9 +262,9 @@ class Events(commands.Cog):
                 await ctx.reply(error)
 
             elif isinstance(error, commands.MissingAnyRole):
-                error.missing_roles = ', '.join([ctx.guild.get_role(role).mention for role in error.missing_roles])
+                roles = ', '.join([ctx.guild.get_role(role).mention for role in error.missing_roles])
                 embed = discord.Embed(
-                    description = f'You are missing at least one of the required roles: {error.missing_roles}',
+                    description = l10n.format_value('CheckFailure-MissingAnyRole', {'roles': roles}),
                     color = discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
@@ -248,7 +274,7 @@ class Events(commands.Cog):
 
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, discord.errors.Forbidden):
-                await ctx.reply('I am missing some permissions to execute this command. Please contact a mod to resolve this issue.')
+                await ctx.reply(l10n.format_value('CommandInvokeError-Forbidden'))
 
             elif isinstance(error.original, commands.ExtensionError):
                 await ctx.reply(error.original)
