@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from utils.l10n import get_l10n
 
 import discord
 from discord.ext import commands
@@ -11,13 +12,14 @@ class Info(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        with open('db/emojis.json', 'r') as f:
+        with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
     def cog_check(self, ctx):
+        self.l10n = get_l10n(ctx.guild.id, 'info')
         return self.bot.basicVerificationCheck(ctx)
 
     @commands.command(brief='Displays details of the user', aliases=['p'])
@@ -28,39 +30,45 @@ class Info(commands.Cog):
         if member != ctx.author:
             await self.bot.moderatorCheck(ctx)
 
-        # Gets details of requested user from the database
         self.c.execute('SELECT Roll_Number, Section, SubSection, Name, Institute_Email, Verified FROM main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
-        # Exit if the user was not found
+
         if not tuple:
-            await ctx.reply('The requested record wasn\'t found!')
+            await ctx.reply(self.l10n.format_value('record-notfound'))
             return
-        # Creates a list of role objects of the user to display in the embed
+
         ignored_roles = [tuple[1], tuple[2], '@everyone']
         user_roles = [role.mention for role in member.roles if role.name not in ignored_roles]
         user_roles.reverse()
         user_roles = ', '.join(user_roles)
         if not user_roles:
-            user_roles = 'None taken'
-        # Checking if the user has a verified email or not
+            user_roles = self.l10n.format_value('roles-none')
+
         status = ' '
         if tuple[5] == 'True':
             status += self.emojis['verified']
         else:
             status += self.emojis['not-verified']
-        # Creating the embed
+
+        profile = {
+            'roll': str(tuple[0]),
+            'section': tuple[1] + tuple[2][4:],
+            'roles': user_roles,
+            'email': tuple[4]
+        }
         embed = discord.Embed(
             title = f'{tuple[3].title()}{status}',
-            description = f'**Roll Number:** {tuple[0]}'
-            + f'\n**Section:** {tuple[1]}{tuple[2][4:]}'
-            + f'\n**Roles:** {user_roles}'
-            + f'\n**Email:** {tuple[4]}',
+            description = self.l10n.format_value('profile', profile),
             colour = member.top_role.color
         )
-        embed.set_author(name = f'{member}\'s Profile', icon_url = member.avatar_url)
-        embed.set_thumbnail(url = member.avatar_url)
-        join_date = member.joined_at.strftime('%b %d, %Y')
-        embed.set_footer(text = f'Joined at: {join_date}')
+        embed.set_author(
+            name = self.l10n.format_value('profile-name', {'member': str(member)}),
+            icon_url = member.avatar_url
+        )
+        embed.set_thumbnail(url=member.avatar_url)
+        date = member.joined_at.strftime('%b %d, %Y')
+        embed.set_footer(text=self.l10n.format_value('profile-join-date', {'date': date}))
+
         await ctx.send(embed=embed)
 
     @commands.command(brief='Nicks a user to their first name')
@@ -81,10 +89,9 @@ class Info(commands.Cog):
         self.c.execute('SELECT Name from main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
 
-        # Exit if the user was not found
         if not tuple:
             embed = discord.Embed(
-                description = f'{member.mention} does not exist in the database',
+                description = self.l10n.format_value('member-notfound', {'member': member.mention}),
                 color = discord.Color.blurple()
             )
             await ctx.reply(embed=embed)
@@ -93,8 +100,14 @@ class Info(commands.Cog):
         old_nick = member.nick
         first_name = tuple[0].split(' ', 1)[0].capitalize()
         await member.edit(nick=first_name)
+
+        nick = {
+            'member': member.mention,
+            'old': old_nick,
+            'new': member.nick
+        }
         embed = discord.Embed(
-            description = f'{member.mention}\'s nick changed from `{old_nick}` to `{member.nick}` successfully.',
+            description = self.l10n.format_value('nick-change-success', nick),
             color = discord.Color.blurple()
         )
         await ctx.reply(embed=embed)
@@ -105,7 +118,15 @@ class Info(commands.Cog):
         and their totals
         """
 
-        sections = ['CE-A', 'CE-B', 'CE-C', 'CS-A', 'CS-B', 'EC-A', 'EC-B', 'EC-C', 'EE-A', 'EE-B', 'EE-C', 'IT-A', 'IT-B', 'ME-A', 'ME-B', 'ME-C', 'PI-A', 'PI-B']
+        sections = (
+            'CE-A', 'CE-B', 'CE-C',
+            'CS-A', 'CS-B',
+            'EC-A', 'EC-B', 'EC-C',
+            'EE-A', 'EE-B', 'EE-C',
+            'IT-A', 'IT-B',
+            'ME-A', 'ME-B', 'ME-C',
+            'PI-A', 'PI-B'
+        )
         total = []
         joined = []
         verified = []
@@ -142,11 +163,12 @@ class Info(commands.Cog):
 
     @commands.command(brief='Gives invites of some servers', aliases=['inv'])
     async def invite(self, ctx):
-        servers = ['NITKKR\'24: https://discord.gg/nitkkr-24',
+        servers = ('NITKKR\'24: https://discord.gg/nitkkr-24',
             'kkr++: https://discord.gg/epaTW7tjYR'
-        ]
+        )
+
         embed = discord.Embed(
-            title = 'Invites:',
+            title = self.l10n.format_value('invite'),
             description = '\n'.join(servers),
             color = discord.Color.blurple()
         )
