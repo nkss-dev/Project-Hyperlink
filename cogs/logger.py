@@ -22,7 +22,7 @@ class Logger(commands.Cog):
             return
         embed = Embed(
             description = f'Message deleted in {message.channel.mention}',
-            color = Color.from_rgb(255, 0, 0)
+            color = Color.red()
         )
         embed.set_author(name=message.author, icon_url=message.author.avatar_url)
         if not message.content:
@@ -50,7 +50,7 @@ class Logger(commands.Cog):
 
         embed = Embed(
             description = f'{len(payload.cached_messages)} messages were deleted in {payload.cached_messages[0].channel.mention}',
-            color = Color.from_rgb(255, 0, 0)
+            color = Color.red()
         )
         embed.timestamp = datetime.utcnow()
         await channel.send(embed=embed)
@@ -70,7 +70,7 @@ class Logger(commands.Cog):
             return
         embed = Embed(
             description = f'Message edited in {before.channel.mention} - [Jump to message]({before.jump_url})',
-            color = Color.from_rgb(255, 255, 0)
+            color = Color.orange()
         )
         embed.set_author(name=before.author, icon_url=before.author.avatar_url)
         if not before.content:
