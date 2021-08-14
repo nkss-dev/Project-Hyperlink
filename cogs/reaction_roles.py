@@ -1,6 +1,7 @@
 import json
 
 from asyncio import TimeoutError
+from utils.l10n import get_l10n
 
 import discord
 from discord.ext import commands
@@ -68,6 +69,7 @@ class ReactionRoles(commands.Cog):
             self.save()
 
     async def cog_check(self, ctx):
+        self.l10n = get_l10n(ctx.guild.id, 'reaction_roles')
         return await self.bot.moderatorCheck(ctx)
 
     @commands.group(brief='This adds/removes roles from a user based on reactions to a specified message', aliases=['rr'])
@@ -75,7 +77,7 @@ class ReactionRoles(commands.Cog):
     @commands.bot_has_permissions(manage_roles=True)
     async def reactionrole(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.reply('Invalid command passed.')
+            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
     @reactionrole.command(brief='Adds a reaction role')
@@ -84,25 +86,30 @@ class ReactionRoles(commands.Cog):
             if game in self.emojis:
                 reaction = self.emojis[game]
             else:
-                await ctx.reply(f'{game} is invalid!')
+                await ctx.reply(self.l10n.format_value('invalid-game', {'game': game}))
                 return
         else:
-            msg = await ctx.reply('React to this message with the reaction you want to use for the reaction role.')
+            msg = await ctx.reply(self.l10n.format_value('react-message'))
+
             def check(reaction, user):
                 return user == ctx.author and reaction.message.id == msg.id
+
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
                 reaction = reaction.emoji
             except TimeoutError:
-                await ctx.send('Reaction role setup has been cancelled. You took too long to choose a valid reaction.')
+                await ctx.send(self.l10n.format_value('react-timeout'))
                 return
         await message.add_reaction(reaction)
+
         ID = self.generateID([reaction_role['ID'] for reaction_role in self.data[str(ctx.guild.id)]])
+
         if isinstance(reaction, str):
             if reaction[0] == '<':
                 reaction = int(reaction.split(':')[2][:-1])
         else:
             reaction = reaction.id
+
         dict = {
             "ID": ID,
             "emoji": reaction,
@@ -113,11 +120,13 @@ class ReactionRoles(commands.Cog):
         }
         self.data[str(ctx.guild.id)].append(dict)
         self.save()
+
         embed = discord.Embed(
-            description = 'Successfully created the reaction role!',
+            description = self.l10n.format_value('react-success'),
             color = discord.Color.blurple()
         )
-        embed.add_field(name='ID', value=f'`{ID}`')
+        embed.add_field(name=self.l10n.format_value('id'), value=f'`{ID}`')
+
         if game:
             await ctx.reply(embed=embed)
         else:
@@ -129,17 +138,21 @@ class ReactionRoles(commands.Cog):
             if ID == reaction_role['ID']:
                 channel = self.bot.get_channel(reaction_role['channel_id'])
                 message = await channel.fetch_message(reaction_role['message_id'])
+
                 if isinstance(emoji := reaction_role['emoji'], int):
                     for game in self.emojis:
                         if str(emoji) in self.emojis[game]:
                             emoji = self.emojis[game]
                             break
+
                 await message.remove_reaction(emoji, self.bot.user)
                 self.data[str(ctx.guild.id)].remove(reaction_role)
                 self.save()
-                await ctx.send(f'Reaction role with ID `{ID}` removed successfully!')
+
+                await ctx.reply(self.l10n.format_value('remove-success', {'id': ID}))
                 return
-        await ctx.reply(f'No reaction role with ID `{ID}` found.')
+
+        await ctx.reply(self.l10n.format_value('react-notfound', {'id': ID}))
 
     def generateID(self, IDs):
         sample_set = '01234567890123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
