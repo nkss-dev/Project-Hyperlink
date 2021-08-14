@@ -124,10 +124,18 @@ class Links(commands.Cog):
         else:
             times = [class_time.split(')')[0] for class_time in description.split('(')[2:]]
             subjects = [lecture.split(' (')[0] for lecture in description.split('\n')[2:] if '(' in lecture]
+
+            flag = False
             for lecture, class_time in zip(subjects, times):
-                if datetime.strptime(time, '%I:%M%p') <= datetime.strptime(class_time, '%I:%M%p'):
+                if datetime.strptime(time, '%I:%M%p') < datetime.strptime(class_time, '%I:%M%p'):
                     description = description.replace(f'{lecture} ({class_time})', f'{subject} ({time}):\n{link}\n\n{lecture} ({class_time})')
+                    flag = True
                     break
+
+            if not flag:
+                description = description.replace('No class times inputted', '')
+                description += f'{subject} ({time}):\n{link}'
+
         await self.edit(message, description)
         await ctx.message.delete()
 
