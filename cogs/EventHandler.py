@@ -73,10 +73,15 @@ class Events(commands.Cog):
             return
 
         if details.get('on_join/leave'):
+            # Sends welcome message on the server's channel
             if channel := self.bot.get_channel(details['on_join/leave']['join_msg'][0]):
                 await channel.send(details['on_join/leave']['join_msg'][1].replace('{user}', member.mention))
+
+            # Sends welcome message to the user's DM
             if dm := details['on_join/leave']['private_dm']:
                 await member.send(dm.replace('{server}', guild.name))
+
+            # Gives roles to the new user
             for role in details['on_join/leave']['new_roles']:
                 if new_role := guild.get_role(role):
                     await member.add_roles(new_role)
@@ -92,18 +97,18 @@ class Events(commands.Cog):
 
         if tuple:
             if tuple[3] == 'True':
-                # Fetches the mutual guilds list from the user
+                # Adding the guild ID to the user's details
                 guilds = json.loads(tuple[2])
-                # Adds the new guild id if it is a new one
                 if guild.id not in guilds:
                     guilds.append(guild.id)
                 guilds = json.dumps(guilds)
-                # Assigning one SubSection and one Section role to the user
+
+                # Assigning Section and Sub-Section roles to the user
                 role = get(guild.roles, name = tuple[0])
                 await member.add_roles(role)
                 role = get(guild.roles, name = tuple[1])
                 await member.add_roles(role)
-                # Updating the record in the database
+
                 self.c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
                 self.conn.commit()
                 return
@@ -112,14 +117,17 @@ class Events(commands.Cog):
             welcome_channel = self.bot.get_channel(details['verification']['welcome_channel'])
             commands_channel = self.bot.get_channel(details['verification']['commands_channel'])
             dm_message = f'Before you can see/use all the channels that it has, you will need to do a quick verification, the process of which is explained in {welcome_channel.mention}. Send the verification command in {commands_channel.mention}. If you have any issues with the command, contact a moderator on the server (or {guild.owner.mention}). Do try to verify even if you didn\'t understand it fully, the moderators will help you out if need be.'
+
             embed = discord.Embed(
                 title = f'Welcome to {guild}!',
                 description = dm_message,
                 color = discord.Color.blurple()
             )
             embed.set_footer(text='Have fun!')
+
             await member.send(embed=embed)
-        # Adding a role that restricts the user to view any channel but one on the server
+
+        # Adding a role that restricts the user to view any channel on the server
         role = guild.get_role(details['verification']['not-verified_role'])
         await member.add_roles(role)
 
@@ -131,6 +139,7 @@ class Events(commands.Cog):
 
         action = 'leave_msg'
         if member.guild.me.guild_permissions.view_audit_log:
+            # Checking the last 5 audit log entries to check for a kick or a ban
             async for entry in member.guild.audit_logs(limit=5):
                 if str(entry.target) == str(member):
                     if entry.action is discord.AuditLogAction.kick:
@@ -157,23 +166,26 @@ class Events(commands.Cog):
 
         self.c.execute('SELECT Guilds, Verified FROM main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
-        # Exit if the user was not found
+
         if not tuple and channel:
             triggered = self.emojis['triggered']
             await channel.send(f'{member.mention} has left the server because they didn\'t know how to verify {triggered}')
             return
-        # Fetches the mutual guilds list and removes one
+
+        # Removing the guild ID from the user's details
         guilds = json.loads(tuple[0])
         guilds.remove(member.guild.id)
-        # Remvoes their ID from the database if they don't have a verified email
-        # and this was the only guild they shared with the bot
+
+        # Removing the user's entry if they don't share any guild with the bot and are not verified
         if tuple[1] == 'False' and not guilds:
             self.c.execute('UPDATE main SET Discord_UID = NULL, Guilds = "[]" where Discord_UID = (:uid)', {'uid': member.id})
             self.conn.commit()
-        # Only removes the guild ID otherwise
+
         else:
             self.c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': json.dumps(guilds)})
             self.conn.commit()
+
+        # Sends exit message to the server's channel
         if channel:
             message = details['on_join/leave'][action][1].replace('{user}', member.mention)
             message += '\n**Reason:** ' + (entry.reason or 'None')
