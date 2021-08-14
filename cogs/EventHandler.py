@@ -72,7 +72,7 @@ class Events(commands.Cog):
                 await member.add_roles(bot_role)
             return
 
-        if 'on_join/leave' in details:
+        if details.get('on_join/leave'):
             if channel := self.bot.get_channel(details['on_join/leave']['join_msg'][0]):
                 await channel.send(details['on_join/leave']['join_msg'][1].replace('{user}', member.mention))
             if dm := details['on_join/leave']['private_dm']:
@@ -83,11 +83,13 @@ class Events(commands.Cog):
                 else:
                     details['on_join/leave']['new_roles'].remove(role)
                     self.save()
-        if 'verification' not in details:
+
+        if not details.get('verification'):
             return
-        # Checks if the user who joined is already in the database or not
+
         self.c.execute('SELECT Section, SubSection, Guilds, Verified from main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
+
         if tuple:
             if tuple[3] == 'True':
                 # Fetches the mutual guilds list from the user
@@ -124,7 +126,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         details = self.data[str(member.guild.id)]
-        if 'on_join/leave' not in details:
+        if not details.get('on_join/leave'):
             return
 
         action = 'leave_msg'
@@ -142,15 +144,17 @@ class Events(commands.Cog):
         if action != 'leave_msg' and (channel := self.bot.get_channel(details['on_join/leave'][action][0])):
             message = details['on_join/leave'][action][1].replace('{user}', member.mention)
             message += '\n**Reason:** ' + (entry.reason or 'None')
+
             embed = discord.Embed(
                 description = message,
                 color = discord.Color.blurple()
             )
             await channel.send(embed=embed)
             channel = None
-        if 'verification' not in details:
+
+        if not details.get('verification'):
             return
-        # Gets details of user from the database
+
         self.c.execute('SELECT Guilds, Verified FROM main where Discord_UID = (:uid)', {'uid': member.id})
         tuple = self.c.fetchone()
         # Exit if the user was not found
