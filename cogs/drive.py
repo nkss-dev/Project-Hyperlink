@@ -8,6 +8,7 @@ from utils.l10n import get_l10n
 from discord import Embed, Color
 from discord.ext import commands
 
+from googleapiclient import errors
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -82,7 +83,7 @@ class Drive(commands.Cog):
                         fields='nextPageToken, files(id, name, parents, mimeType)',
                         pageToken=page_token
                     ).execute()
-                except googleapiclient.errors.HttpError:
+                except errors.HttpError:
                     await ctx.reply(self.l10n.format_value('search-error'))
                     return
 
