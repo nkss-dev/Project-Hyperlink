@@ -3,7 +3,7 @@ A moderation bot made specifically to be used in NITKKR only servers
 
 ## Prerequisites
 - Python 3.6+
-- aiohttp (for [tag.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/tag.py))
+- aiohttp (for [tag.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/tag.py) and [drive.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/drive.py))
 - discord 1.7+
 - googleapiclient (for [drive.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/drive.py))
 - python.dotenv
