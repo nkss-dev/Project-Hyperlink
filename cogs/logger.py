@@ -1,6 +1,7 @@
 import json
 
 from datetime import datetime
+from utils.l10n import get_l10n
 
 from discord import Embed, Color
 from discord.ext import commands
@@ -20,24 +21,26 @@ class Logger(commands.Cog):
         channel = self.bot.get_channel(guild_data[str(message.guild.id)]['logging_channel'][0])
         if not channel:
             return
+
+        l10n = get_l10n(message.guild.id, 'logger')
+
         embed = Embed(
-            description = f'Message deleted in {message.channel.mention}',
+            description = l10n.format_value('message-delete', {'channel': message.channel.mention}),
             color = Color.red()
         )
         embed.set_author(name=message.author, icon_url=message.author.avatar_url)
-        if not message.content:
-            embed.add_field(name='**Content**', value='Could not find message content')
-        else:
-            embed.add_field(name='**Content**', value=message.content)
+        embed.add_field(
+            name = l10n.format_value('content'),
+            value = message.content or l10n.format_value('content-notfound')
+        )
+
         if message.attachments:
             if 'image' in message.attachments[0].content_type:
                 embed.set_image(url=message.attachments[0].url)
         embed.timestamp = datetime.utcnow()
-        embed.set_footer(text=f'User ID: {message.author.id}')
-        try:
-            await channel.send(embed=embed)
-        except:
-            print(message.content)
+        embed.set_footer(text=l10n.format_value('user-id', {'id': message.author.id}))
+
+        await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
@@ -48,11 +51,19 @@ class Logger(commands.Cog):
         if not channel:
             return
 
+        l10n = get_l10n(payload.guild_id, 'logger')
+
+        messages = {
+            'count': len(payload.cached_messages),
+            'channel': self.bot.get_channel(payload.channel_id).mention
+        }
+
         embed = Embed(
-            description = f'{len(payload.cached_messages)} messages were deleted in {payload.cached_messages[0].channel.mention}',
+            description = l10n.format_value('messages-delete', messages),
             color = Color.red()
         )
         embed.timestamp = datetime.utcnow()
+
         await channel.send(embed=embed)
 
     @commands.Cog.listener()
@@ -66,27 +77,34 @@ class Logger(commands.Cog):
         channel = self.bot.get_channel(guild_data[str(before.guild.id)]['logging_channel'][1])
         if not channel:
             return
+
         if before.content == after.content:
             return
+
+        l10n = get_l10n(before.guild.id, 'logger')
+
         embed = Embed(
-            description = f'Message edited in {before.channel.mention} - [Jump to message]({before.jump_url})',
+            description = l10n.format_value(
+                'message-edit',
+                {'channel': before.channel.mention, 'url': before.jump_url}
+            ),
             color = Color.orange()
         )
         embed.set_author(name=before.author, icon_url=before.author.avatar_url)
-        if not before.content:
-            embed.add_field(name='**Old Message**', value='Could not find message content')
-        else:
-            embed.add_field(name='**Old Message**', value=before.content)
-        if not after.content:
-            embed.add_field(name='**New Message**', value='Could not find message content', inline=False)
-        else:
-            embed.add_field(name='**New Message**', value=after.content, inline=False)
+
+        embed.add_field(
+            name = l10n.format_value('message-old'),
+            value = before.content or l10n.format_value('content-notfound')
+        )
+        embed.add_field(
+            name = l10n.format_value('message-new'),
+            value = after.content or l10n.format_value('content-notfound'),
+            inline=False
+        )
         embed.timestamp = datetime.utcnow()
-        embed.set_footer(text=f'User ID: {before.author.id}')
-        try:
-            await channel.send(embed=embed)
-        except:
-            print(before.content)
+        embed.set_footer(text=l10n.format_value('user-id', {'id': before.author.id}))
+
+        await channel.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(Logger(bot))
