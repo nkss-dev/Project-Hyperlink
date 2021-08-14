@@ -1,4 +1,5 @@
 import aiohttp
+from utils.l10n import get_l10n
 
 from discord import utils
 from discord.ext import commands
@@ -28,6 +29,7 @@ class Tag(commands.Cog):
         )
 
     async def cog_check(self, ctx):
+        self.l10n = get_l10n(ctx.guild.id, 'tag')
         return self.bot.verificationCheck(ctx)
 
     @commands.command(brief='Allows user to tag section/subsection roles')
@@ -48,15 +50,12 @@ class Tag(commands.Cog):
             # Creates a webhook if none exist
             if not bool:
                 webhook = await ctx.channel.create_webhook(name='Webhook')
-        if ctx.author.nick:
-            username = ctx.author.nick
-        else:
-            username = str(ctx.author.name)
+
         section = tuple[1]
         for i in content.split(' '):
             # Exit if the user tries to ping @everyone or @here
             if '@everyone' in i or '@here' in i:
-                await ctx.send('You can\'t tag `@everyone` or `@here`')
+                await ctx.send(self.l10n.format_value('tag-everyone-invalid'))
                 return
             # Skip to the next iteration if the current word doesn't contain a tag
             if not i or '@' not in i:
@@ -86,7 +85,7 @@ class Tag(commands.Cog):
                     elif j[3].upper() == section[3]:
                         content = content.replace('@' + j[:4], utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
                 elif j and j[:2].upper() not in section:
-                    await ctx.send('You can\'t tag sections other than your own!')
+                    await ctx.send(self.l10n.format_value('tag-other-section-invalid'))
                     return
                 elif j and j[:2].upper() in section:
                     # Checks if the tag is of a SubSection
@@ -99,16 +98,20 @@ class Tag(commands.Cog):
                         elif section[3] == 'C' and (j[4] == '7' or j[4] == '8' or j[4] == '9'):
                             content = content.replace('@' + j[:5], utils.get(ctx.guild.roles, name = j[:5].strip().upper()).mention)
                         else:
-                            await ctx.send('You can\'t tag sections other than your own!')
+                            await ctx.send(self.l10n.format_value('tag-other-section-invalid'))
                             return
                     elif j[3].upper() == section[3]:
                         content = content.replace('@' + j[:4], utils.get(ctx.guild.roles, name = j[:4].strip().upper()).mention)
                     else:
-                        await ctx.send('You can\'t tag sections other than your own!')
+                        await ctx.send(self.l10n.format_value('tag-other-section-invalid'))
                         return
-        # Deletes the sent command and sends the new tagged version
+
         await ctx.message.delete()
-        await webhook.send(content.strip(), username=username, avatar_url=ctx.author.avatar_url)
+        await webhook.send(
+            content.strip(),
+            username = ctx.author.nick or ctx.author.name,
+            avatar_url = ctx.author.avatar_url
+        )
 
 def setup(bot):
     bot.add_cog(Tag(bot))
