@@ -46,11 +46,6 @@ class Prefix(commands.Cog):
         self.save()
         await ctx.send(f'{prefix} removed')
 
-    @prefix.command(brief='Removes all prefixes')
-    async def clear(self, ctx):
-        self.data[str(ctx.guild.id)]['prefix'] = []
-        self.save()
-        await ctx.send(f'All prefixes have been removed')
 
     @prefix.command(brief='Removes all custom prefixes and sets to the specified prefix')
     async def set(self, ctx, prefix):
