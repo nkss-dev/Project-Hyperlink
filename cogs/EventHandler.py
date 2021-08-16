@@ -37,8 +37,8 @@ class Events(commands.Cog):
                 color = discord.Color.blurple()
             )
 
-            with open('db/guilds.json') as f:
-                prefixes = json.load(f)[str(message.guild.id)]['prefix']
+            self.open()
+            prefixes = self.data[str(message.guild.id)]['prefix']
 
             embed.add_field(
                 name = l10n.format_value('prefix'),
@@ -76,8 +76,7 @@ class Events(commands.Cog):
     async def on_member_join(self, member):
         guild = member.guild
 
-        with open('db/guilds.json') as f:
-            self.data = json.load(f)
+        self.open()
         details = self.data[str(guild.id)]
 
         if member.bot:
@@ -151,16 +150,20 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        details = self.data[str(member.guild.id)]
+        guild = member.guild
+
+        self.open()
+        details = self.data[str(guild.id)]
+
         if not details.get('on_join/leave'):
             return
 
-        l10n = get_l10n(member.guild.id, 'EventHandler')
+        l10n = get_l10n(guild.id, 'EventHandler')
 
         action = 'leave_msg'
-        if member.guild.me.guild_permissions.view_audit_log:
+        if guild.me.guild_permissions.view_audit_log:
             # Checking the last 5 audit log entries to check for a kick or a ban
-            async for entry in member.guild.audit_logs(limit=5):
+            async for entry in guild.audit_logs(limit=5):
                 if str(entry.target) == str(member):
                     if entry.action is discord.AuditLogAction.kick:
                         action = 'kick_msg'
@@ -197,7 +200,7 @@ class Events(commands.Cog):
 
         # Removing the guild ID from the user's details
         guilds = json.loads(tuple[0])
-        guilds.remove(member.guild.id)
+        guilds.remove(guild.id)
 
         # Removing the user's entry if they don't share any guild with the bot and are not verified
         if tuple[1] == 'False' and not guilds:
@@ -221,13 +224,19 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
+        self.open()
         self.data[str(guild.id)] = self.bot.default_guild_details
         self.save()
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
+        self.open()
         del self.data[str(guild.id)]
         self.save()
+
+    def open(self):
+        with open('db/guilds.json') as f:
+            self.data = json.load(f)
 
     def save(self):
         with open('db/guilds.json', 'w') as f:
