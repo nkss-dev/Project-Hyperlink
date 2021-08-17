@@ -75,6 +75,18 @@ class Verify(commands.Cog):
         self.data[str(ctx.author.id)] = otp
         self.save()
 
+    def checkCode(self, author_id, code):
+        if self.data[str(author_id)] == code:
+            del self.data[str(author_id)]
+            self.save()
+
+            # Marks user as verified in the database
+            self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': author_id})
+            self.conn.commit()
+            return True
+        else:
+            return False
+
     @commands.group(brief='Registers the user in the database')
     async def verify(self, ctx):
         self.l10n = get_l10n(ctx.guild.id, 'verification')
@@ -159,14 +171,7 @@ class Verify(commands.Cog):
             await ctx.reply(self.l10n.format_value('verify-not-received'))
             return
 
-        if self.data[str(ctx.author.id)] == code:
-            del self.data[str(ctx.author.id)]
-            self.save()
-
-            # Marks user as verified in the database
-            self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': ctx.author.id})
-            self.conn.commit()
-
+        if self.checkCode(ctx.author.id, code):
             await ctx.reply(self.l10n.format_value('verify-email-success', {'emoji': self.emojis['verified']}))
         else:
             await ctx.reply(self.l10n.format_value('verify-code-incorrect'))
