@@ -141,7 +141,7 @@ class Drive(commands.Cog):
         await webhook.send(
             embeds=embeds,
             username=self.bot.user.name,
-            avatar_url=self.bot.user.avatar.url
+            avatar_url=self.bot.user.avatar_url
         )
 
 def setup(bot):
