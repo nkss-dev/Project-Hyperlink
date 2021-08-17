@@ -47,6 +47,34 @@ class Verify(commands.Cog):
             OTP += sample_set[floor(random() * 46)]
         return OTP
 
+    async def sendEmail(self, ctx, name, email):
+        await ctx.message.add_reaction(self.emojis['loading'])
+
+        # Setting variables for the email
+        EMAIL = os.getenv('EMAIL')
+        PASSWORD = os.getenv('PASSWORD')
+        otp = self.generateotp()
+
+        # Creating the email
+        msg = EmailMessage()
+        msg['Subject'] = f'Verification of {ctx.author} on {ctx.guild}'
+        msg['From'] = EMAIL
+        msg['To'] = email
+        msg.set_content(
+            self.l10n.format_value('verify-email-HTML', {'user': name, 'otp': otp, 'guild': ctx.guild.name, 'prefix': ctx.prefix}),
+            subtype='html'
+        )
+
+        # Sending the email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL, PASSWORD)
+            smtp.send_message(msg)
+
+        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+
+        self.data[str(ctx.author.id)] = otp
+        self.save()
+
     @commands.group(brief='Registers the user in the database')
     async def verify(self, ctx):
         self.l10n = get_l10n(ctx.guild.id, 'verification')
@@ -120,34 +148,9 @@ class Verify(commands.Cog):
             await ctx.reply(self.l10n.format_value('verify-email-mismatch'))
             return
 
-        await ctx.message.add_reaction(self.emojis['loading'])
-
-        # Setting variables for the email
-        EMAIL = os.getenv('EMAIL')
-        PASSWORD = os.getenv('PASSWORD')
-        name = tuple[0].title().strip()
-        otp = self.generateotp()
-
-        # Creating the email
-        msg = EmailMessage()
-        msg['Subject'] = f'Verification of {ctx.author} on {ctx.guild}'
-        msg['From'] = EMAIL
-        msg['To'] = tuple[1]
-        msg.set_content(
-            self.l10n.format_value('verify-email-HTML', {'user': name, 'otp': otp, 'guild': ctx.guild.name, 'prefix': ctx.prefix}),
-            subtype='html'
-        )
-
-        # Sending the email
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL, PASSWORD)
-            smtp.send_message(msg)
+        await self.sendEmail(ctx, tuple[0].title().strip(), tuple[1])
 
         await ctx.reply(self.l10n.format_value('verify-check-email', { 'prefix': ctx.prefix }))
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
-
-        self.data[str(ctx.author.id)] = otp
-        self.save()
 
     @verify.command(brief='Used to input OTP that the user received in order to verify their email')
     @commands.check(basicVerificationCheck)
