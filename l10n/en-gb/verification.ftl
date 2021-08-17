@@ -1,6 +1,9 @@
 invalid-command = Invalid {$name} command passed.
 
-verify-basic-already-claimed = The details you entered is of a record already claimed by `{$user}`. If you think this was a mistake, contact a moderator.
+member-kick-old = User has verified with a new ID, {$user}.
+
+verify-basic-already-claimed = The details you entered is of a record already claimed by `{$user}`.
+                            An email has been sent to your institute email ID, `{$email}`. Paste the code here to complete your verification.
 
 verify-basic-record-notfound = The requested record was not found. Please re-check the entered details and try again
 
@@ -14,6 +17,8 @@ verify-basic-success = Your record was found and verified!
 verify-check-email = Please check your institute email for the OTP and enter it here using `{$prefix}verify code [OTP here]`.
 
 verify-code-incorrect = The code you entered is incorrect.
+
+verify-code-retry = `{$code}` is incorrect. Please try again with the correct code.
 
 verify-email-success = Your email has been verified successfully {$emoji}!
 

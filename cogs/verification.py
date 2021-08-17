@@ -57,7 +57,7 @@ class Verify(commands.Cog):
 
         # Creating the email
         msg = EmailMessage()
-        msg['Subject'] = f'Verification of {ctx.author} on {ctx.guild}'
+        msg['Subject'] = f'Verification of {ctx.author} in {ctx.guild}'
         msg['From'] = EMAIL
         msg['To'] = email
         msg.set_content(
@@ -107,7 +107,7 @@ class Verify(commands.Cog):
 
     @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
-        self.c.execute('SELECT Section, Subsection, Name, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
+        self.c.execute('SELECT Section, Subsection, Name, Institute_Email, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
         tuple = self.c.fetchone()
 
         if not tuple:
@@ -122,9 +122,25 @@ class Verify(commands.Cog):
             await ctx.reply(self.l10n.format_value('verify-basic-section-mismatch'))
             return
 
-        if user := self.bot.get_user(tuple[3]):
-            await ctx.reply(self.l10n.format_value('verify-basic-already-claimed', {'user': f'{user}'}))
-            return
+        if user := ctx.guild.get_member(tuple[4]):
+            await self.sendEmail(ctx, tuple[2].title().strip(), tuple[3])
+            await ctx.reply(self.l10n.format_value('verify-basic-already-claimed', {'user': f'{user}', 'email': tuple[3]}))
+
+            def check(msg):
+                return msg.author == ctx.author and msg.channel == ctx.channel
+
+            while True:
+                try:
+                    ctx.message = await self.bot.wait_for('message', timeout=120.0, check=check)
+                    if self.checkCode(ctx.author.id, ctx.message.content):
+                        self.c.execute('UPDATE main SET Verified = "True" WHERE Roll_Number = (:roll)', {'roll': roll_no})
+                        await user.kick(reason=self.l10n.format_value('member-kick-old', {'user': ctx.author.mention}))
+                        break
+                    else:
+                        await ctx.reply(self.l10n.format_value('verify-code-retry', {'code': ctx.message.content}))
+                except TimeoutError:
+                    await ctx.send(self.l10n.format_value('react-timeout'))
+                    return
 
         # Assigning section/sub-section roles to the user
         role = utils.get(ctx.guild.roles, name=tuple[0])
@@ -132,14 +148,14 @@ class Verify(commands.Cog):
         role = utils.get(ctx.guild.roles, name=tuple[1])
         await ctx.author.add_roles(role)
 
+        await ctx.reply(self.l10n.format_value('verify-basic-success'))
+
         # Removing restricting role
         role = utils.get(ctx.guild.roles, name='Not-Verified')
         await ctx.author.remove_roles(role)
 
-        await ctx.reply(self.l10n.format_value('verify-basic-success'))
-
         # Input changes to the database
-        guilds = json.loads(tuple[4])
+        guilds = json.loads(tuple[5])
         if ctx.guild.id not in guilds:
             guilds.append(ctx.guild.id)
         guilds = json.dumps(guilds)
