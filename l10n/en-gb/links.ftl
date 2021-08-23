@@ -1,7 +1,7 @@
 invalid-command = Invalid {$name} command passed.
 
 link-embed-title = **Upcoming Classes:**
-                ({$date})\n\n
+                ({$date}){"\u000a"}{"\u000a"}
 
 link-notfound = Link unavailable
 

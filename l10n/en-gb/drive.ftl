@@ -2,7 +2,7 @@ files = Files
 
 folders = Folders
 
-ignored-args = The following arguments were ignored:\n{$args}
+ignored-args = The following arguments were ignored:{"\u000a"}{$args}
 
 ignored-args-reason = Reason: Arguments must be at least 3 characters long
 

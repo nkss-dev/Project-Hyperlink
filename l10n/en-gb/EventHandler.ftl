@@ -6,7 +6,7 @@ dm-description = Before you can see/use all the channels that it has, you will n
 dm-footer = Have fun!
 dm-title = Welcome to {$guild}!
 
-leave-reason = \n**Reason:** {$reason}
+leave-reason = {"\u000a"}**Reason:** {$reason}
 
 leave-verification-notfound = {$member} has left the server because they didn't know how to verify {$emoji}
 

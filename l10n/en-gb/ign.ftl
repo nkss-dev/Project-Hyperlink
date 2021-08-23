@@ -7,7 +7,7 @@ game-list-notfound = No games have been added yet. Contact a moderator to get so
 game-notfound = The game, `{$game}`, does not exist in the database. If you want it added, contact a moderator.
                 For a list of available games, type `{$prefix}ign`.
 
-igns-title = {$member}'s IGNs:\n
+igns-title = {$member}'s IGNs:{"\u000a"}
 
 nice-try = It was worth a try.
 
