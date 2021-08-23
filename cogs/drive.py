@@ -19,7 +19,7 @@ class Drive(commands.Cog):
         self.bot = bot
 
         with open('db/emojis.json') as f:
-            self.emojis = json.load(f)
+            self.emojis = json.load(f)['utility']
 
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
         creds = None
@@ -66,6 +66,8 @@ class Drive(commands.Cog):
             if not bool:
                 webhook = await ctx.channel.create_webhook(name='Webhook')
 
+        await ctx.message.add_reaction(self.emojis['loading'])
+
         folder_links = {}
         file_links = {}
         ignored_args = []
@@ -85,6 +87,7 @@ class Drive(commands.Cog):
                     ).execute()
                 except errors.HttpError:
                     await ctx.reply(self.l10n.format_value('search-error'))
+                    await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
                     return
 
                 for file in response.get('files', []):
@@ -111,10 +114,12 @@ class Drive(commands.Cog):
 
             if len(ignored_args) == len(content):
                 await ctx.reply(embed=ignored_embed)
+                await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
                 return
 
         if not folder_links and not file_links:
             await ctx.reply(self.l10n.format_value('search-result-notfound'))
+            await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
             return
 
         embed_title = (
@@ -143,6 +148,8 @@ class Drive(commands.Cog):
             username=self.bot.user.name,
             avatar_url=self.bot.user.avatar_url
         )
+
+        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
 def setup(bot):
     bot.add_cog(Drive(bot))
