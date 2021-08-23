@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-import aiohttp
 import json
 import os.path
 from utils.l10n import get_l10n
+from utils.utils import getWebhook
 
 from discord import Embed, Color
 from discord.ext import commands
@@ -54,18 +54,7 @@ class Drive(commands.Cog):
 
     @drive.command(brief='Used to send search queries to the Drive')
     async def search(self, ctx, *content):
-        bool = False
-        async with aiohttp.ClientSession() as session:
-            # Checks if a webhook already exists for that channel
-            webhooks = await ctx.channel.webhooks()
-            for webhook in webhooks:
-                if webhook.user == self.bot.user:
-                    bool = True
-                    break
-            # Creates a webhook if none exist
-            if not bool:
-                webhook = await ctx.channel.create_webhook(name='Webhook')
-
+        webhook = await getWebhook(ctx.channel, self.bot.user)
         await ctx.message.add_reaction(self.emojis['loading'])
 
         folder_links = {}

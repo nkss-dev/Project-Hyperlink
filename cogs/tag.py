@@ -1,5 +1,5 @@
-import aiohttp
 from utils.l10n import get_l10n
+from utils.utils import getWebhook
 
 from discord import utils
 from discord.ext import commands
@@ -39,17 +39,7 @@ class Tag(commands.Cog):
 
         **PS:** If you're found to abuse this facility, ie. spam tags and/or tag people for an unimportant reason, then this facility will be revoked for you and you will face consequences based on the severity of the abuse."""
 
-        bool = False
-        async with aiohttp.ClientSession() as session:
-            # Checks if a webhook already exists for that channel
-            webhooks = await ctx.channel.webhooks()
-            for webhook in webhooks:
-                if webhook.user == self.bot.user:
-                    bool = True
-                    break
-            # Creates a webhook if none exist
-            if not bool:
-                webhook = await ctx.channel.create_webhook(name='Webhook')
+        webhook = await getWebhook(ctx.channel, self.bot.user)
 
         section = tuple[1]
         for i in content.split(' '):
