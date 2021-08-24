@@ -38,7 +38,7 @@ class Logger(commands.Cog):
             if 'image' in message.attachments[0].content_type:
                 embed.set_image(url=message.attachments[0].url)
         embed.timestamp = datetime.utcnow()
-        embed.set_footer(text=l10n.format_value('user-id', {'id': message.author.id}))
+        embed.set_footer(text=l10n.format_value('user-id', {'id': str(message.author.id)}))
 
         await channel.send(embed=embed)
 
@@ -54,7 +54,7 @@ class Logger(commands.Cog):
         l10n = get_l10n(payload.guild_id, 'logger')
 
         messages = {
-            'count': len(payload.cached_messages),
+            'count': str(len(payload.cached_messages)),
             'channel': self.bot.get_channel(payload.channel_id).mention
         }
 
@@ -102,7 +102,7 @@ class Logger(commands.Cog):
             inline=False
         )
         embed.timestamp = datetime.utcnow()
-        embed.set_footer(text=l10n.format_value('user-id', {'id': before.author.id}))
+        embed.set_footer(text=l10n.format_value('user-id', {'id': str(before.author.id)}))
 
         await channel.send(embed=embed)
 
