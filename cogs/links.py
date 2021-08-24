@@ -206,7 +206,7 @@ class Links(commands.Cog):
     async def wait_until_12am(self):
         IST = timezone('Asia/Kolkata')
         now = datetime.now(IST)
-        next_run = now.replace(hour=20, minute=0, second=0)
+        next_run = now.replace(hour=17, minute=0, second=0)
         if next_run < now:
             next_run += timedelta(days=1)
         await sleep_until(next_run)
