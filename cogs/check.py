@@ -1,7 +1,6 @@
 import json
 import sqlite3
 
-from datetime import datetime
 from discord.ext import commands
 
 class Check(commands.Cog):
@@ -11,7 +10,6 @@ class Check(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-        self.bot.launch_time = datetime.utcnow()
         self.bot.moderatorCheck = self.moderatorCheck
         self.bot.basicVerificationCheck = self.basicVerificationCheck
         self.bot.verificationCheck = self.verificationCheck

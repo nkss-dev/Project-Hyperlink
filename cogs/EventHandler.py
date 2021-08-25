@@ -12,6 +12,7 @@ from discord.utils import get
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot.launch_time = datetime.utcnow()
 
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
