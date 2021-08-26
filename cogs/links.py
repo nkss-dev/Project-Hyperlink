@@ -46,6 +46,7 @@ class Links(commands.Cog):
 
     async def create(self, tuple):
         guild = self.bot.get_guild(self.data[str(tuple[1])]['server_ID'][0])
+        self.l10n = get_l10n(guild.id, 'links')
 
         datetime_ist = datetime.now(timezone('Asia/Kolkata')) + timedelta(hours=7)
         date = datetime_ist.strftime('%d-%m-%Y')
