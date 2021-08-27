@@ -43,7 +43,7 @@ class Verify(commands.Cog):
     def generateotp(self):
         sample_set = '01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         OTP = ''
-        for i in range(5):
+        for _ in range(5):
             OTP += sample_set[floor(random() * 46)]
         return OTP
 

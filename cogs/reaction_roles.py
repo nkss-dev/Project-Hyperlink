@@ -95,7 +95,7 @@ class ReactionRoles(commands.Cog):
                 return user == ctx.author and reaction.message.id == msg.id
 
             try:
-                reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
+                reaction, _ = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
                 reaction = reaction.emoji
             except TimeoutError:
                 await ctx.send(self.l10n.format_value('react-timeout'))
