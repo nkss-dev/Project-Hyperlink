@@ -34,10 +34,24 @@ class Tag(commands.Cog):
 
     @commands.command(brief='Allows user to tag section/subsection roles')
     async def tag(self, ctx, *, content):
-        """With this command, you're able to tag roles of subsections _given_ that the said subsection falls in the same section that you are in.
-        That means that if you're in IT-A, you can tag `IT-A, IT-01, IT-02 and IT-03` but you can NOT tag `IT-B, IT-04, ME-B, CE-01, PI-06, ...`
+        """
+        **Which all sections can I tag?**
 
-        **PS:** If you're found to abuse this facility, ie. spam tags and/or tag people for an unimportant reason, then this facility will be revoked for you and you will face consequences based on the severity of the abuse."""
+        With this command, you're able to tag roles of subsections _given_\
+        that the said subsection falls in the same section that you are in.
+        This means that if you're in IT-A, you can tag `IT-A`, `IT-01`, `IT-02`\
+        and `IT-03` but you can NOT tag `IT-B`, `IT-04`, `ME-B`, `PI-06`, etc
+
+        **How can I tag?**
+
+        Type your message normally after invoking this command like any other. \
+        To tag an allowed section, simply precede the section/subsection with \
+        the `@` symbol.
+
+        The section/subsection follow the format as seen in the examples below:
+        `Hello, @CE-01!`
+        `Hey, @it-b. Please help me with this. I'm in @iT-05.`
+        """
 
         webhook = await getWebhook(ctx.channel, self.bot.user)
 
