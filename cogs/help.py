@@ -17,7 +17,7 @@ def syntax(command):
 
     for key, value in command.params.items():
         if key not in ('self', 'ctx'):
-            params.append(f'[{key}]' if str(value) == None else f'<{key}>')
+            params.append(f'[{key}]' if not str(value) else f'<{key}>')
     params = ' '.join(params)
 
     help = command.help or command.brief
