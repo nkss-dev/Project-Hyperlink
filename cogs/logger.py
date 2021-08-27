@@ -18,7 +18,7 @@ class Logger(commands.Cog):
         with open('db/guilds.json') as f:
             guild_data = json.load(f)
 
-        channel = self.bot.get_channel(guild_data[str(message.guild.id)]['logging_channel'][0])
+        channel = self.bot.get_channel(guild_data[str(message.guild.id)]['log'][0])
         if not channel:
             return
 
@@ -47,7 +47,7 @@ class Logger(commands.Cog):
         with open('db/guilds.json') as f:
             guild_data = json.load(f)
 
-        channel = self.bot.get_channel(guild_data[str(payload.guild_id)]['logging_channel'][0])
+        channel = self.bot.get_channel(guild_data[str(payload.guild_id)]['log'][0])
         if not channel:
             return
 
@@ -74,7 +74,7 @@ class Logger(commands.Cog):
         with open('db/guilds.json') as f:
             guild_data = json.load(f)
 
-        channel = self.bot.get_channel(guild_data[str(before.guild.id)]['logging_channel'][1])
+        channel = self.bot.get_channel(guild_data[str(before.guild.id)]['log'][1])
         if not channel:
             return
 
