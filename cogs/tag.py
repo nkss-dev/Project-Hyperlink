@@ -58,7 +58,7 @@ class Tag(commands.Cog):
                 try:
                     role = utils.get(ctx.guild.roles, name=tag[1:].upper())
                     content = content.replace(tag, role.mention, 1)
-                except:
+                except AttributeError:
                     continue
 
         # Loop through the mentioned roles and remove the restricted ones
