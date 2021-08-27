@@ -36,7 +36,7 @@ async def on_ready():
             json.dump(details, f)
     except FileNotFoundError:
         # Creates the guilds.json file if it doesn't exist, as it is essential for many cogs' functioning
-        data = dict([(guild.id, client.default_guild_details) for guild in client.guilds])
+        data = {guild.id: client.default_guild_details for guild in client.guilds}
         with open('db/guilds.json', 'w') as f:
             json.dump(data, f)
 

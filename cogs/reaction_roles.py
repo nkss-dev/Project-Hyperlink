@@ -166,7 +166,7 @@ class ReactionRoles(commands.Cog):
 
     async def create(self):
         await self.bot.wait_until_ready()
-        self.data = dict([(guild.id, []) for guild in self.bot.guilds])
+        self.data = {guild.id: [] for guild in self.bot.guilds}
         self.save()
 
     def save(self):
