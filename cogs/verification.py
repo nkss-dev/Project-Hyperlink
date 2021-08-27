@@ -87,8 +87,7 @@ class Verify(commands.Cog):
             )
             self.conn.commit()
             return True
-        else:
-            return False
+        return False
 
     @commands.group(brief='Registers the user in the database')
     async def verify(self, ctx):

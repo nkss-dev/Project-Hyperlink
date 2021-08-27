@@ -161,8 +161,7 @@ class ReactionRoles(commands.Cog):
             ID += sample_set[floor(random() * 72)]
         if ID in IDs:
             return self.generateID(IDs)
-        else:
-            return ID
+        return ID
 
     async def create(self):
         await self.bot.wait_until_ready()
