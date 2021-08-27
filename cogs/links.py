@@ -102,7 +102,7 @@ class Links(commands.Cog):
         try:
             old_message = await ctx.channel.fetch_message(self.data[str(self.tuple[1])][self.tuple[0]]['message'])
             await old_message.delete()
-        except:
+        except discord.NotFound:
             pass
 
         self.data[str(self.tuple[1])][self.tuple[0]]['message'] = (await ctx.send(embed=embed)).id
@@ -152,7 +152,7 @@ class Links(commands.Cog):
             desc = description.split(f'\n\n{subject} ({time}):\n', 1)
             try:
                 remainder = desc[1].split('\n', 1)[1]
-            except:
+            except IndexError:
                 remainder = f"\n{self.l10n.format_value('links-notfound')}"
 
             desc = f'{desc[0]}\n{remainder}'
@@ -194,7 +194,7 @@ class Links(commands.Cog):
                     try:
                         message = await channel.fetch_message(self.data[batch][section]['message'])
                         await self.edit(message, await self.create((section, batch)))
-                    except:
+                    except discord.NotFound:
                         pass
 
     @link_update_loop.before_loop
