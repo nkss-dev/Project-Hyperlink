@@ -181,7 +181,7 @@ class Links(commands.Cog):
         while True:
             try:
                 with open('db/links.json') as f:
-                    data = json.load(f)
+                    self.data = json.load(f)
                 break
             except FileNotFoundError:
                 continue
