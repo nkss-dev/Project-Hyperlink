@@ -191,6 +191,14 @@ class Events(commands.Cog):
             channel = None
 
         if not details.get('verification'):
+            if channel:
+                message = details['on_join/leave']['leave'][1].replace('{user}', member.mention)
+
+                embed = discord.Embed(
+                    description = message,
+                    color = discord.Color.blurple()
+                )
+                await channel.send(embed=embed)
             return
 
         tuple = self.c.execute(
@@ -227,8 +235,7 @@ class Events(commands.Cog):
 
         # Sends exit message to the server's channel
         if channel:
-            message = details['on_join/leave'][action][1].replace('{user}', member.mention)
-            message += l10n.format_value('leave-reason', {'reason': entry.reason or 'None'})
+            message = details['on_join/leave']['leave'][1].replace('{user}', member.mention)
 
             embed = discord.Embed(
                 description = message,
