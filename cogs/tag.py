@@ -1,6 +1,6 @@
-import sqlite3, re
+import re
+import sqlite3
 
-from utils.l10n import get_l10n
 from utils.utils import getWebhook
 
 from discord import utils, AllowedMentions
@@ -14,7 +14,6 @@ class Tag(commands.Cog):
         self.c = self.conn.cursor()
 
     async def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id, 'tag')
         return self.bot.verificationCheck(ctx)
 
     @commands.command(brief='Allows user to tag section/subsection roles')
