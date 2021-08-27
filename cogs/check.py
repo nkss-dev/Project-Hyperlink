@@ -22,8 +22,8 @@ class Check(commands.Cog):
 
         if not verified:
             raise commands.CheckFailure('AccountNotLinked')
-        else:
-            return True
+
+        return True
 
     def verificationCheck(self, ctx):
         verified = self.c.execute(

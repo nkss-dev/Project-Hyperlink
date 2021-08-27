@@ -145,8 +145,8 @@ class Verify(commands.Cog):
                         )
                         await user.kick(reason=self.l10n.format_value('member-kick-old', {'user': ctx.author.mention}))
                         break
-                    else:
-                        await ctx.reply(self.l10n.format_value('verify-code-retry', {'code': ctx.message.content}))
+
+                    await ctx.reply(self.l10n.format_value('verify-code-retry', {'code': ctx.message.content}))
                 except TimeoutError:
                     await ctx.send(self.l10n.format_value('react-timeout'))
                     return
