@@ -2,7 +2,7 @@ import json
 import sqlite3
 from utils.l10n import get_l10n
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from re import fullmatch
 
 import discord
@@ -156,6 +156,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
+        time = datetime.utcnow()
         guild = member.guild
 
         self.open()
@@ -166,20 +167,20 @@ class Events(commands.Cog):
 
         l10n = get_l10n(guild.id, 'EventHandler')
 
-        action = 'leave_msg'
+        action = 'leave'
         if guild.me.guild_permissions.view_audit_log:
             # Checking the last 5 audit log entries to check for a kick or a ban
-            async for entry in guild.audit_logs(limit=5):
-                if str(entry.target) == str(member):
+            async for entry in guild.audit_logs():
+                if str(entry.target) == str(member) and (time - entry.created_at) < timedelta(seconds=1):
                     if entry.action is discord.AuditLogAction.kick:
-                        action = 'kick_msg'
+                        action = 'kick'
                         break
-                    elif entry.action is discord.AuditLogAction.ban:
-                        action = 'ban_msg'
+                    if entry.action is discord.AuditLogAction.ban:
+                        action = 'ban'
                         break
 
         channel = self.bot.get_channel(details['on_join/leave'][action][0])
-        if action != 'leave_msg' and (channel := self.bot.get_channel(details['on_join/leave'][action][0])):
+        if action != 'leave' and channel:
             message = details['on_join/leave'][action][1].replace('{user}', member.mention)
             message += l10n.format_value('leave-reason', {'reason': entry.reason or 'None'})
 
