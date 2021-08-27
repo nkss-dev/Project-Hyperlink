@@ -33,12 +33,14 @@ class Links(commands.Cog):
 
         self.l10n = get_l10n(ctx.guild.id, 'links')
 
-        self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
+        self.tuple = self.c.execute(
+            'select Section, Batch from main where Discord_UID = (:uid)',
+            {'uid': ctx.author.id}
+        ).fetchone()
 
-        await commands.has_any_role(*self.data[str(tuple[1])]['manager_roles']).predicate(ctx)
+        await commands.has_any_role(*self.data[str(self.tuple[1])]['manager_roles']).predicate(ctx)
 
-        channel = self.bot.get_channel(self.data[str(tuple[1])][tuple[0]]['channel'])
+        channel = self.bot.get_channel(self.data[str(self.tuple[1])][self.tuple[0]]['channel'])
         if channel != ctx.channel:
             await ctx.reply(self.l10n.format_value('link-protection', {'channel': channel.mention}))
             return False
@@ -92,31 +94,25 @@ class Links(commands.Cog):
 
     @link.command(name='create', brief='Creates the dashboard embed')
     async def init(self, ctx):
-        self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-
         embed = discord.Embed(
-            description = await self.create(tuple),
+            description = await self.create(self.tuple),
             color = discord.Color.blurple()
         )
 
         try:
-            old_message = await ctx.channel.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
+            old_message = await ctx.channel.fetch_message(self.data[str(self.tuple[1])][self.tuple[0]]['message'])
             await old_message.delete()
         except:
             pass
 
-        self.data[str(tuple[1])][tuple[0]]['message'] = (await ctx.send(embed=embed)).id
+        self.data[str(self.tuple[1])][self.tuple[0]]['message'] = (await ctx.send(embed=embed)).id
         self.save()
 
         await ctx.message.delete()
 
     @link.command(brief='Used to add temporary links')
     async def add(self, ctx, time, subject, *, link='Link unavailable'):
-        self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-
-        message = await ctx.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
+        message = await ctx.fetch_message(self.data[str(self.tuple[1])][self.tuple[0]]['message'])
         description = message.embeds[0].description
 
         if f'{subject} ({time}):' in description:
@@ -149,13 +145,11 @@ class Links(commands.Cog):
 
     @link.command(brief='Used to remove temporary links')
     async def remove(self, ctx, time, subject):
-        self.c.execute('SELECT Section, Batch FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-
-        message = await ctx.fetch_message(self.data[str(tuple[1])][tuple[0]]['message'])
+        message = await ctx.fetch_message(self.data[str(self.tuple[1])][self.tuple[0]]['message'])
         description = message.embeds[0].description
+
         if f'{subject} ({time}):' in description:
-            desc = description.split(f'\n\n{subject} ({time}):\n')
+            desc = description.split(f'\n\n{subject} ({time}):\n', 1)
             try:
                 remainder = desc[1].split('\n', 1)[1]
             except:

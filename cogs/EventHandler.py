@@ -105,8 +105,10 @@ class Events(commands.Cog):
         if not details.get('verification'):
             return
 
-        self.c.execute('SELECT Section, SubSection, Guilds, Verified from main where Discord_UID = (:uid)', {'uid': member.id})
-        tuple = self.c.fetchone()
+        tuple = self.c.execute(
+            'select Section, SubSection, Guilds, Verified from main where Discord_UID = (:uid)',
+            {'uid': member.id}
+        ).fetchone()
 
         if tuple:
             if tuple[3] == 'True':
@@ -122,7 +124,10 @@ class Events(commands.Cog):
                 role = get(guild.roles, name = tuple[1])
                 await member.add_roles(role)
 
-                self.c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': guilds})
+                self.c.execute(
+                    'update main set Guilds = (:guilds) where Discord_UID = (:uid)',
+                    {'uid': member.id, 'guilds': guilds}
+                )
                 self.conn.commit()
                 return
         else:
@@ -188,8 +193,10 @@ class Events(commands.Cog):
         if not details.get('verification'):
             return
 
-        self.c.execute('SELECT Guilds, Verified FROM main where Discord_UID = (:uid)', {'uid': member.id})
-        tuple = self.c.fetchone()
+        tuple = self.c.execute(
+            'select Guilds, Verified FROM main where Discord_UID = (:uid)',
+            {'uid': member.id}
+        ).fetchone()
 
         if not tuple and channel:
             keys = {
@@ -205,11 +212,17 @@ class Events(commands.Cog):
 
         # Removing the user's entry if they don't share any guild with the bot and are not verified
         if tuple[1] == 'False' and not guilds:
-            self.c.execute('UPDATE main SET Discord_UID = NULL, Guilds = "[]" where Discord_UID = (:uid)', {'uid': member.id})
+            self.c.execute(
+                'update main set Discord_UID = NULL, Guilds = "[]" where Discord_UID = (:uid)',
+                {'uid': member.id}
+            )
             self.conn.commit()
 
         else:
-            self.c.execute('UPDATE main SET Guilds = (:guilds) where Discord_UID = (:uid)', {'uid': member.id, 'guilds': json.dumps(guilds)})
+            self.c.execute(
+                'update main set Guilds = (:guilds) where Discord_UID = (:uid)',
+                {'uid': member.id, 'guilds': json.dumps(guilds)}
+            )
             self.conn.commit()
 
         # Sends exit message to the server's channel

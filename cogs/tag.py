@@ -39,8 +39,10 @@ class Tag(commands.Cog):
 
         webhook = await getWebhook(ctx.channel, self.bot.user)
 
-        self.c.execute('SELECT Section FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        section = self.c.fetchone()[0]
+        section = self.c.execute(
+            'select Section from main where Discord_UID = (:uid)',
+            {'uid': ctx.author.id}
+        ).fetchone()[0]
 
         # Store roles that the user is allowed to tag
         if section[3] == 'A':

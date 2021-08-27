@@ -30,8 +30,10 @@ class Info(commands.Cog):
         if member != ctx.author:
             await self.bot.moderatorCheck(ctx)
 
-        self.c.execute('SELECT Roll_Number, Section, SubSection, Name, Institute_Email, Verified FROM main where Discord_UID = (:uid)', {'uid': member.id})
-        tuple = self.c.fetchone()
+        tuple = self.c.execute(
+            'select Roll_Number, Section, SubSection, Name, Institute_Email, Verified from main where Discord_UID = (:uid)',
+            {'uid': member.id}
+        ).fetchone()
 
         if not tuple:
             await ctx.reply(self.l10n.format_value('record-notfound'))
@@ -86,10 +88,12 @@ class Info(commands.Cog):
             if not member.guild_permissions.change_nickname:
                 raise commands.MissingPermissions([discord.Permissions.change_nickname])
 
-        self.c.execute('SELECT Name from main where Discord_UID = (:uid)', {'uid': member.id})
-        tuple = self.c.fetchone()
+        name = self.c.execute(
+            'select Name from main where Discord_UID = (:uid)',
+            {'uid': member.id}
+        ).fetchone()
 
-        if not tuple:
+        if not name:
             embed = discord.Embed(
                 description = self.l10n.format_value('member-notfound', {'member': member.mention}),
                 color = discord.Color.blurple()
@@ -98,7 +102,7 @@ class Info(commands.Cog):
             return
 
         old_nick = member.nick
-        first_name = tuple[0].split(' ', 1)[0].capitalize()
+        first_name = name[0].split(' ', 1)[0].capitalize()
         await member.edit(nick=first_name)
 
         nick = {
@@ -130,19 +134,29 @@ class Info(commands.Cog):
         total = []
         joined = []
         verified = []
+
         for section in sections:
-            self.c.execute('SELECT count(*), count(Discord_UID) from main where Section = (:section) and Batch = (:batch)', {'section': section, 'batch': batch})
-            tuple = self.c.fetchone()
+            tuple = self.c.execute(
+                'select count(*), count(Discord_UID) from main where Section = (:section) and Batch = (:batch)',
+                {'section': section, 'batch': batch}
+            ).fetchone()
             total.append(tuple[0])
             joined.append(tuple[1])
+
         for section in sections:
-            self.c.execute('SELECT count(*) from main where Section = (:section) and Verified = "True" and Batch = (:batch)', {'section': section, 'batch': batch})
-            tuple = self.c.fetchone()
-            verified.append(tuple[0])
-        self.c.execute('SELECT count(*), count(Discord_UID) from main where Batch = (:batch)', {'batch': batch})
-        tuple = self.c.fetchone()
+            countVerified = self.c.execute(
+                'select count(*) from main where Section = (:section) and Verified = "True" and Batch = (:batch)',
+                {'section': section, 'batch': batch}
+            ).fetchone()[0]
+            verified.append(countVerified)
+
+        tuple = self.c.execute(
+            'select count(*), count(Discord_UID) from main where Batch = (:batch)',
+            {'batch': batch}
+        ).fetchone()
         total.append(tuple[0])
         joined.append(tuple[1])
+
         table =  '╭─────────┬────────┬───────────┬──────────╮\n'
         table += '│ Section │ Joined │ Remaining │ Verified │\n'
         table += '├─────────┼────────┼───────────┼──────────┤\n'
@@ -155,6 +169,7 @@ class Info(commands.Cog):
         table += '├─────────┼────────┼───────────┼──────────┤\n'
         table += '│  Total  │{:^8}│{:^11}│{:^10}│\n'.format(str(sum(joined[:-1])).zfill(2), str(sum(total[:-1])-sum(joined[:-1])).zfill(2), str(sum(verified)).zfill(2))
         table += '╰─────────┴────────┴───────────┴──────────╯'
+
         embed = discord.Embed(
             description = f'```\n{table}```',
             color = discord.Color.blurple()

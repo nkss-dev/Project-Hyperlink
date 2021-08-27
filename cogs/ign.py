@@ -45,6 +45,12 @@ class IGN(commands.Cog):
             await ctx.send(embed=embed)
             return
 
+        igns = self.c.execute(
+            'select IGN from main where Discord_UID = (:uid)',
+            {'uid': ctx.author.id}
+        ).fetchone()[0]
+        self.igns = json.loads(igns)
+
     @ign.command(brief='Used to add an IGN for a specified game.')
     async def add(self, ctx, game, ign):
         flag = False
@@ -60,12 +66,11 @@ class IGN(commands.Cog):
             await ctx.reply(self.l10n.format_value('nice-try'))
             return
 
-        self.c.execute('SELECT IGN FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        igns = json.loads(tuple[0])
-
-        igns[allowed_game] = ign
-        self.c.execute('UPDATE main set IGN = (:ign) where Discord_UID = (:uid)', {'ign': json.dumps(igns), 'uid': ctx.author.id})
+        self.igns[allowed_game] = ign
+        self.c.execute(
+            'update main set IGN = (:ign) where Discord_UID = (:uid)',
+            {'ign': json.dumps(self.igns), 'uid': ctx.author.id}
+        )
         self.conn.commit()
 
         await ctx.reply(self.l10n.format_value('add-success', {'game': allowed_game}))
@@ -81,11 +86,7 @@ class IGN(commands.Cog):
 
         oneself = ctx.author == member
 
-        self.c.execute('SELECT IGN FROM main where Discord_UID = (:uid)', {'uid': member.id})
-        tuple = self.c.fetchone()
-        igns = json.loads(tuple[0])
-
-        if not igns:
+        if not self.igns:
             if oneself:
                 await ctx.reply(self.l10n.format_value('self-igns-notfound', {'prefix': ctx.prefix}))
             else:
@@ -98,13 +99,13 @@ class IGN(commands.Cog):
 
         if single:
             flag = False
-            for ign in igns:
+            for ign in self.igns:
                 if game.lower() == ign.lower():
                     flag = True
                     break
             if flag:
                 embed = discord.Embed(
-                    description = igns[ign],
+                    description = self.igns[ign],
                     color = member.top_role.color
                 )
                 await ctx.reply(embed=embed)
@@ -119,8 +120,8 @@ class IGN(commands.Cog):
             return
 
         ign = ''
-        for game in igns:
-            ign += f'\n**{game}:** {igns[game]}'
+        for game in self.igns:
+            ign += f'\n**{game}:** {self.igns[game]}'
         embed = discord.Embed(
             title = self.l10n.format_value('igns-title', {'member': member}),
             description = ign,
@@ -137,32 +138,34 @@ class IGN(commands.Cog):
 
     @ign.command(brief='Deletes the IGN of the entered game. Deletes all IGNs if none entered', aliases=['del'])
     async def delete(self, ctx, game: str=None):
-        self.c.execute('SELECT IGN FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
-        igns = json.loads(tuple[0])
-
-        if not igns:
+        if not self.igns:
             await ctx.reply(self.l10n.format_value('self-igns-notfound'))
             return
 
         if not game:
-            self.c.execute('UPDATE main SET IGN = "{}" where Discord_UID = (:uid)', {'uid': ctx.author.id})
+            self.c.execute(
+                'update main set IGN = "{}" where Discord_UID = (:uid)',
+                {'uid': ctx.author.id}
+            )
             self.conn.commit()
             await ctx.reply(self.l10n.format_value('remove-all-success'))
             return
 
         flag = False
-        for ign in igns:
+        for ign in self.igns:
             if game.lower() == ign.lower():
                 flag = True
                 break
         if flag:
-            igns.pop(ign)
+            self.igns.pop(ign)
         else:
             await ctx.reply(self.l10n.format_value('self-ign-notfound', {'ign': game}))
             return
 
-        self.c.execute('UPDATE main SET IGN = (:ign) where Discord_UID = (:uid)', {'ign': json.dumps(igns), 'uid': ctx.author.id})
+        self.c.execute(
+            'update main set IGN = (:ign) where Discord_UID = (:uid)',
+            {'ign': json.dumps(self.igns), 'uid': ctx.author.id}
+        )
         self.conn.commit()
 
         await ctx.reply(self.l10n.format_value('remove-success', {'game': ign}))

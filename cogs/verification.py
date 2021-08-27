@@ -81,7 +81,10 @@ class Verify(commands.Cog):
             self.save()
 
             # Marks user as verified in the database
-            self.c.execute('UPDATE main SET Verified = "True" where Discord_UID = (:uid)', {'uid': author_id})
+            self.c.execute(
+                'update main set Verified = "True" where Discord_UID = (:uid)',
+                {'uid': author_id}
+            )
             self.conn.commit()
             return True
         else:
@@ -95,11 +98,13 @@ class Verify(commands.Cog):
             await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
-        self.c.execute('SELECT Verified from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        details = self.c.fetchone()
+        verified = self.c.execute(
+            'select Verified from main where Discord_UID = (:uid)',
+            {'uid': ctx.author.id}
+        ).fetchone()
 
-        if details:
-            if details[0] == 'False':
+        if verified:
+            if verified[0] == 'False':
                 if ctx.invoked_subcommand.name == 'basic':
                     raise commands.CheckFailure('AccountAlreadyLinked')
             else:
@@ -107,8 +112,10 @@ class Verify(commands.Cog):
 
     @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
-        self.c.execute('SELECT Section, Subsection, Name, Institute_Email, Discord_UID, Guilds from main where Roll_Number = (:roll)', {'roll': roll_no})
-        tuple = self.c.fetchone()
+        tuple = self.c.execute(
+            'select Section, Subsection, Name, Institute_Email, Discord_UID, Guilds from main where Roll_Number = (:roll)',
+            {'roll': roll_no}
+        ).fetchone()
 
         if not tuple:
             await ctx.reply(self.l10n.format_value('verify-basic-record-notfound'))
@@ -133,7 +140,10 @@ class Verify(commands.Cog):
                 try:
                     ctx.message = await self.bot.wait_for('message', timeout=120.0, check=check)
                     if self.checkCode(ctx.author.id, ctx.message.content):
-                        self.c.execute('UPDATE main SET Verified = "True" WHERE Roll_Number = (:roll)', {'roll': roll_no})
+                        self.c.execute(
+                            'update main set Verified = "True" where Roll_Number = (:roll)',
+                            {'roll': roll_no}
+                        )
                         await user.kick(reason=self.l10n.format_value('member-kick-old', {'user': ctx.author.mention}))
                         break
                     else:
@@ -160,7 +170,10 @@ class Verify(commands.Cog):
             guilds.append(ctx.guild.id)
         guilds = json.dumps(guilds)
 
-        self.c.execute('UPDATE main SET Discord_UID = (:uid), Guilds = (:guilds) WHERE Roll_Number = (:roll)', {'uid': ctx.author.id, 'roll': roll_no, 'guilds': guilds})
+        self.c.execute(
+            'update main set Discord_UID = (:uid), Guilds = (:guilds) where Roll_Number = (:roll)',
+            {'uid': ctx.author.id, 'roll': roll_no, 'guilds': guilds}
+        )
         self.conn.commit()
 
         first_name = tuple[2].split(' ', 1)[0].capitalize()
@@ -169,8 +182,10 @@ class Verify(commands.Cog):
     @verify.command(brief='Allows user to verify their email')
     @commands.check(basicVerificationCheck)
     async def email(self, ctx, email: str):
-        self.c.execute('SELECT Name, Institute_Email from main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
+        tuple = self.c.execute(
+            'select Name, Institute_Email from main where Discord_UID = (:uid)',
+            {'uid': ctx.author.id}
+        ).fetchone()
 
         if email.lower() != tuple[1]:
             await ctx.reply(self.l10n.format_value('verify-email-mismatch'))

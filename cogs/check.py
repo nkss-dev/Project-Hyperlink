@@ -15,21 +15,25 @@ class Check(commands.Cog):
         self.bot.verificationCheck = self.verificationCheck
 
     def basicVerificationCheck(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
+        verified = self.c.execute(
+            'select Verified from main where Discord_UID = (:uid)',
+            {'uid': ctx.author.id}
+        ).fetchone()
 
-        if not tuple:
+        if not verified:
             raise commands.CheckFailure('AccountNotLinked')
         else:
             return True
 
     def verificationCheck(self, ctx):
-        self.c.execute('SELECT Verified FROM main where Discord_UID = (:uid)', {'uid': ctx.author.id})
-        tuple = self.c.fetchone()
+        verified = self.c.execute(
+            'select Verified from main where Discord_UID = (:uid)',
+            {'uid': ctx.author.id}
+        ).fetchone()
 
-        if not tuple:
+        if not verified:
             raise commands.CheckFailure('AccountNotLinked')
-        if tuple[0] == 'False':
+        if verified[0] == 'False':
             raise commands.CheckFailure('UserNotVerified')
         return True
 
