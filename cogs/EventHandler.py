@@ -85,21 +85,21 @@ class Events(commands.Cog):
                 await member.add_roles(bot_role)
             return
 
-        if details.get('on_join/leave'):
+        if events := details.get('on_join/leave'):
             # Sends welcome message on the server's channel
-            if channel := self.bot.get_channel(details['on_join/leave']['join_msg'][0]):
-                await channel.send(details['on_join/leave']['join_msg'][1].replace('{user}', member.mention))
+            if channel := self.bot.get_channel(events['join'][0]):
+                await channel.send(events['join'][1].replace('{user}', member.mention))
 
             # Sends welcome message to the user's DM
-            if dm := details['on_join/leave']['private_dm']:
+            if dm := events['private_dm']:
                 await member.send(dm.replace('{server}', guild.name))
 
             # Gives roles to the new user
-            for role in details['on_join/leave']['new_roles']:
+            for role in events['new_roles']:
                 if new_role := guild.get_role(role):
                     await member.add_roles(new_role)
                 else:
-                    details['on_join/leave']['new_roles'].remove(role)
+                    events['new_roles'].remove(role)
                     self.save()
 
         if not details.get('verification'):
@@ -148,7 +148,10 @@ class Events(commands.Cog):
             )
             embed.set_footer(text=l10n.format_value('dm-footer'))
 
-            await member.send(embed=embed)
+            try:
+                await member.send(embed=embed)
+            except:
+                pass
 
         # Adding a role that restricts the user to view any channel on the server
         role = guild.get_role(details['verification']['not-verified_role'])
@@ -162,7 +165,7 @@ class Events(commands.Cog):
         self.open()
         details = self.data[str(guild.id)]
 
-        if not details.get('on_join/leave'):
+        if not (events := details.get('on_join/leave')):
             return
 
         l10n = get_l10n(guild.id, 'EventHandler')
@@ -179,9 +182,9 @@ class Events(commands.Cog):
                         action = 'ban'
                         break
 
-        channel = self.bot.get_channel(details['on_join/leave'][action][0])
+        channel = self.bot.get_channel(events[action][0])
         if action != 'leave' and channel:
-            message = details['on_join/leave'][action][1].replace('{user}', member.mention)
+            message = events[action][1].replace('{user}', member.mention)
             message += l10n.format_value('leave-reason', {'reason': entry.reason or 'None'})
 
             embed = discord.Embed(
@@ -193,7 +196,7 @@ class Events(commands.Cog):
 
         if not details.get('verification'):
             if channel:
-                message = details['on_join/leave']['leave'][1].replace('{user}', member.mention)
+                message = events['leave'][1].replace('{user}', member.mention)
 
                 embed = discord.Embed(
                     description = message,
@@ -236,7 +239,7 @@ class Events(commands.Cog):
 
         # Sends exit message to the server's channel
         if channel:
-            message = details['on_join/leave']['leave'][1].replace('{user}', member.mention)
+            message = events['leave'][1].replace('{user}', member.mention)
 
             embed = discord.Embed(
                 description = message,
