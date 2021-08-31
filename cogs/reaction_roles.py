@@ -26,8 +26,13 @@ class ReactionRoles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        try:
+            details = self.data[str(payload.guild_id)]
+        except KeyError:
+            return
+
         flag = False
-        for reaction_role in self.data[str(payload.guild_id)]:
+        for reaction_role in details:
             if payload.emoji.is_unicode_emoji():
                 emoji = str(payload.emoji)
             else:
@@ -48,8 +53,13 @@ class ReactionRoles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
+        try:
+            details = self.data[str(payload.guild_id)]
+        except KeyError:
+            return
+
         flag = False
-        for reaction_role in self.data[str(payload.guild_id)]:
+        for reaction_role in details:
             if payload.emoji.is_unicode_emoji():
                 emoji = str(payload.emoji)
             else:
@@ -59,6 +69,7 @@ class ReactionRoles(commands.Cog):
                 break
         if not flag:
             return
+
         guild = self.bot.get_guild(payload.guild_id)
         member = guild.get_member(payload.user_id)
         role = guild.get_role(reaction_role['role_id'])
