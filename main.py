@@ -12,7 +12,11 @@ def get_prefix(_, message):
         prefixes = json.load(f)
     return prefixes[str(message.guild.id)]['prefix']
 
-client = Bot(command_prefix=get_prefix, intents=Intents.all())
+client = Bot(
+    command_prefix=get_prefix,
+    intents=Intents.all(),
+    owner_ids=list(map(int, os.getenv('OWNER_IDS').split(',')))
+)
 
 @client.event
 async def on_ready():
