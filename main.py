@@ -15,7 +15,7 @@ def get_prefix(_, message):
 client = Bot(
     command_prefix=get_prefix,
     intents=Intents.all(),
-    owner_ids=list(map(int, os.getenv('OWNER_IDS').split(',')))
+    owner_ids=list(map(int, os.getenv('OWNER_IDS').split(', ')))
 )
 
 @client.event
