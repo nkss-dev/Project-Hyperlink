@@ -1,6 +1,10 @@
 invalid-command = Invalid {$name} command passed.
 
+incorrect-server = Verification of the {$batch} batch is not allowed on this server.
+
 member-kick-old = User has verified with a new ID, {$user}.
+
+server-not-allowed = This command is restricted to certain servers.
 
 verify-basic-already-claimed = The details you entered is of a record already claimed by `{$user}`.
                             An email has been sent to your institute email ID, `{$email}`. Paste the code here to complete your verification.

@@ -1,6 +1,8 @@
 import json
 import os
 import sqlite3
+
+from asyncio import TimeoutError
 from utils.l10n import get_l10n
 
 from math import floor
@@ -25,10 +27,12 @@ class Verify(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-        with open('db/codes.json') as f:
-            self.data = json.load(f)
-        with open('db/emojis.json') as f:
-            self.emojis = json.load(f)['utility']
+        with open('db/guilds.json') as guilds:
+            self.guilds = json.load(guilds)
+        with open('db/codes.json') as codes:
+            self.codes = json.load(codes)
+        with open('db/emojis.json') as emojis:
+            self.emojis = json.load(emojis)['utility']
 
         self.sections = (
             'CE-A', 'CE-B', 'CE-C',
@@ -72,12 +76,12 @@ class Verify(commands.Cog):
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
-        self.data[str(ctx.author.id)] = otp
+        self.codes[str(ctx.author.id)] = otp
         self.save()
 
     def checkCode(self, author_id, code):
-        if self.data[str(author_id)] == code:
-            del self.data[str(author_id)]
+        if self.codes[str(author_id)] == code:
+            del self.codes[str(author_id)]
             self.save()
 
             # Marks user as verified in the database
@@ -112,9 +116,27 @@ class Verify(commands.Cog):
     @verify.command(brief='Allows user to link their account to a record in the database')
     async def basic(self, ctx, section: str, roll_no: int):
         tuple = self.c.execute(
-            'select Section, Subsection, Name, Institute_Email, Discord_UID, Guilds from main where Roll_Number = (:roll)',
+            'select Section, Subsection, Name, Institute_Email, Batch, Discord_UID, Guilds from main where Roll_Number = (:roll)',
             {'roll': roll_no}
         ).fetchone()
+
+        override = False
+        if details := self.guilds[str(ctx.guild.id)].get('verification'):
+            if tuple[4] != details['batch']:
+                await ctx.reply(self.l10n.format_value('incorrect-server', {'batch': int(tuple[4])}))
+                return
+        else:
+            await ctx.reply(self.l10n.format_value('server-not-allowed'))
+
+            def check(msg):
+                return msg.author.id in self.bot.owner_ids and msg.channel == ctx.channel
+
+            try:
+                message = await self.bot.wait_for('message', timeout=60.0, check=check)
+                if message.content.lower() == 'override':
+                    override = True
+            except TimeoutError:
+                return
 
         if not tuple:
             await ctx.reply(self.l10n.format_value('verify-basic-record-notfound'))
@@ -128,7 +150,7 @@ class Verify(commands.Cog):
             await ctx.reply(self.l10n.format_value('verify-basic-section-mismatch'))
             return
 
-        if user := ctx.guild.get_member(tuple[4]):
+        if user := ctx.guild.get_member(tuple[5]):
             await self.sendEmail(ctx, tuple[2].title().strip(), tuple[3])
             await ctx.reply(self.l10n.format_value('verify-basic-already-claimed', {'user': f'{user}', 'email': tuple[3]}))
 
@@ -152,20 +174,26 @@ class Verify(commands.Cog):
                     return
 
         # Assigning section/sub-section roles to the user
-        role = utils.get(ctx.guild.roles, name=tuple[0])
-        await ctx.author.add_roles(role)
-        role = utils.get(ctx.guild.roles, name=tuple[1])
-        await ctx.author.add_roles(role)
+        try:
+            role = utils.get(ctx.guild.roles, name=tuple[0])
+            await ctx.author.add_roles(role)
+            role = utils.get(ctx.guild.roles, name=tuple[1])
+            await ctx.author.add_roles(role)
+        except:
+            pass
 
         await ctx.reply(self.l10n.format_value('verify-basic-success'))
 
         # Removing restricting role
-        role = utils.get(ctx.guild.roles, name='Not-Verified')
-        await ctx.author.remove_roles(role)
+        try:
+            role = utils.get(ctx.guild.roles, name='Not-Verified')
+            await ctx.author.remove_roles(role)
+        except:
+            pass
 
         # Input changes to the database
-        guilds = json.loads(tuple[5])
-        if ctx.guild.id not in guilds:
+        guilds = json.loads(tuple[6])
+        if not override and ctx.guild.id not in guilds:
             guilds.append(ctx.guild.id)
         guilds = json.dumps(guilds)
 
@@ -197,7 +225,7 @@ class Verify(commands.Cog):
     @verify.command(brief='Used to input OTP that the user received in order to verify their email')
     @commands.check(basicVerificationCheck)
     async def code(self, ctx, code: str):
-        if str(ctx.author.id) not in self.data:
+        if str(ctx.author.id) not in self.codes:
             await ctx.reply(self.l10n.format_value('verify-not-received'))
             return
 
@@ -208,7 +236,7 @@ class Verify(commands.Cog):
 
     def save(self):
         with open('db/codes.json', 'w') as f:
-            json.dump(self.data, f)
+            json.dump(self.codes, f)
 
 def setup(bot):
     bot.add_cog(Verify(bot))
