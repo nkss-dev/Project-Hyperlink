@@ -55,8 +55,8 @@ class Verify(commands.Cog):
         await ctx.message.add_reaction(self.emojis['loading'])
 
         # Setting variables for the email
-        EMAIL = os.getenv('EMAIL')
-        PASSWORD = os.getenv('PASSWORD')
+        EMAIL = os.environ['EMAIL']
+        PASSWORD = os.environ['PASSWORD']
         otp = self.generateotp()
 
         # Creating the email

@@ -68,4 +68,4 @@ async def on_ready():
     for error in errors:
         print(error)
 
-client.run(os.getenv('BOT_TOKEN'))
+client.run(os.environ['BOT_TOKEN'])
