@@ -81,25 +81,25 @@ class Events(commands.Cog):
         details = self.data[str(guild.id)]
 
         if member.bot:
-            if bot_role := guild.get_role((details['bot_role'])):
-                await member.add_roles(bot_role)
+            if botRole := guild.get_role((details['roles']['bot'])):
+                await member.add_roles(botRole)
             return
 
-        if events := details.get('on_join/leave'):
+        if events := details.get('events'):
             # Sends welcome message on the server's channel
             if channel := self.bot.get_channel(events['join'][0]):
                 await channel.send(events['join'][1].replace('{user}', member.mention))
 
             # Sends welcome message to the user's DM
-            if dm := events['private_dm']:
+            if dm := events['welcome']:
                 await member.send(dm.replace('{server}', guild.name))
 
             # Gives roles to the new user
-            for role in events['new_roles']:
+            for role in details['roles']['join']:
                 if new_role := guild.get_role(role):
                     await member.add_roles(new_role)
                 else:
-                    events['new_roles'].remove(role)
+                    self.data[str(guild.id)]['roles']['join'].remove(role)
                     self.save()
 
         if not details.get('verification'):
@@ -132,13 +132,13 @@ class Events(commands.Cog):
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
-            welcome_channel = self.bot.get_channel(details['verification']['welcome_channel'])
-            commands_channel = self.bot.get_channel(details['verification']['commands_channel'])
+            instruction = self.bot.get_channel(details['verification']['instruction'])
+            command = self.bot.get_channel(details['verification']['command'])
 
             l10n = get_l10n(guild.id, 'EventHandler')
             keys = {
-                'instruction-channel': welcome_channel.mention,
-                'command-channel': commands_channel.mention,
+                'instruction-channel': instruction.mention,
+                'command-channel': command.mention,
                 'owner': guild.owner.mention
             }
             embed = discord.Embed(
@@ -165,14 +165,14 @@ class Events(commands.Cog):
         self.open()
         details = self.data[str(guild.id)]
 
-        if not (events := details.get('on_join/leave')):
+        if not (events := details.get('events')):
             return
 
         l10n = get_l10n(guild.id, 'EventHandler')
 
         action = 'leave'
         if guild.me.guild_permissions.view_audit_log:
-            # Checking the last 5 audit log entries to check for a kick or a ban
+            # Checking the audit log entries to check for a kick or a ban
             async for entry in guild.audit_logs():
                 if str(entry.target) == str(member) and (time - entry.created_at) < timedelta(seconds=1):
                     if entry.action is discord.AuditLogAction.kick:

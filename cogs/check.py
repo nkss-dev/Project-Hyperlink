@@ -48,8 +48,8 @@ class Check(commands.Cog):
             guild_data = json.load(f)
 
         # Fetches the moderator roles set for the guild
-        if mod_roles := guild_data[str(ctx.guild.id)]['mod_roles']:
-            await commands.has_any_role(*mod_roles).predicate(ctx)
+        if modRoles := guild_data[str(ctx.guild.id)]['roles']['mod']:
+            await commands.has_any_role(*modRoles).predicate(ctx)
         else:
             raise commands.CheckFailure('MissingModeratorRoles')
 

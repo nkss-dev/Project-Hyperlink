@@ -15,7 +15,7 @@ def get_prefix(_, message):
 client = Bot(
     command_prefix=get_prefix,
     intents=Intents.all(),
-    owner_ids=list(map(int, os.getenv('OWNER_IDS').split(', ')))
+    owner_ids=list(map(int, os.environ['OWNER_IDS'].split(', ')))
 )
 
 @client.event
@@ -24,9 +24,20 @@ async def on_ready():
 
     client.default_guild_details = {
         'prefix': ['%'],
-        'mod_roles': [],
-        'bot_role': 0,
-        'logging_channel': [0, 0]
+        'roles': {
+            'bot': 0,
+            'join': [],
+            'mod': [],
+            'mute': 0
+        },
+        'events': {
+            'join': [0, '{user} has joined the server!'],
+            'leave': [0, '{user} has left the server.'],
+            'kick': [0, '{user} has been kicked from the server.'],
+            'ban': [0, '{user} has been banned from the server.'],
+            'welcome': ''
+        },
+        'log': [0, 0]
     }
 
     try:
