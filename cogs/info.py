@@ -80,10 +80,11 @@ class Info(commands.Cog):
         """Enter a member to change their name or leave it blank to change your own"""
 
         member = member or ctx.author
-        if member != ctx.author:
+        if await member.is_owner():
+            pass
+        elif member != ctx.author:
             if not ctx.author.guild_permissions.manage_nicknames:
                 raise commands.MissingPermissions([discord.Permissions.manage_nicknames])
-
         else:
             if not member.guild_permissions.change_nickname:
                 raise commands.MissingPermissions([discord.Permissions.change_nickname])
