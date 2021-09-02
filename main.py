@@ -9,9 +9,7 @@ load_dotenv()
 
 def get_prefix(_, message):
     if message.guild:
-        with open('db/guilds.json') as f:
-            prefixes = json.load(f)
-        return  prefixes[str(message.guild.id)]['prefix']
+        return  client.guild_data[str(message.guild.id)]['prefix']
     return '%'
 
 client = Bot(
