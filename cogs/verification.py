@@ -27,8 +27,6 @@ class Verify(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-        with open('db/guilds.json') as guilds:
-            self.guilds = json.load(guilds)
         with open('db/codes.json') as codes:
             self.codes = json.load(codes)
         with open('db/emojis.json') as emojis:
@@ -120,8 +118,12 @@ class Verify(commands.Cog):
             {'roll': roll_no}
         ).fetchone()
 
+        if not tuple:
+            await ctx.reply(self.l10n.format_value('verify-basic-record-notfound'))
+            return
+
         override = False
-        if details := self.guilds[str(ctx.guild.id)].get('verification'):
+        if details := self.bot.guild_data[str(ctx.guild.id)].get('verification'):
             if tuple[4] != details['batch']:
                 await ctx.reply(self.l10n.format_value('incorrect-server', {'batch': int(tuple[4])}))
                 return
@@ -137,10 +139,6 @@ class Verify(commands.Cog):
                     override = True
             except TimeoutError:
                 return
-
-        if not tuple:
-            await ctx.reply(self.l10n.format_value('verify-basic-record-notfound'))
-            return
 
         if section not in self.sections:
             await ctx.reply(self.l10n.format_value('verify-basic-section-notfound', {'section': section}))

@@ -44,18 +44,18 @@ async def on_ready():
 
     try:
         with open('db/guilds.json') as f:
-            details = json.load(f)
-        for guild in details:
+            client.guild_data = json.load(f)
+        for guild in client.guild_data:
             for key in client.default_guild_details:
-                if key not in details[guild]:
-                    details[guild][key] = client.default_guild_details[key]
+                if key not in client.guild_data[guild]:
+                    client.guild_data[guild][key] = client.default_guild_details[key]
         with open('db/guilds.json', 'w') as f:
-            json.dump(details, f)
+            json.dump(client.guild_data, f)
     except FileNotFoundError:
         # Creates the guilds.json file if it doesn't exist, as it is essential for many cogs' functioning
-        data = {guild.id: client.default_guild_details for guild in client.guilds}
+        client.guild_data = {guild.id: client.default_guild_details for guild in client.guilds}
         with open('db/guilds.json', 'w') as f:
-            json.dump(data, f)
+            json.dump(client.guild_data, f)
 
     # Loads all the cogs
     errors = []

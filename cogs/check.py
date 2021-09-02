@@ -44,12 +44,9 @@ class Check(commands.Cog):
         if await self.bot.is_owner(ctx.author) or ctx.author == ctx.guild.owner:
             return True
 
-        with open('db/guilds.json', 'r') as f:
-            guild_data = json.load(f)
-
         # Fetches the moderator roles set for the guild
-        if modRoles := guild_data[str(ctx.guild.id)]['roles']['mod']:
-            await commands.has_any_role(*modRoles).predicate(ctx)
+        if mod_roles := self.bot.guild_data[str(ctx.guild.id)]['roles']['mod']:
+            await commands.has_any_role(*mod_roles).predicate(ctx)
         else:
             raise commands.CheckFailure('MissingModeratorRoles')
 

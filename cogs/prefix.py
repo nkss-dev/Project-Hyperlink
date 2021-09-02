@@ -19,26 +19,23 @@ class Prefix(commands.Cog):
             await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
-        with open('db/guilds.json') as f:
-            self.data = json.load(f)
-
     @prefix.command(brief='Adds a prefix for this server')
     async def add(self, ctx, prefix):
-        prefixes = self.data[str(ctx.guild.id)]['prefix']
+        prefixes = self.bot.guild_data[str(ctx.guild.id)]['prefix']
 
         if prefix in prefixes:
             await ctx.reply(self.l10n.format_value('prefix-exists-true', {'prefix': prefix}))
             return
 
         prefixes.append(prefix)
-        self.data[str(ctx.guild.id)]['prefix'] = prefixes
+        self.bot.guild_data[str(ctx.guild.id)]['prefix'] = prefixes
         self.save()
 
         await ctx.reply(self.l10n.format_value('add-success', {'prefix': prefix}))
 
     @prefix.command(brief='Removes a prefix from the server')
     async def remove(self, ctx, prefix):
-        prefixes = self.data[str(ctx.guild.id)]['prefix']
+        prefixes = self.bot.guild_data[str(ctx.guild.id)]['prefix']
 
         if prefix not in prefixes:
             await ctx.reply(self.l10n.format_value('prefix-exists-false', {'prefix': prefix}))
@@ -49,21 +46,21 @@ class Prefix(commands.Cog):
             return
 
         prefixes.remove(prefix)
-        self.data[str(ctx.guild.id)]['prefix'] = prefixes
+        self.bot.guild_data[str(ctx.guild.id)]['prefix'] = prefixes
         self.save()
 
         await ctx.reply(self.l10n.format_value('remove-success', {'prefix': prefix}))
 
     @prefix.command(brief='Removes all custom prefixes and sets to the specified prefix')
     async def set(self, ctx, prefix):
-        self.data[str(ctx.guild.id)]['prefix'] = [prefix]
+        self.bot.guild_data[str(ctx.guild.id)]['prefix'] = [prefix]
         self.save()
 
-        await ctx.reply(self.l10n.format_value('guild-prefix'))
+        await ctx.reply(self.l10n.format_value('guild-prefix', {'prefix': prefix}))
 
     def save(self):
         with open('db/guilds.json', 'w') as f:
-            json.dump(self.data, f)
+            json.dump(self.bot.guild_data, f)
 
 def setup(bot):
     bot.add_cog(Prefix(bot))

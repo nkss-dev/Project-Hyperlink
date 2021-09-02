@@ -15,11 +15,8 @@ class Logger(commands.Cog):
         if message.author.bot:
             return
 
-        with open('db/guilds.json') as f:
-            guild_data = json.load(f)
-
-        channel = self.bot.get_channel(guild_data[str(message.guild.id)]['log'][0])
-        if not channel:
+        channel_id = self.bot.guild_data[str(message.guild.id)]['log'][0]
+        if not (channel := self.bot.get_channel(channel_id)):
             return
 
         l10n = get_l10n(message.guild.id, 'logger')
@@ -44,11 +41,8 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
-        with open('db/guilds.json') as f:
-            guild_data = json.load(f)
-
-        channel = self.bot.get_channel(guild_data[str(payload.guild_id)]['log'][0])
-        if not channel:
+        channel_id = self.bot.guild_data[str(payload.guild_id)]['log'][0]
+        if not (channel := self.bot.get_channel(channel_id)):
             return
 
         l10n = get_l10n(payload.guild_id, 'logger')
@@ -71,11 +65,8 @@ class Logger(commands.Cog):
         if before.author.bot:
             return
 
-        with open('db/guilds.json') as f:
-            guild_data = json.load(f)
-
-        channel = self.bot.get_channel(guild_data[str(before.guild.id)]['log'][1])
-        if not channel:
+        channel_id = self.bot.guild_data[str(before.guild.id)]['log'][1]
+        if not (channel := self.bot.get_channel(channel_id)):
             return
 
         if before.content == after.content:

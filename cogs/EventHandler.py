@@ -40,8 +40,7 @@ class Events(commands.Cog):
             color = discord.Color.blurple()
         )
 
-        self.open()
-        prefixes = self.data[str(message.guild.id)]['prefix']
+        prefixes = self.bot.guild_data[str(message.guild.id)]['prefix']
 
         embed.add_field(
             name = l10n.format_value('prefix'),
@@ -79,8 +78,7 @@ class Events(commands.Cog):
     async def on_member_join(self, member):
         guild = member.guild
 
-        self.open()
-        details = self.data[str(guild.id)]
+        details = self.bot.guild_data[str(guild.id)]
 
         if member.bot:
             if botRole := guild.get_role((details['roles']['bot'])):
@@ -101,7 +99,7 @@ class Events(commands.Cog):
                 if new_role := guild.get_role(role):
                     await member.add_roles(new_role)
                 else:
-                    self.data[str(guild.id)]['roles']['join'].remove(role)
+                    self.bot.guild_data[str(guild.id)]['roles']['join'].remove(role)
                     self.save()
 
         if not details.get('verification'):
@@ -164,8 +162,7 @@ class Events(commands.Cog):
         time = datetime.utcnow()
         guild = member.guild
 
-        self.open()
-        details = self.data[str(guild.id)]
+        details = self.bot.guild_data[str(guild.id)]
 
         if not (events := details.get('events')):
             return
@@ -251,23 +248,17 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        self.open()
-        self.data[str(guild.id)] = self.bot.default_guild_details
+        self.bot.guild_data[str(guild.id)] = self.bot.default_guild_details
         self.save()
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        self.open()
-        del self.data[str(guild.id)]
+        del self.bot.guild_data[str(guild.id)]
         self.save()
-
-    def open(self):
-        with open('db/guilds.json') as f:
-            self.data = json.load(f)
 
     def save(self):
         with open('db/guilds.json', 'w') as f:
-            json.dump(self.data, f)
+            json.dump(self.bot.guild_data, f)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
