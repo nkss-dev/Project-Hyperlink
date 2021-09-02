@@ -99,7 +99,7 @@ class Info(commands.Cog):
         """Enter a member to change their name or leave it blank to change your own"""
 
         member = member or ctx.author
-        if await member.is_owner():
+        if await self.bot.is_owner(member):
             pass
         elif member != ctx.author:
             if not ctx.author.guild_permissions.manage_nicknames:
