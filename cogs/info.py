@@ -39,11 +39,14 @@ class Info(commands.Cog):
             await ctx.reply(self.l10n.format_value('record-notfound'))
             return
 
-        ignored_roles = [tuple[1], tuple[2], '@everyone']
-        user_roles = [role.mention for role in member.roles if role.name not in ignored_roles]
-        user_roles.reverse()
-        user_roles = ', '.join(user_roles)
-        if not user_roles:
+        if ctx.guild:
+            ignored_roles = [tuple[1], tuple[2], '@everyone']
+            user_roles = [role.mention for role in member.roles if role.name not in ignored_roles]
+            user_roles.reverse()
+            user_roles = ', '.join(user_roles)
+            if not user_roles:
+                user_roles = self.l10n.format_value('roles-none')
+        else:
             user_roles = self.l10n.format_value('roles-none')
 
         status = ' '
@@ -61,15 +64,16 @@ class Info(commands.Cog):
         embed = discord.Embed(
             title = f'{tuple[3].title()}{status}',
             description = self.l10n.format_value('profile', profile),
-            colour = member.top_role.color
+            colour = member.top_role.color if ctx.guild else discord.Color.blurple()
         )
         embed.set_author(
             name = self.l10n.format_value('profile-name', {'member': str(member)}),
             icon_url = member.avatar_url
         )
         embed.set_thumbnail(url=member.avatar_url)
-        date = member.joined_at.strftime('%b %d, %Y')
-        embed.set_footer(text=self.l10n.format_value('profile-join-date', {'date': date}))
+        if ctx.guild:
+            date = member.joined_at.strftime('%b %d, %Y')
+            embed.set_footer(text=self.l10n.format_value('profile-join-date', {'date': date}))
 
         await ctx.send(embed=embed)
 
