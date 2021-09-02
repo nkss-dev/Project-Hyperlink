@@ -43,7 +43,7 @@ class Drive(commands.Cog):
         self.DRIVE = build('drive', 'v3', credentials=creds)
 
     async def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id, 'drive')
+        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'drive')
         return self.bot.verificationCheck(ctx)
 
     @commands.group(brief='Allows users to interact with a specific Google Drive')

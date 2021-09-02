@@ -11,6 +11,7 @@ class OwnerOnly(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     async def cog_check(self, ctx):
+        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'owner')
         return await commands.is_owner().predicate(ctx)
 
     @commands.command(brief='Loads a cog')
@@ -19,8 +20,7 @@ class OwnerOnly(commands.Cog):
 
         self.bot.load_extension(f'cogs.{extension}')
 
-        l10n = get_l10n(ctx.guild.id, 'owner')
-        await ctx.send(l10n.format_value('load-successful', {'ext': extension}))
+        await ctx.send(self.l10n.format_value('load-successful', {'ext': extension}))
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
@@ -30,8 +30,7 @@ class OwnerOnly(commands.Cog):
 
         self.bot.unload_extension(f'cogs.{extension}')
 
-        l10n = get_l10n(ctx.guild.id, 'owner')
-        await ctx.send(l10n.format_value('unload-successful', {'ext': extension}))
+        await ctx.send(self.l10n.format_value('unload-successful', {'ext': extension}))
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
@@ -42,8 +41,7 @@ class OwnerOnly(commands.Cog):
         self.bot.unload_extension(f'cogs.{extension}')
         self.bot.load_extension(f'cogs.{extension}')
 
-        l10n = get_l10n(ctx.guild.id, 'owner')
-        await ctx.send(l10n.format_value('reload-successful', {'ext': extension}))
+        await ctx.send(self.l10n.format_value('reload-successful', {'ext': extension}))
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 

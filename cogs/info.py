@@ -19,7 +19,7 @@ class Info(commands.Cog):
         self.c = self.conn.cursor()
 
     def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id, 'info')
+        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'info')
         return self.bot.basicVerificationCheck(ctx)
 
     @commands.command(brief='Displays details of the user', aliases=['p'])

@@ -269,7 +269,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        l10n = get_l10n(ctx.guild.id, 'EventHandler')
+        l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'EventHandler')
 
         if isinstance(error, commands.CommandNotFound):
             pass

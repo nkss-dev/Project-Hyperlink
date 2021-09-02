@@ -23,7 +23,7 @@ class IGN(commands.Cog):
             self.data = []
 
     async def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id, 'ign')
+        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'ign')
         return self.bot.verificationCheck(ctx)
 
     @commands.group(brief='Shows the list of eligible games for which an IGN can be added.')

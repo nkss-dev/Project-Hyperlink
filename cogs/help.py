@@ -65,7 +65,7 @@ class Help(commands.Cog):
 
     @commands.command(name='help')
     async def help(self, ctx, cmd: Optional[str]):
-        self.l10n = get_l10n(ctx.guild.id, 'help')
+        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'help')
 
         if not cmd:
             embed = Embed(
