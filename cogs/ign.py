@@ -22,6 +22,13 @@ class IGN(commands.Cog):
                 json.dump([], f)
             self.data = []
 
+    def get_ign(self, author_id):
+        igns = self.c.execute(
+            'select IGN from main where Discord_UID = (:uid)',
+            {'uid': author_id}
+        ).fetchone()[0]
+        return json.loads(igns)
+
     async def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'ign')
         return self.bot.verificationCheck(ctx)
@@ -45,12 +52,6 @@ class IGN(commands.Cog):
             await ctx.send(embed=embed)
             return
 
-        igns = self.c.execute(
-            'select IGN from main where Discord_UID = (:uid)',
-            {'uid': ctx.author.id}
-        ).fetchone()[0]
-        self.igns = json.loads(igns)
-
     @ign.command(brief='Used to add an IGN for a specified game.')
     async def add(self, ctx, game, ign):
         flag = False
@@ -66,10 +67,11 @@ class IGN(commands.Cog):
             await ctx.reply(self.l10n.format_value('nice-try'))
             return
 
-        self.igns[allowed_game] = ign
+        igns = self.get_ign(ctx.author.id)
+        igns[allowed_game] = ign
         self.c.execute(
             'update main set IGN = (:ign) where Discord_UID = (:uid)',
-            {'ign': json.dumps(self.igns), 'uid': ctx.author.id}
+            {'ign': json.dumps(igns), 'uid': ctx.author.id}
         )
         self.conn.commit()
 
@@ -86,7 +88,8 @@ class IGN(commands.Cog):
 
         oneself = ctx.author == member
 
-        if not self.igns:
+        igns = self.get_ign(member.id)
+        if not igns:
             if oneself:
                 await ctx.reply(self.l10n.format_value('self-igns-notfound', {'prefix': ctx.prefix}))
             else:
@@ -99,13 +102,13 @@ class IGN(commands.Cog):
 
         if single:
             flag = False
-            for ign in self.igns:
+            for ign in igns:
                 if game.lower() == ign.lower():
                     flag = True
                     break
             if flag:
                 embed = discord.Embed(
-                    description = self.igns[ign],
+                    description = igns[ign],
                     color = member.top_role.color
                 )
                 await ctx.reply(embed=embed)
@@ -120,8 +123,8 @@ class IGN(commands.Cog):
             return
 
         ign = ''
-        for game in self.igns:
-            ign += f'\n**{game}:** {self.igns[game]}'
+        for game in igns:
+            ign += f'\n**{game}:** {igns[game]}'
         embed = discord.Embed(
             title = self.l10n.format_value('igns-title', {'member': member}),
             description = ign,
@@ -138,7 +141,8 @@ class IGN(commands.Cog):
 
     @ign.command(brief='Deletes the IGN of the entered game. Deletes all IGNs if none entered', aliases=['del'])
     async def delete(self, ctx, game: str=None):
-        if not self.igns:
+        igns = self.get_ign(ctx.author.id)
+        if not igns:
             await ctx.reply(self.l10n.format_value('self-igns-notfound'))
             return
 
@@ -152,19 +156,19 @@ class IGN(commands.Cog):
             return
 
         flag = False
-        for ign in self.igns:
+        for ign in igns:
             if game.lower() == ign.lower():
                 flag = True
                 break
         if flag:
-            self.igns.pop(ign)
+            igns.pop(ign)
         else:
             await ctx.reply(self.l10n.format_value('self-ign-notfound', {'ign': game}))
             return
 
         self.c.execute(
             'update main set IGN = (:ign) where Discord_UID = (:uid)',
-            {'ign': json.dumps(self.igns), 'uid': ctx.author.id}
+            {'ign': json.dumps(igns), 'uid': ctx.author.id}
         )
         self.conn.commit()
 
