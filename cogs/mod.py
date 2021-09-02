@@ -21,11 +21,12 @@ class Mod(commands.Cog):
 
     @commands.command(brief='Mutes user/role from the server/channel')
     async def mute(self, ctx, item: Union[discord.Member, discord.Role], duration, channel: discord.TextChannel=None):
-        if not fullmatch('^\d+:(([0-1]\d)|(2[0-4])):[0-6]\d$', duration):
+        if not fullmatch('^(\d+:)?(([0-1]\d)|(2[0-4])):[0-6]\d$', duration):
             await ctx.reply(self.l10n.format_value('duration-incorrect-format'))
             return
 
-        days, hours, minutes = list(map(int, duration.split(':')))
+        duration = list(map(int, duration.split(':')))
+        days, hours, minutes = duration if len(duration) == 3 else [0, *duration]
         unmute_time = datetime.now() + timedelta(days=days, hours=hours, minutes=minutes)
 
         if channel:

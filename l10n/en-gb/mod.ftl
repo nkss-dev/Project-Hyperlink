@@ -1,4 +1,4 @@
-duration-incorrect-format = Incorrect format of `duration`. Accepted format: `DD:HH:MM`
+duration-incorrect-format = Incorrect format of `duration`. Accepted formats: `DD:HH:MM` and `HH:MM`
 
 mute-ineffective = {$item} has been muted but the mute remains ineffective due to another permission override
 
