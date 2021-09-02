@@ -95,7 +95,7 @@ class IGN(commands.Cog):
             else:
                 embed = discord.Embed(
                     description = self.l10n.format_value('other-igns-notfound', {'member': member.mention}),
-                    color = member.top_role.color
+                    color = member.top_role.color if ctx.guild else discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
             return
@@ -109,7 +109,7 @@ class IGN(commands.Cog):
             if flag:
                 embed = discord.Embed(
                     description = igns[ign],
-                    color = member.top_role.color
+                    color = member.top_role.color if ctx.guild else discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
             elif oneself:
@@ -117,7 +117,7 @@ class IGN(commands.Cog):
             else:
                 embed = discord.Embed(
                     description = self.l10n.format_value('other-ign-notfound', {'member': member.mention, 'game': game}),
-                    color = member.top_role.color
+                    color = member.top_role.color if ctx.guild else discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
             return
@@ -126,14 +126,14 @@ class IGN(commands.Cog):
         for game in igns:
             ign += f'\n**{game}:** {igns[game]}'
         embed = discord.Embed(
-            title = self.l10n.format_value('igns-title', {'member': member}),
+            title = self.l10n.format_value('igns-title', {'member': f'{member}'}),
             description = ign,
-            color = member.top_role.color
+            color = member.top_role.color if ctx.guild else discord.Color.blurple()
         )
         embed.set_thumbnail(url=member.avatar_url)
         if not oneself:
             embed.set_footer(
-                text=self.l10n.format_value('request', {'author': ctx.author}),
+                text=self.l10n.format_value('request', {'author': f'{ctx.author}'}),
                 icon_url=ctx.author.avatar_url
             )
 

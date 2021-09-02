@@ -33,7 +33,7 @@ class Events(commands.Cog):
         if not fullmatch(f'<@!?{self.bot.user.id}>', message.content):
             return
 
-        l10n = get_l10n(message.guild.id, 'EventHandler')
+        l10n = get_l10n(message.guild.id if message.guild else 0, 'EventHandler')
 
         embed = discord.Embed(
             title = l10n.format_value('details-title'),
