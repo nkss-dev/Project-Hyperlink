@@ -75,7 +75,22 @@ class Info(commands.Cog):
             date = member.joined_at.strftime('%b %d, %Y')
             embed.set_footer(text=self.l10n.format_value('profile-join-date', {'date': date}))
 
-        await ctx.send(embed=embed)
+        profile = await ctx.send(embed=embed)
+        await profile.add_reaction('🗑️')
+
+        def check(reaction, member):
+            if reaction.emoji != '🗑️' or member == self.bot.user:
+                return False
+            if member != ctx.author and not member.guild_permissions.manage_messages:
+                return False
+            if reaction.message != profile:
+                return False
+            return True
+
+        await self.bot.wait_for('reaction_add', check=check)
+        await profile.delete()
+        if ctx.guild and ctx.guild.me.guild_permissions.manage_messages:
+            await ctx.message.delete()
 
     @commands.command(brief='Nicks a user to their first name')
     @commands.bot_has_permissions(manage_nicknames=True)
