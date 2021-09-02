@@ -30,48 +30,50 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if fullmatch(f'<@!?{self.bot.user.id}>', message.content):
-            l10n = get_l10n(message.guild.id, 'EventHandler')
+        if not fullmatch(f'<@!?{self.bot.user.id}>', message.content):
+            return
 
-            embed = discord.Embed(
-                title = l10n.format_value('details-title'),
-                color = discord.Color.blurple()
-            )
+        l10n = get_l10n(message.guild.id, 'EventHandler')
 
-            self.open()
-            prefixes = self.data[str(message.guild.id)]['prefix']
+        embed = discord.Embed(
+            title = l10n.format_value('details-title'),
+            color = discord.Color.blurple()
+        )
 
-            embed.add_field(
-                name = l10n.format_value('prefix'),
-                value = '\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]),
-                inline = False
-            )
+        self.open()
+        prefixes = self.data[str(message.guild.id)]['prefix']
 
-            delta_uptime = datetime.utcnow() - self.bot.launch_time
-            hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
-            minutes, seconds = divmod(remainder, 60)
-            days, hours = divmod(hours, 24)
-            embed.add_field(
-                name = l10n.format_value('uptime'),
-                value = f'{days}d, {hours}h, {minutes}m, {seconds}s',
-                inline = False
-            )
+        embed.add_field(
+            name = l10n.format_value('prefix'),
+            value = '\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]),
+            inline = False
+        )
 
-            ping_msg = await message.channel.send(l10n.format_value('ping-initiate'))
-            start = datetime.utcnow()
-            await ping_msg.edit(content=l10n.format_value('ping-calc'))
-            delta_uptime = (datetime.utcnow() - start)
+        delta_uptime = datetime.utcnow() - self.bot.launch_time
+        hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
+        embed.add_field(
+            name = l10n.format_value('uptime'),
+            value = f'{days}d, {hours}h, {minutes}m, {seconds}s',
+            inline = False
+        )
 
-            embed.add_field(
-                name = l10n.format_value('ping-r-latency'),
-                value = f'```{int(delta_uptime.total_seconds()*1000)}ms```'
-            )
-            embed.add_field(
-                name = l10n.format_value('ping-w-latency'),
-                value = f'```{int(self.bot.latency*1000)}ms```'
-            )
+        ping_msg = await message.channel.send(l10n.format_value('ping-initiate'))
+        start = datetime.utcnow()
+        await ping_msg.edit(content=l10n.format_value('ping-calc'))
+        delta_uptime = (datetime.utcnow() - start)
 
-            await ping_msg.edit(content=None, embed=embed)
+        embed.add_field(
+            name = l10n.format_value('ping-r-latency'),
+            value = f'```{int(delta_uptime.total_seconds()*1000)}ms```'
+        )
+        embed.add_field(
+            name = l10n.format_value('ping-w-latency'),
+            value = f'```{int(self.bot.latency*1000)}ms```'
+        )
+
+        await ping_msg.edit(content=None, embed=embed)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
