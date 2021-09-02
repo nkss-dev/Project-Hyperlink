@@ -47,7 +47,10 @@ class OwnerOnly(commands.Cog):
 
     @commands.command(brief='Restarts the bot')
     async def restart(self, ctx):
-        await ctx.message.delete()
+        if ctx.guild and ctx.guild.me.guild_permissions.manage_messages:
+            await ctx.message.delete()
+        else:
+            await ctx.message.add_reaction(self.emojis['verified'])
         await self.bot.close()
 
 def setup(bot):
