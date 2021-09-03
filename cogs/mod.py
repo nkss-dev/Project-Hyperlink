@@ -37,9 +37,13 @@ class Mod(commands.Cog):
 
             await asyncio.sleep(1)
             if channel.permissions_for(item).send_messages:
-                await ctx.reply(self.l10n.format_value('mute-ineffective'))
+                await ctx.reply(self.l10n.format_value('mute-ineffective', {'item': item.mention}))
+            else:
+                await ctx.reply(self.l10n.format_value('mute-effective', {'item': item.mention, 'place': channel.mention}))
 
             await sleep_until(unmute_time)
+
+            overwrite = channel.overwrites_for(item)
             overwrite.send_messages = original_perm
             await channel.set_permissions(item, overwrite=overwrite)
 
@@ -51,6 +55,9 @@ class Mod(commands.Cog):
                     return
 
                 await item.add_roles(mute_role)
+
+                await ctx.reply(self.l10n.format_value('mute-effective', {'item': item.mention, 'place': guild.name}))
+
                 await sleep_until(unmute_time)
                 await item.remove_roles(mute_role)
             else:
