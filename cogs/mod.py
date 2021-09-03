@@ -27,7 +27,7 @@ class Mod(commands.Cog):
 
         duration = list(map(int, duration.split(':')))
         days, hours, minutes = duration if len(duration) == 3 else [0, *duration]
-        unmute_time = datetime.now() + timedelta(days=days, hours=hours, minutes=minutes)
+        unmute_time = datetime.utcnow() + timedelta(days=days, hours=hours, minutes=minutes)
 
         if channel:
             overwrite = channel.overwrites_for(item)
