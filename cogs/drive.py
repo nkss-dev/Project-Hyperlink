@@ -135,7 +135,7 @@ class Drive(commands.Cog):
         await webhook.send(
             embeds=embeds,
             username=self.bot.user.name,
-            avatar_url=self.bot.user.avatar_url
+            avatar_url=self.bot.user.avatar.url
         )
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)

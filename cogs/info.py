@@ -68,9 +68,9 @@ class Info(commands.Cog):
         )
         embed.set_author(
             name = self.l10n.format_value('profile-name', {'member': str(member)}),
-            icon_url = member.avatar_url
+            icon_url = member.avatar.url
         )
-        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_thumbnail(url=member.avatar.url)
         if ctx.guild:
             date = member.joined_at.strftime('%b %d, %Y')
             embed.set_footer(text=self.l10n.format_value('profile-join-date', {'date': date}))

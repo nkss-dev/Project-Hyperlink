@@ -130,11 +130,11 @@ class IGN(commands.Cog):
             description = ign,
             color = member.top_role.color if ctx.guild else discord.Color.blurple()
         )
-        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_thumbnail(url=member.avatar.url)
         if not oneself:
             embed.set_footer(
                 text=self.l10n.format_value('request', {'author': f'{ctx.author}'}),
-                icon_url=ctx.author.avatar_url
+                icon_url=ctx.author.avatar.url
             )
 
         await ctx.send(embed=embed)

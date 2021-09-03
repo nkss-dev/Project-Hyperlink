@@ -7,7 +7,6 @@ from re import fullmatch
 
 import discord
 from discord.ext import commands
-from discord.utils import get
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -119,9 +118,9 @@ class Events(commands.Cog):
                 guilds = json.dumps(guilds)
 
                 # Assigning Section and Sub-Section roles to the user
-                role = get(guild.roles, name = tuple[0])
+                role = discord.utils.get(guild.roles, name = tuple[0])
                 await member.add_roles(role)
-                role = get(guild.roles, name = tuple[1])
+                role = discord.utils.get(guild.roles, name = tuple[1])
                 await member.add_roles(role)
 
                 self.c.execute(
@@ -159,7 +158,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        time = datetime.utcnow()
+        time = discord.utils.utcnow()
         guild = member.guild
 
         details = self.bot.guild_data[str(guild.id)]

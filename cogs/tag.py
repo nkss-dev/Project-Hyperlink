@@ -84,7 +84,7 @@ class Tag(commands.Cog):
         await webhook.send(
             content.strip(),
             username = ctx.author.nick or ctx.author.name,
-            avatar_url = ctx.author.avatar_url,
+            avatar_url = ctx.author.avatar.url,
             allowed_mentions = allowed_mentions
         )
 
