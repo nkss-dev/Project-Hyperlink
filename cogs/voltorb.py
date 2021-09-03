@@ -26,7 +26,7 @@ class voltorb_embed:
             title = 'Voltorb Flip',
             colour = ctx.author.top_role.color
         )
-        embed.set_author(name = str(ctx.author) + '\'s session', icon_url = ctx.author.avatar_url)
+        embed.set_author(name = str(ctx.author) + '\'s session', icon_url = ctx.author.avatar.url)
         embed.set_thumbnail(url = 'attachment://voltorb.gif')
         embed.set_image(url = 'attachment://board.png')
         embed.add_field(name='Level:', value=str(self.level), inline=True)
@@ -74,7 +74,7 @@ class voltorb_embed:
             title = 'Voltorb Flip',
             colour = ctx.author.top_role.color
         )
-        embed.set_author(name = str(ctx.author) + '\'s session', icon_url = ctx.author.avatar_url)
+        embed.set_author(name = str(ctx.author) + '\'s session', icon_url = ctx.author.avatar.url)
         embed.set_thumbnail(url = 'attachment://voltorb.gif')
         embed.set_image(url = 'attachment://board.png')
         embed.add_field(name='Level:', value=str(self.level), inline=True)

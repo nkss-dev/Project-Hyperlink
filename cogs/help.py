@@ -73,7 +73,7 @@ class Help(commands.Cog):
                 description = self.l10n.format_value('help-desc', {'prefix': ctx.prefix}),
                 color = Color.blurple()
             )
-            embed.set_thumbnail(url=self.bot.user.avatar_url)
+            embed.set_thumbnail(url=self.bot.user.avatar.url)
 
             for command in self.bot.commands:
                 _, aliases, params = syntax(command)

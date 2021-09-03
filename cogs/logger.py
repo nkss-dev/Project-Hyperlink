@@ -25,7 +25,7 @@ class Logger(commands.Cog):
             description = l10n.format_value('message-delete', {'channel': message.channel.mention}),
             color = Color.red()
         )
-        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+        embed.set_author(name=message.author, icon_url=message.author.avatar.url)
         embed.add_field(
             name = l10n.format_value('content'),
             value = message.content or l10n.format_value('content-notfound')
@@ -81,7 +81,7 @@ class Logger(commands.Cog):
             ),
             color = Color.orange()
         )
-        embed.set_author(name=before.author, icon_url=before.author.avatar_url)
+        embed.set_author(name=before.author, icon_url=before.author.avatar.url)
 
         embed.add_field(
             name = l10n.format_value('message-old'),
