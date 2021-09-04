@@ -1,5 +1,4 @@
 import json
-import os
 import sqlite3
 
 from asyncio import TimeoutError
@@ -14,6 +13,7 @@ from discord import utils
 import smtplib
 from email.message import EmailMessage
 
+import os
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -24,13 +24,13 @@ class Verify(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
-
         with open('db/codes.json') as codes:
             self.codes = json.load(codes)
         with open('db/emojis.json') as emojis:
             self.emojis = json.load(emojis)['utility']
+
+        self.conn = sqlite3.connect('db/details.db')
+        self.c = self.conn.cursor()
 
         self.sections = (
             'CE-A', 'CE-B', 'CE-C',
@@ -42,7 +42,8 @@ class Verify(commands.Cog):
             'PI-A', 'PI-B'
         )
 
-    def generateotp(self):
+    @staticmethod
+    def generateotp():
         sample_set = '01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         OTP = ''
         for _ in range(5):

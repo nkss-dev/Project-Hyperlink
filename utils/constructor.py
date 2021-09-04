@@ -27,7 +27,8 @@ class Constructor():
         ]
 
     # boards.json
-    def boards(self):
+    @staticmethod
+    def boards():
         try:
             with open('db/boards.json') as f:
                 json.load(f)
@@ -36,7 +37,8 @@ class Constructor():
                 json.dump({}, f)
 
     # codes.json
-    def codes(self):
+    @staticmethod
+    def codes():
         try:
             with open('db/codes.json') as f:
                 json.load(f)
@@ -45,7 +47,8 @@ class Constructor():
                 json.dump({}, f)
 
     # details.db
-    def details(self):
+    @staticmethod
+    def details():
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
 
@@ -93,7 +96,8 @@ class Constructor():
             pass
 
     # emojis.json
-    def emojis(self):
+    @staticmethod
+    def emojis():
         try:
             with open('db/emojis.json') as f:
                 json.load(f)
@@ -111,7 +115,8 @@ class Constructor():
                 json.dump(emojis, f)
 
     # games.json
-    def games(self):
+    @staticmethod
+    def games():
         try:
             with open('db/games.json') as f:
                 json.load(f)
@@ -158,7 +163,8 @@ class Constructor():
                 json.dump(self.client.guild_data, f)
 
     # links.json
-    def links(self):
+    @staticmethod
+    def links():
         try:
             with open('db/links.json') as f:
                 json.load(f)
@@ -199,7 +205,8 @@ class Constructor():
                 json.dump(links, f)
 
     # muted.json
-    def muted(self):
+    @staticmethod
+    def muted():
         try:
             with open('db/muted.json') as f:
                 json.load(f)
@@ -208,7 +215,8 @@ class Constructor():
                 json.dump([], f)
 
     # reactionRoles.json
-    def reactionRoles(self):
+    @staticmethod
+    def reactionRoles():
         try:
             with open('db/reactionRoles.json') as f:
                 json.load(f)
@@ -217,7 +225,8 @@ class Constructor():
                 json.dump({}, f)
 
     # VCs.json
-    def VCs(self):
+    @staticmethod
+    def VCs():
         try:
             with open('db/VCs.json') as f:
                 json.load(f)
