@@ -31,13 +31,15 @@ class Events(commands.Cog):
             color = discord.Color.blurple()
         )
 
-        prefixes = self.bot.guild_data[str(message.guild.id)]['prefix']
-
-        embed.add_field(
-            name = l10n.format_value('prefix'),
-            value = '\n'.join([f'{prefix[0] + 1}. {prefix[1]}' for prefix in enumerate(prefixes)]),
-            inline = False
-        )
+        if message.guild:
+            prefixes = self.bot.guild_data[str(message.guild.id)]['prefix']
+            embed.add_field(
+                name = l10n.format_value('prefix'),
+                value = '\n'.join([f'{i+1}. {prefix}' for i, prefix in enumerate(prefixes)]),
+                inline = False
+            )
+        else:
+            embed.add_field(name=l10n.format_value('prefix'), value='%', inline=False)
 
         delta_uptime = datetime.utcnow() - self.bot.launch_time
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
