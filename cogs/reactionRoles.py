@@ -76,6 +76,7 @@ class ReactionRoles(commands.Cog):
     @commands.group(brief='This adds/removes roles from a user based on reactions to a specified message', aliases=['rr'])
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
+    @commands.guild_only()
     async def reactionrole(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))

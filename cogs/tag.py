@@ -17,6 +17,7 @@ class Tag(commands.Cog):
         return self.bot.verificationCheck(ctx)
 
     @commands.command(brief='Allows user to tag section/subsection roles')
+    @commands.guild_only()
     async def tag(self, ctx, *, content):
         """
         **Which all sections can I tag?**

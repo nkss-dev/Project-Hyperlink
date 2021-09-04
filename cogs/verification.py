@@ -93,6 +93,7 @@ class Verify(commands.Cog):
         return False
 
     @commands.group(brief='Registers the user in the database')
+    @commands.guild_only()
     async def verify(self, ctx):
         self.l10n = get_l10n(ctx.guild.id, 'verification')
 

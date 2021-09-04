@@ -14,6 +14,7 @@ class Prefix(commands.Cog):
     @commands.group(brief='Manages the server\'s custom prefixes')
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
+    @commands.guild_only()
     async def prefix(self, ctx):
         if not ctx.invoked_subcommand:
             await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))

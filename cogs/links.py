@@ -25,6 +25,8 @@ class Links(commands.Cog):
         self.link_update_loop.start()
 
     async def cog_check(self, ctx):
+        if not ctx.guild:
+            raise commands.NoPrivateMessage
         if not self.bot.verificationCheck(ctx):
             return False
 

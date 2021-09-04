@@ -93,8 +93,9 @@ class Info(commands.Cog):
             await ctx.message.delete()
 
     @commands.command(brief='Nicks a user to their first name')
-    @commands.bot_has_permissions(manage_nicknames=True)
     @commands.check(verificationCheck)
+    @commands.bot_has_permissions(manage_nicknames=True)
+    @commands.guild_only()
     async def nick(self, ctx, member: discord.Member=None):
         """Enter a member to change their name or leave it blank to change your own"""
 

@@ -21,6 +21,8 @@ class Mod(commands.Cog):
         self.bot.loop.create_task(self.loadAllMuted())
 
     def cog_check(self, ctx):
+        if not ctx.guild:
+            raise commands.NoPrivateMessage
         self.l10n = get_l10n(ctx.guild.id, 'mod')
         return self.bot.moderatorCheck(ctx)
 

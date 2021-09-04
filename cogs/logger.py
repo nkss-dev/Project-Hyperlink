@@ -12,7 +12,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if message.author.bot:
+        if message.author.bot or not message.guild:
             return
 
         channel_id = self.bot.guild_data[str(message.guild.id)]['log'][0]
@@ -62,7 +62,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        if before.author.bot:
+        if before.author.bot or not before.guild:
             return
 
         channel_id = self.bot.guild_data[str(before.guild.id)]['log'][1]
