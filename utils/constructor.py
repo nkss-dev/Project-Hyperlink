@@ -5,7 +5,11 @@ import sqlite3
 class Constructor():
     def __init__(self, client):
         print(f'Logged on as {client.user}')
-        os.system('mkdir db')
+
+        try:
+            os.mkdir('db')
+        except FileExistsError:
+            pass
 
         self.client = client
         self.funcs = [
@@ -45,45 +49,48 @@ class Constructor():
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
 
-        c.execute('''
-            CREATE TABLE main (
-                Roll_Number integer PRIMARY KEY,
-                Section text,
-                SubSection text,
-                Name text,
-                Gender text,
-                Institute_Email text,
-                Batch integer,
-                Discord_UID integer UNIQUE,
-                Guilds text DEFAULT "[]",
-                Verified text DEFAULT "False",
-                IGN text DEFAULT '{}'
-            )
-        ''')
-        c.execute('''
-            CREATE TABLE voltorb (
-                Discord_UID integer,
-                level text,
-                coins text,
-                total text,
-                lose text,
-                win text,
-                rip text,
-                message text,
-                row text,
-                col text,
-                board text,
-                flip text,
-                bg blob,
-                voltorb_tile blob,
-                tile_1 blob,
-                tile_2 blob,
-                tile_3 blob,
-                hl_voltorb_tile blob,
-                FOREIGN KEY(Discord_UID) REFERENCES main(Discord_UID)
-            )
-        ''')
-        conn.commit()
+        try:
+            c.execute('''
+                CREATE TABLE main (
+                    Roll_Number integer PRIMARY KEY,
+                    Section text,
+                    SubSection text,
+                    Name text,
+                    Gender text,
+                    Institute_Email text,
+                    Batch integer,
+                    Discord_UID integer UNIQUE,
+                    Guilds text DEFAULT "[]",
+                    Verified text DEFAULT "False",
+                    IGN text DEFAULT '{}'
+                )
+            ''')
+            c.execute('''
+                CREATE TABLE voltorb (
+                    Discord_UID integer,
+                    level text,
+                    coins text,
+                    total text,
+                    lose text,
+                    win text,
+                    rip text,
+                    message text,
+                    row text,
+                    col text,
+                    board text,
+                    flip text,
+                    bg blob,
+                    voltorb_tile blob,
+                    tile_1 blob,
+                    tile_2 blob,
+                    tile_3 blob,
+                    hl_voltorb_tile blob,
+                    FOREIGN KEY(Discord_UID) REFERENCES main(Discord_UID)
+                )
+            ''')
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
 
     # emojis.json
     def emojis(self):
