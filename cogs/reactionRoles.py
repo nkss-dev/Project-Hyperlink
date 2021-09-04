@@ -13,22 +13,17 @@ class ReactionRoles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        try:
-            with open('db/reaction_roles.json', 'r') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.bot.loop.create_task(self.create())
+        with open('db/reactionRoles.json') as f:
+            self.data = json.load(f)
         try:
             with open('db/emojis.json', 'r') as f:
                 self.emojis = json.load(f)['games']
         except FileNotFoundError:
-            self.enmojis = {}
+            self.emojis = {}
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        try:
-            details = self.data[str(payload.guild_id)]
-        except KeyError:
+        if not (details := self.data.get(str(payload.guild_id)))
             return
 
         flag = False
@@ -53,9 +48,7 @@ class ReactionRoles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        try:
-            details = self.data[str(payload.guild_id)]
-        except KeyError:
+        if not (details := self.data.get(str(payload.guild_id)))
             return
 
         flag = False
@@ -80,7 +73,7 @@ class ReactionRoles(commands.Cog):
             self.save()
 
     async def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id, 'reaction_roles')
+        self.l10n = get_l10n(ctx.guild.id, 'reactionRoles')
         return await self.bot.moderatorCheck(ctx)
 
     @commands.group(brief='This adds/removes roles from a user based on reactions to a specified message', aliases=['rr'])
@@ -113,6 +106,8 @@ class ReactionRoles(commands.Cog):
                 return
         await message.add_reaction(reaction)
 
+        if not self.data.get(str(ctx.guild.id)):
+            self.data[str(ctx.guild.id)] = []
         ID = self.generateID([reaction_role['ID'] for reaction_role in self.data[str(ctx.guild.id)]])
 
         if isinstance(reaction, str):
@@ -122,12 +117,12 @@ class ReactionRoles(commands.Cog):
             reaction = reaction.id
 
         dict = {
-            "ID": ID,
-            "emoji": reaction,
-            "role_id": role.id,
-            "type": 1,
-            "message_id": message.id,
-            "channel_id": message.channel.id
+            'ID': ID,
+            'emoji': reaction,
+            'role_id': role.id,
+            'type': 1,
+            'message_id': message.id,
+            'channel_id': message.channel.id
         }
         self.data[str(ctx.guild.id)].append(dict)
         self.save()
@@ -145,6 +140,9 @@ class ReactionRoles(commands.Cog):
 
     @reactionrole.command(brief='Removes a reaction role')
     async def remove(self, ctx, ID: str):
+        if not (details := self.data.get(str(ctx.guild.id)))
+            return
+
         for reaction_role in self.data[str(ctx.guild.id)]:
             if ID == reaction_role['ID']:
                 channel = self.bot.get_channel(reaction_role['channel_id'])
@@ -174,13 +172,8 @@ class ReactionRoles(commands.Cog):
             return self.generateID(IDs)
         return ID
 
-    async def create(self):
-        await self.bot.wait_until_ready()
-        self.data = {guild.id: [] for guild in self.bot.guilds}
-        self.save()
-
     def save(self):
-        with open('db/reaction_roles.json', 'w') as f:
+        with open('db/reactionRoles.json', 'w') as f:
             json.dump(self.data, f)
 
 def setup(bot):
