@@ -5,6 +5,9 @@ from utils.l10n import get_l10n
 import discord
 from discord.ext import commands
 
+def basicVerificationCheck(ctx):
+    return ctx.bot.basicVerificationCheck(ctx)
+
 def verificationCheck(ctx):
     return ctx.bot.verificationCheck(ctx)
 
@@ -23,6 +26,7 @@ class Info(commands.Cog):
         return self.bot.basicVerificationCheck(ctx)
 
     @commands.command(brief='Displays details of the user', aliases=['p'])
+    @commands.check(basicVerificationCheck)
     async def profile(self, ctx, *, member: discord.Member=None):
         """Displays details of the user related to the server and the college"""
 
