@@ -274,11 +274,8 @@ class VoltorbFlip(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        try:
-            with open('db/boards.json') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.data = {}
+        with open('db/boards.json') as f:
+            self.data = json.load(f)
 
         self.dict = {
             'level': 1,

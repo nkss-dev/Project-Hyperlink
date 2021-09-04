@@ -15,15 +15,12 @@ class ReactionRoles(commands.Cog):
 
         with open('db/reactionRoles.json') as f:
             self.data = json.load(f)
-        try:
-            with open('db/emojis.json', 'r') as f:
-                self.emojis = json.load(f)['games']
-        except FileNotFoundError:
-            self.emojis = {}
+        with open('db/emojis.json') as f:
+            self.emojis = json.load(f)['games']
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if not (details := self.data.get(str(payload.guild_id)))
+        if not (details := self.data.get(str(payload.guild_id))):
             return
 
         flag = False
@@ -48,7 +45,7 @@ class ReactionRoles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        if not (details := self.data.get(str(payload.guild_id)))
+        if not (details := self.data.get(str(payload.guild_id))):
             return
 
         flag = False
@@ -140,7 +137,7 @@ class ReactionRoles(commands.Cog):
 
     @reactionrole.command(brief='Removes a reaction role')
     async def remove(self, ctx, ID: str):
-        if not (details := self.data.get(str(ctx.guild.id)))
+        if not (details := self.data.get(str(ctx.guild.id))):
             return
 
         for reaction_role in self.data[str(ctx.guild.id)]:

@@ -13,14 +13,11 @@ class Links(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+        with open('db/links.json', 'r') as f:
+            self.data = json.load(f)
+
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
-
-        try:
-            with open('db/links.json', 'r') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.data = {}
 
         self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thrusday', 'Friday', 'Saturday', 'Sunday')
         self.time = ('8:30', '9:25', '10:40', '11:35', '12:30', '1:45', '2:40', '3:35', '4:30', '5:00')

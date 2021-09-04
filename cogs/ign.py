@@ -11,16 +11,11 @@ class IGN(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+        with open('db/games.json') as f:
+            self.data = json.load(f)
+
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
-
-        try:
-            with open('db/games.json') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            with open('db/games.json', 'w') as f:
-                json.dump([], f)
-            self.data = []
 
     def get_ign(self, author_id):
         igns = self.c.execute(
