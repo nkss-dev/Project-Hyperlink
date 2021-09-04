@@ -6,7 +6,6 @@ cachetools==4.2.2
 certifi==2021.5.30
 chardet==4.0.0
 charset-normalizer==2.0.4
-discord.py==2.0.0a3575+g45d498c1
 fluent.runtime==0.3.1
 fluent.syntax==0.18.1
 google-api-core==2.0.1
