@@ -157,7 +157,7 @@ class Constructor():
                 json.dump(self.client.guild_data, f)
         except FileNotFoundError:
             self.client.guild_data = {
-                guild.id: self.client.default_guild_details for guild in self.client.guilds
+                str(guild.id): self.client.default_guild_details for guild in self.client.guilds
             }
             with open('db/guilds.json', 'w') as f:
                 json.dump(self.client.guild_data, f)
