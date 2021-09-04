@@ -8,7 +8,7 @@ load_dotenv()
 
 def get_prefix(_, message):
     if message.guild:
-        return  client.guild_data[str(message.guild.id)]['prefix']
+        return client.guild_data[str(message.guild.id)]['prefix']
     return '%'
 
 client = Bot(

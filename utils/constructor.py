@@ -103,13 +103,13 @@ class Constructor():
                 json.load(f)
         except FileNotFoundError:
             emojis = {
-            	'utility': {
-            		'verified': '',
-            		'not-verified': '',
-            		'triggered': '',
-            		'loading': ''
-            	},
-            	'games': {}
+                'utility': {
+                    'verified': '',
+                    'not-verified': '',
+                    'triggered': '',
+                    'loading': ''
+                },
+                'games': {}
             }
             with open('db/emojis.json', 'w') as f:
                 json.dump(emojis, f)

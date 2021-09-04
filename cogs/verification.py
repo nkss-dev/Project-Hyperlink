@@ -220,7 +220,7 @@ class Verify(commands.Cog):
 
         await self.sendEmail(ctx, tuple[0].title().strip(), tuple[1])
 
-        await ctx.reply(self.l10n.format_value('verify-check-email', { 'prefix': ctx.prefix }))
+        await ctx.reply(self.l10n.format_value('verify-check-email', {'prefix': ctx.prefix}))
 
     @verify.command(brief='Used to input OTP that the user received in order to verify their email')
     @commands.check(basicVerificationCheck)

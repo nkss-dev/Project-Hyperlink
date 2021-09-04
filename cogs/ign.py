@@ -41,9 +41,9 @@ class IGN(commands.Cog):
 
             embed = discord.Embed(
                 title = self.l10n.format_value('game-list'),
-                    description = msg,
-                    color = discord.Colour.blurple()
-                )
+                description = msg,
+                color = discord.Colour.blurple()
+            )
             await ctx.send(embed=embed)
             return
 

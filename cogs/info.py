@@ -203,7 +203,8 @@ class Info(commands.Cog):
 
     @commands.command(brief='Gives invites of some servers', aliases=['inv'])
     async def invite(self, ctx):
-        servers = ('NITKKR\'24: https://discord.gg/nitkkr-24',
+        servers = (
+            'NITKKR\'24: https://discord.gg/4eF7R6afqv',
             'kkr++: https://discord.gg/epaTW7tjYR'
         )
 
