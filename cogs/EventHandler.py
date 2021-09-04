@@ -19,14 +19,6 @@ class Events(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-        self.custom_errors = {
-            'AccountNotLinked': 'You need to complete basic verification to use this command.',
-            'AccountAlreadyLinked': 'You have already completed the basic level of verification.',
-            'MissingModeratorRoles': 'This command needs for a moderator role to be set for this guild.',
-            'UserNotVerified': 'Only members with a verified email can use this command.',
-            'UserAlreadyVerified': 'You are already verified.',
-        }
-
     @commands.Cog.listener()
     async def on_message(self, message):
         if not fullmatch(f'<@!?{self.bot.user.id}>', message.content):
@@ -297,8 +289,8 @@ class Events(commands.Cog):
                 )
                 await ctx.reply(embed=embed)
 
-            elif str(error) in self.custom_errors:
-                await ctx.reply(self.custom_errors[str(error)])
+            else:
+                await ctx.reply(l10n.format_value(str(error)))
 
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, discord.errors.Forbidden):

@@ -25,3 +25,9 @@ CheckFailure-NotOwner = This command is for the bot owner only.
 CheckFailure-MissingAnyRole = You are missing at least one of the required roles: {$roles}
 
 CommandInvokeError-Forbidden = I am missing some permissions to execute this command.
+
+AccountNotLinked = You need to complete basic verification to use this command.
+AccountAlreadyLinked = You have already completed the basic level of verification.
+MissingModeratorRoles = This command needs for a moderator role to be set for this guild.
+UserNotVerified = Only members with a verified email can use this command.
+UserAlreadyVerified = You are already verified.
