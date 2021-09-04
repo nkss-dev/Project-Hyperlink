@@ -46,13 +46,13 @@ class Mod(commands.Cog):
             if channel.permissions_for(item).send_messages:
                 embed = discord.Embed(
                     description=self.l10n.format_value('mute-ineffective', {'item': item.mention}),
-                    color=discord.color.Blurple()
+                    color=discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
             else:
                 embed = discord.Embed(
                     description=self.l10n.format_value('mute-effective', {'item': item.mention, 'place': channel.mention}),
-                    color=discord.color.Blurple()
+                    color=discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
 
@@ -94,7 +94,7 @@ class Mod(commands.Cog):
 
                 embed = discord.Embed(
                     description=self.l10n.format_value('mute-effective', {'item': item.mention, 'place': ctx.guild.name}),
-                    color=discord.color.Blurple()
+                    color=discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
 
