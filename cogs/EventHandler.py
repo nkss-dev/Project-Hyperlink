@@ -182,7 +182,9 @@ class Events(commands.Cog):
 
         channel = self.bot.get_channel(events[action][0])
         if action != 'leave' and channel:
-            message = events[action][1].replace('{user}', member.mention)
+            for i in (('{user}', member.mention), ('{member}', entry.user.mention)):
+                events[action][1].replace(*i)
+            message = events[action][1]
             message += l10n.format_value('leave-reason', {'reason': entry.reason or 'None'})
 
             embed = discord.Embed(
