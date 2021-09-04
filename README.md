@@ -19,6 +19,3 @@ A moderation bot made specifically to be used in NITKKR only servers
 - If you choose to use [verification.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/verification.py):
     - Replace `<email-here>` with the Google email with which you want the verification emails to be sent
     - Replace `<password-token-here>` with the password token of said email given by Google after turning on Developer Mode from [here](https://support.google.com/a/answer/10621196?hl=en)
-
-### In [db.sample](https://github.com/GetPsyched/Project-Hyperlink/tree/main/db.sample)
-- Rename `db.sample` to `db`
