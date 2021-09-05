@@ -41,8 +41,7 @@ class Links(commands.Cog):
 
         channel = self.bot.get_channel(self.data[str(self.tuple[1])][self.tuple[0]]['channel'])
         if channel != ctx.channel:
-            await ctx.reply(self.l10n.format_value('link-protection', {'channel': channel.mention}))
-            return False
+            raise commands.CheckFailure('LinkProtection')
         return True
 
     async def create(self, tuple):
