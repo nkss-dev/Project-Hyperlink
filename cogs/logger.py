@@ -1,9 +1,7 @@
 import json
-
-from datetime import datetime
 from utils.l10n import get_l10n
 
-from discord import Embed, Color
+from discord import Color, Embed, utils
 from discord.ext import commands
 
 class Logger(commands.Cog):
@@ -34,7 +32,7 @@ class Logger(commands.Cog):
         if message.attachments:
             if 'image' in message.attachments[0].content_type:
                 embed.set_image(url=message.attachments[0].url)
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = utils.utcnow()
         embed.set_footer(text=l10n.format_value('user-id', {'id': str(message.author.id)}))
 
         await channel.send(embed=embed)
@@ -56,7 +54,7 @@ class Logger(commands.Cog):
             description = l10n.format_value('messages-delete', messages),
             color = Color.red()
         )
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = utils.utcnow()
 
         await channel.send(embed=embed)
 
@@ -92,7 +90,7 @@ class Logger(commands.Cog):
             value = after.content or l10n.format_value('content-notfound'),
             inline=False
         )
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = utils.utcnow()
         embed.set_footer(text=l10n.format_value('user-id', {'id': str(before.author.id)}))
 
         await channel.send(embed=embed)
