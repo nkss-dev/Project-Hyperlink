@@ -1,95 +1,131 @@
-from discord import Embed, Color
+import contextlib
+from discord import Color, Embed, utils
 from discord.ext import commands
-from discord.utils import get
 
-from typing import Optional
 from utils.l10n import get_l10n
 
-def syntax(command):
-    aliases = [str(command), *command.aliases]
-    if len(aliases) > 1:
-        aliases = '[' + '|'.join(aliases) + ']'
-    else:
-        aliases = aliases[0]
-    if command.parent:
-        aliases = aliases.replace(f'{command.parent} ', '')
-    params = []
+class HelpEmbed(Embed):
+    def __init__(self, l10n, **kwargs):
+        super().__init__(**kwargs)
+        self.timestamp = utils.utcnow()
+        self.set_footer(text=l10n.format_value('footer'))
+        self.color = Color.blurple()
 
-    for key, value in command.params.items():
-        if key not in ('self', 'ctx'):
-            params.append(f'[{key}]' if not str(value) else f'<{key}>')
-    params = ' '.join(params)
+class Help(commands.HelpCommand):
+    def __init__(self):
+        super().__init__(
+            command_attrs={
+                'help': 'The help command for the bot',
+                'cooldown': commands.CooldownMapping.from_cooldown(2, 5.0, commands.BucketType.user),
+                'aliases': ['commands']
+            }
+        )
 
-    help = command.help or command.brief
+    async def send(self, **kwargs):
+        """a shortcut to sending to get_destination"""
+        await self.get_destination().send(**kwargs)
 
-    return help, aliases, params
+    async def send_bot_help(self, mapping):
+        """invoked when `<prefix>help` is called"""
+        l10n = get_l10n(self.context.guild.id if self.context.guild else 0, 'help')
+        bot = self.context.me
+        prefix = self.context.clean_prefix
 
-class Help(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-        self.bot.remove_command('help')
+        embed = HelpEmbed(l10n, title=l10n.format_value('help-title', {'name': bot.name}))
+        embed.set_thumbnail(url=bot.avatar.url)
+        total = 0
+        usable = 0
 
-    async def cmd_help(self, ctx, command):
-        if command.cog:
-            embed = Embed(
-                title = self.l10n.format_value('help-cog-title', {'name': command.cog.qualified_name}),
-                color = Color.blurple()
-            )
-
-            for command in command.cog.walk_commands():
-                _, aliases, params = syntax(command)
-
-                if command.parent:
-                    field_name = f'{command.parent} {aliases} {params}'
+        for cog, commands in mapping.items():
+            total += len(commands)
+            if filtered_commands := await self.filter_commands(commands):
+                amount = len(filtered_commands)
+                usable += amount
+                if cog:
+                    name = cog.qualified_name
+                    description = cog.description or l10n.format_value('desc-notfound')
                 else:
-                    field_name = f'{aliases} {params}'
+                    for command in commands:
+                        print(command)
+                    name = l10n.format_value('category-notfound')
+                    description = l10n.format_value('no-category-commands')
 
-                if not (help := command.help):
-                    help = command.brief
-
-                embed.add_field(name=field_name, value=help, inline=False)
-            await ctx.send(embed=embed)
-        else:
-            help, aliases, params = syntax(command)
-            embed = Embed(
-                title = f'{command} {params}',
-                description = help,
-                color = Color.blurple()
-            )
-
-            if '|' in aliases:
-                aliases = aliases.replace(f'{command}|', '')
-                embed.add_field(name=self.l10n.format_value('help-alias'), value=f'`{aliases}`')
-
-            await ctx.send(embed=embed)
-
-    @commands.command(name='help')
-    async def help(self, ctx, cmd: Optional[str]):
-        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'help')
-
-        if not cmd:
-            embed = Embed(
-                title = self.l10n.format_value('help-title'),
-                description = self.l10n.format_value('help-desc', {'prefix': ctx.prefix}),
-                color = Color.blurple()
-            )
-            embed.set_thumbnail(url=self.bot.user.avatar.url)
-
-            for command in self.bot.commands:
-                _, aliases, params = syntax(command)
-                embed.add_field(name=f'{aliases} {params}', value=command.brief, inline=False)
-
-            await ctx.send(embed=embed)
-        else:
-            if command := get(self.bot.commands, name=cmd):
-                await self.cmd_help(ctx, command)
-            else:
-                embed = Embed(
-                    title = self.l10n.format_value('help-notfound-title'),
-                    description = self.l10n.format_value('help-notfound-desc', {'cmd': cmd}),
-                    color = Color.from_rgb(255, 165, 0)
+                embed.add_field(
+                    name=l10n.format_value('category-title', {'name': name, 'amt': amount}),
+                    value=description
                 )
-                await ctx.send(embed=embed)
+
+        embed.description = l10n.format_value('help-desc', {'total': total, 'amt': usable})
+
+        await self.send(embed=embed)
+
+    async def send_command_help(self, command):
+        l10n = get_l10n(self.context.guild.id if self.context.guild else 0, 'help')
+        prefix = self.context.clean_prefix
+
+        embed = HelpEmbed(l10n, title=self.get_command_signature(command))
+        embed.add_field(
+            name=l10n.format_value('help'),
+            value=command.help or command.brief,
+            inline=False
+        )
+
+        if cog := command.cog:
+            embed.add_field(name=l10n.format_value('category'), value=cog.qualified_name)
+
+        with contextlib.suppress(commands.CommandError):
+            usable = await command.can_run(self.context)
+        embed.add_field(
+            name=l10n.format_value('usable'),
+            value=l10n.format_value('yes') if usable else l10n.format_value('no')
+        )
+
+        if command._buckets and (cooldown := command._buckets._cooldown):
+            embed.add_field(
+                name=l10n.format_value('cooldown'),
+                value=l10n.format_value(
+                    'cooldown-value',
+                    {'rate': cooldown.rate, 'per': str(cooldown.per).split('.', 1)[0]}
+                )
+            )
+
+        if alias := command.aliases:
+            embed.add_field(
+                name=l10n.format_value('aliases'),
+                value=', '.join(alias)
+            )
+
+        await self.send(embed=embed)
+
+    async def send_help_embed(self, title, description, commands):
+        """helper function to add commands to an embed and send it"""
+        l10n = get_l10n(self.context.guild.id if self.context.guild else 0, 'help')
+        embed = HelpEmbed(
+            l10n,
+            title=title,
+            description=description or l10n.format_value('help-notfound')
+        )
+
+        if filtered_commands := await self.filter_commands(commands):
+            for command in filtered_commands:
+                embed.add_field(
+                    name=self.get_command_signature(command),
+                    value=command.brief or command.help or l10n.format_value('help-notfound'),
+                    inline=False
+                )
+
+        await self.send(embed=embed)
+
+    async def send_group_help(self, group):
+        """invoked when `<prefix>help <group>` is called"""
+        title = self.get_command_signature(group)
+        await self.send_help_embed(title, group.help, group.commands)
+
+    async def send_cog_help(self, cog):
+        """invoked when `<prefix>help <cog>` is called"""
+        l10n = get_l10n(self.context.guild.id if self.context.guild else 0, 'help')
+        title = cog.qualified_name or l10n.format_value('category-notfound')
+        await self.send_help_embed(title, cog.description, cog.get_commands())
 
 def setup(bot):
-    bot.add_cog(Help(bot))
+    bot.help_command = Help()
