@@ -264,7 +264,12 @@ class Events(commands.Cog):
 
         elif isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):
-                await ctx.reply(l10n.format_value('UserInputError-MissingRequiredArgument', {'arg': error.param.name}))
+                await ctx.reply(
+                    l10n.format_value(
+                        'UserInputError-MissingRequiredArgument',
+                        {'arg': error.param.name}
+                    )
+                )
 
             elif isinstance(error, commands.BadArgument):
                 if isinstance(error, commands.MessageNotFound):
@@ -272,6 +277,9 @@ class Events(commands.Cog):
 
                 else:
                     await ctx.reply(error)
+
+            else:
+                raise error
 
         elif isinstance(error, commands.CheckFailure):
             if isinstance(error, commands.NotOwner):
@@ -286,7 +294,10 @@ class Events(commands.Cog):
             elif isinstance(error, commands.MissingAnyRole):
                 roles = ', '.join([ctx.guild.get_role(role).mention for role in error.missing_roles])
                 embed = discord.Embed(
-                    description = l10n.format_value('CheckFailure-MissingAnyRole', {'roles': roles}),
+                    description = l10n.format_value(
+                        'CheckFailure-MissingAnyRole',
+                        {'roles': roles}
+                    ),
                     color = discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
@@ -302,7 +313,11 @@ class Events(commands.Cog):
                 await ctx.reply(error.original)
                 await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
-        raise error
+            else:
+                raise error
+
+        else:
+            raise error
 
 def setup(bot):
     bot.add_cog(Events(bot))
