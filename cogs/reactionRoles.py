@@ -70,7 +70,7 @@ class ReactionRoles(commands.Cog):
             self.save()
 
     async def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id, 'reactionRoles')
+        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'reactionRoles')
         return await self.bot.moderatorCheck(ctx)
 
     @commands.group(brief='This adds/removes roles from a user based on reactions to a specified message', aliases=['rr'])

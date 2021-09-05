@@ -8,7 +8,7 @@ class Prefix(commands.Cog):
         self.bot = bot
 
     async def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id, 'prefix')
+        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'prefix')
         return self.bot.verificationCheck(ctx)
 
     @commands.group(brief='Manages the server\'s custom prefixes')
