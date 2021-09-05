@@ -1,11 +1,22 @@
-help-alias = Aliases
+category-title = {$name} | [{$amt}]
+category-notfound = No Category
+no-category-commands = Commands with no category
+desc-notfound = No description
 
-help-cog-title = {$name} Help!
+error = Error
 
-help-desc = For help with a specific command, type `{$prefix}help <command>`
+footer = Use help [command] or help [category] for more information | <> is required | [] is optional
 
-help-notfound-title = Command not found
+help = Help
+aliases = Aliases
 
-help-notfound-desc = Unknown command `{$cmd}`
+help-title = {$name} Help
+help-desc = {$total} commands | {$amt} usable
+help-notfound = Help not found
 
-help-title = Commands Help!
+category = Category
+cooldown = Cooldown
+cooldown-value = {$rate} per {$per} seconds
+usable = Usable
+yes = Yes
+no = No
