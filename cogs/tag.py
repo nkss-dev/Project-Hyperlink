@@ -54,8 +54,15 @@ class Tag(commands.Cog):
             validTags = [f'{section[:3]}07', f'{section[:3]}08', f'{section[:3]}09']
         validTags.append(section)
 
+        if result := re.findall('@[CEIMP][CEIST]-0[1-9]', content, flags=re.I):
+            tags = result
+        else:
+            tags = []
+        if result := re.findall('@[CEIMP][CEIST]-[ABC]', content, flags=re.I):
+            tags.extend(result)
+
         # Loop through the string roles and mention the allowed and available ones
-        for tag in re.findall('@[CEIMP][CEIST]-0[1-9]', content, flags=re.I):
+        for tag in tags:
             if tag[1:].upper() in validTags:
                 try:
                     role = utils.get(ctx.guild.roles, name=tag[1:].upper())
