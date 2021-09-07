@@ -1,31 +1,25 @@
-from __future__ import print_function
-
 import json
-import os.path
+import mimetypes
+from typing import Dict, Tuple
+
 from utils.l10n import get_l10n
 from utils.utils import getWebhook
 
-from discord import Embed, Color
+import discord
 from discord.ext import commands
 
-from googleapiclient import errors
-from googleapiclient.discovery import build
+import os.path
+from apiclient import errors
+from apiclient.discovery import build
+from apiclient.http import MediaFileUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
-class Drive(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-
-        with open('db/emojis.json') as f:
-            self.emojis = json.load(f)['utility']
-
-        SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+class GoogleDrive():
+    def __init__(self):
+        SCOPES = ['https://www.googleapis.com/auth/drive']
         creds = None
-        # The file token.json stores the user's access and refresh tokens, and is
-        # created automatically when the authorization flow completes for the first
-        # time.
         if os.path.exists('db/token.json'):
             creds = Credentials.from_authorized_user_file('db/token.json', SCOPES)
         # If there are no (valid) credentials available, let the user log in.
@@ -40,105 +34,179 @@ class Drive(commands.Cog):
             with open('db/token.json', 'w') as token:
                 token.write(creds.to_json())
 
-        self.DRIVE = build('drive', 'v3', credentials=creds)
+        self.service = build('drive', 'v3', credentials=creds)
 
-    async def cog_check(self, ctx):
+    def createFolder(self, meta_data):
+        """creates a folder on the Drive"""
+        meta_data['mimeType'] = 'application/vnd.google-apps.folder'
+        self.service.files().create(body=meta_data).execute()
+
+    def uploadFile(self, name, parent_id=None) -> str:
+        """uploads specified file to the given folder"""
+        meta_data = {'name': name}
+        if parent_id:
+            meta_data['parents'] = [parent_id]
+
+        media = MediaFileUpload(
+            name,
+            mimetype=mimetypes.guess_type(name)[0],
+            resumable=True
+        )
+
+        request = self.service.files().create(
+            body=meta_data,
+            media_body=media,
+            fields='id'
+        )
+
+        response = None
+        while not response:
+            _, response = request.next_chunk()
+
+        return request.execute().get('id')
+
+    def getItem(self, id) -> Tuple[str, str]:
+        """returns item details corresponding to a given ID"""
+        return self.service.files().get(fileId=id, fields='name, webViewLink').execute()
+
+    def listItems(self, query) -> Dict[str, str]:
+        """lists all items matching the given query"""
+        try:
+            response = self.service.files().list(
+                q=query,
+                fields='nextPageToken, files(id, name, parents, mimeType, webViewLink)'
+            ).execute()
+        except errors.HttpError:
+            return []
+        files = response.get('files', [])
+        nextPageToken = response.get('nextPageToken')
+
+        while nextPageToken:
+            try:
+                response = self.service.files().list(
+                    q=query,
+                    fields='nextPageToken, files(id, name, parents, mimeType, webViewLink)',
+                    pageToken=nextPageToken
+                ).execute()
+            except errors.HttpError:
+                return []
+            files.extend(response.get('files', []))
+            nextPageToken = response.get('nextPageToken')
+
+        return files
+
+class Drive(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.drive = GoogleDrive()
+
+        with open('db/emojis.json') as f:
+            self.emojis = json.load(f)['utility']
+
+    @staticmethod
+    def getSearchQuery(query, type: str='default') -> Tuple[str, str]:
+        """returns a compatible search query for the Drive API"""
+        search_query = []
+        ignored_args = []
+
+        if type == 'default':
+            for keyword in query:
+                if len(keyword) < 3:
+                    ignored_args.append(keyword)
+                else:
+                    search_query.append(f"name contains '{keyword}'")
+            search_query = ' or '.join(search_query)
+
+        return search_query, ignored_args
+
+    async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'drive')
         return self.bot.verificationCheck(ctx)
 
-    @commands.group(brief='Allows users to interact with a specific Google Drive')
+    @commands.group()
     async def drive(self, ctx):
+        """Main command for interacting with the Google Drive"""
         if not ctx.invoked_subcommand:
             await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
-    @drive.command(brief='Used to send search queries to the Drive')
-    async def search(self, ctx, *content):
-        webhook = await getWebhook(ctx.channel, self.bot.user)
+    @drive.command()
+    async def search(self, ctx, *query):
+        """Searches for the query and sends a corresponding embed"""
         await ctx.message.add_reaction(self.emojis['loading'])
 
-        folder_links = {}
+        search_query, ignored_args = self.getSearchQuery(query)
+        files = self.drive.listItems(search_query)
+
+        # Sorting the links based on their parents
         file_links = {}
-        ignored_args = []
-        for keyword in content:
-            if len(keyword) < 3:
-                ignored_args.append(keyword)
-                continue
+        folder_links = {}
+        for file in files:
+            parent = file['parents'][0]
+            if file['mimeType'] == 'application/vnd.google-apps.folder':
+                if parent not in folder_links:
+                    folder_links[parent] = []
+                folder_links[parent].append(f"[{file['name']}]({file['webViewLink']})")
+            else:
+                if parent not in file_links:
+                    file_links[parent] = []
+                file_links[parent].append(f"[{file['name']}]({file['webViewLink']})")
 
-            page_token = None
-            while True:
-                try:
-                    response = self.DRIVE.files().list(
-                        q=f"name contains '{keyword}'",
-                        spaces='drive',
-                        fields='nextPageToken, files(id, name, parents, mimeType)',
-                        pageToken=page_token
-                    ).execute()
-                except errors.HttpError:
-                    await ctx.reply(self.l10n.format_value('search-error'))
-                    await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
-                    return
-
-                for file in response.get('files', []):
-                    links = file_links if file.get('mimeType') != 'application/vnd.google-apps.folder' else folder_links
-                    if file.get('parents')[0] not in links:
-                        links[file.get('parents')[0]] = set()
-                    links[file.get('parents')[0]].add(f"[{file.get('name')}](https://drive.google.com/file/d/{file.get('id')})")
-                    if file.get('mimeType') != 'application/vnd.google-apps.folder':
-                        file_links = links
-                    else:
-                        folder_links = links
-                page_token = response.get('nextPageToken', None)
-                if page_token is None:
-                    break
-
+        # Add an info embed mentioning any keywords that were ignored during the search
         embeds = []
         if ignored_args:
-            ignored_embed = Embed(
-                description = self.l10n.format_value('ignored-args', {'args': ', '.join([arg for arg in ignored_args])}),
-                color = Color.blurple()
+            ignored_embed = discord.Embed(
+                description=self.l10n.format_value('ignored', {'args': ', '.join(ignored_args)}),
+                color=discord.Color.blurple()
             )
-            ignored_embed.set_footer(text=self.l10n.format_value('ignored-args-reason'))
-            embeds.append(ignored_embed)
+            ignored_embed.set_footer(text=self.l10n.format_value('ignored-reason'))
 
-            if len(ignored_args) == len(content):
+            if len(ignored_args) == len(query):
                 await ctx.reply(embed=ignored_embed)
-                await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+                await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
                 return
 
-        if not folder_links and not file_links:
-            await ctx.reply(self.l10n.format_value('search-result-notfound'))
-            await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+        # Exit if no results were found for the given query
+        if not files:
+            await ctx.reply(self.l10n.format_value('result-notfound'))
+            await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
             return
 
-        embed_title = (
-            self.l10n.format_value('folders'),
-            self.l10n.format_value('files')
+        # Add the links to the final embed(s)
+        bundle = (
+            (self.l10n.format_value('folders'), self.l10n.format_value('files')),
+            (folder_links, file_links)
         )
-
-        for i, embed_name, links in zip(range(2), embed_title, (folder_links, file_links)):
-            description = ''
+        for name, links in zip(*bundle):
+            desc = ''
             for parent in links:
-                data = self.DRIVE.files().get(fileId=parent).execute()
-                description += f"\n{data['name']}:\n"
+                parent_data = self.drive.getItem(parent)
+                parent_link = f"[{parent_data['name']}]({parent_data['webViewLink']})"
+                desc += f'\n**{parent_link}**:\n'
                 for link in links[parent]:
-                    description += f'{link}\n'
+                    desc += f'{link}\n'
 
-            if description:
-                embed = Embed(
-                    title = embed_name,
-                    description = description,
-                    color = Color.blurple()
+            if desc:
+                embed = discord.Embed(title=name, description=desc, color=discord.Color.blurple())
+                embeds.append(embed)
+
+        if ignored_args:
+            embeds.append(ignored_embed)
+
+        if len(embeds) > 1 and ctx.guild and (webhook := await getWebhook(ctx.channel, ctx.guild.me)):
+            try:
+                await webhook.send(
+                    embeds=embeds,
+                    username=ctx.guild.me.nick or ctx.guild.me.name,
+                    avatar_url=ctx.guild.me.avatar.url
                 )
-                embeds.insert(i, embed)
+            except discord.errors.HTTPException:
+                await ctx.reply(self.l10n.format_value('body-too-long'))
+        else:
+            for embed in embeds:
+                await ctx.send(embed=embed)
 
-        await webhook.send(
-            embeds=embeds,
-            username=self.bot.user.name,
-            avatar_url=self.bot.user.avatar.url
-        )
-
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+        await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
 
 def setup(bot):
     bot.add_cog(Drive(bot))
