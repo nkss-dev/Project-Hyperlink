@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from utils.l10n import get_l10n
+from utils.utils import deleteOnReaction
 
 import discord
 from discord.ext import commands
@@ -80,21 +81,7 @@ class Info(commands.Cog):
             embed.set_footer(text=self.l10n.format_value('profile-join-date', {'date': date}))
 
         profile = await ctx.send(embed=embed)
-        await profile.add_reaction('🗑️')
-
-        def check(reaction, member):
-            if reaction.emoji != '🗑️' or member == self.bot.user:
-                return False
-            if member != ctx.author and not member.guild_permissions.manage_messages:
-                return False
-            if reaction.message != profile:
-                return False
-            return True
-
-        await self.bot.wait_for('reaction_add', check=check)
-        await profile.delete()
-        if ctx.guild and ctx.guild.me.guild_permissions.manage_messages:
-            await ctx.message.delete()
+        await deleteOnReaction(ctx, profile)
 
     @commands.command(brief='Nicks a user to their first name')
     @commands.check(verificationCheck)
