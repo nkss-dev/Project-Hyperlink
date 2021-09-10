@@ -1,5 +1,7 @@
 import json
 import sqlite3
+
+from typing import Optional
 from utils.l10n import get_l10n
 from utils.utils import deleteOnReaction
 
@@ -22,19 +24,8 @@ class Info(commands.Cog):
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-    def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'info')
-        return self.bot.basicVerificationCheck(ctx)
-
-    @commands.command(brief='Displays details of the user', aliases=['p'])
-    @commands.check(basicVerificationCheck)
-    async def profile(self, ctx, *, member: discord.Member=None):
-        """Displays details of the user related to the server and the college"""
-
-        member = member or ctx.author
-        if member != ctx.author:
-            await self.bot.moderatorCheck(ctx)
-
+    async def getProfileEmbed(self, ctx, member) -> Optional[discord.Embed]:
+        """returns the details of the given user in an embed"""
         tuple = self.c.execute(
             'select Roll_Number, Section, SubSection, Name, Institute_Email, Verified from main where Discord_UID = (:uid)',
             {'uid': member.id}
@@ -73,13 +64,28 @@ class Info(commands.Cog):
         )
         embed.set_author(
             name = self.l10n.format_value('profile-name', {'member': str(member)}),
-            icon_url = member.avatar.url
+            icon_url = member.display_avatar.url
         )
-        embed.set_thumbnail(url=member.avatar.url)
+        embed.set_thumbnail(url=member.display_avatar.url)
         if ctx.guild:
             date = member.joined_at.strftime('%b %d, %Y')
             embed.set_footer(text=self.l10n.format_value('profile-join-date', {'date': date}))
 
+        return embed
+
+    def cog_check(self, ctx):
+        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'info')
+        return self.bot.basicVerificationCheck(ctx)
+
+    @commands.command(aliases=['p'])
+    @commands.check(basicVerificationCheck)
+    async def profile(self, ctx, *, member: discord.Member=None):
+        """Displays the details of the user related to the server and college"""
+        member = member or ctx.author
+        if member != ctx.author:
+            await self.bot.moderatorCheck(ctx)
+
+        embed = await self.getProfileEmbed(ctx, member)
         profile = await ctx.send(embed=embed)
         await deleteOnReaction(ctx, profile)
 
