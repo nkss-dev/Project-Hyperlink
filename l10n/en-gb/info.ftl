@@ -1,3 +1,7 @@
+choice = Please choose whether you want the profile to be visible only to you or to everyone in this channel
+
+incorrect-user = This interaction is not for you
+
 invite = Invites
 
 member-notfound = {$member} does not exist in the database

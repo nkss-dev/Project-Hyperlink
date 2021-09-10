@@ -14,6 +14,39 @@ def basicVerificationCheck(ctx):
 def verificationCheck(ctx):
     return ctx.bot.verificationCheck(ctx)
 
+class ProfileChoice(discord.ui.View):
+    def __init__(self, embed, l10n, user):
+        super().__init__()
+        self.embed = embed
+        self.l10n = l10n
+        self.type = False
+        self.user = user
+
+    async def interaction_check(self, interaction):
+        """checks if the interaction is authorised or not"""
+        if interaction.user != self.user:
+            await interaction.response.send_message(
+                content=self.l10n.format_value('incorrect-user'),
+                ephemeral=True
+            )
+            return False
+        return True
+
+    @discord.ui.button(label='Hidden', style=discord.ButtonStyle.green)
+    async def hidden(self, button: discord.ui.Button, interaction: discord.Interaction):
+        """invoked when the `Hidden` button is clicked"""
+        await interaction.response.send_message(embed=self.embed, ephemeral=True)
+        await interaction.message.delete()
+        self.type = False
+        self.stop()
+
+    @discord.ui.button(label='Exposed', style=discord.ButtonStyle.red)
+    async def exposed(self, button: discord.ui.Button, interaction: discord.Interaction):
+        """invoked when the `Exposed` button is clicked"""
+        await interaction.message.delete()
+        self.type = True
+        self.stop()
+
 class Info(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -86,8 +119,19 @@ class Info(commands.Cog):
             await self.bot.moderatorCheck(ctx)
 
         embed = await self.getProfileEmbed(ctx, member)
-        profile = await ctx.send(embed=embed)
-        await deleteOnReaction(ctx, profile)
+        if ctx.guild:
+            view = ProfileChoice(embed, self.l10n, ctx.author)
+            await ctx.send(self.l10n.format_value('choice'), view=view)
+            await view.wait()
+
+            if view.type:
+                message = await ctx.send(embed=embed)
+            else:
+                await ctx.message.delete()
+                return
+        else:
+            message = await ctx.send(embed=embed)
+        await deleteOnReaction(ctx, message)
 
     @commands.command(brief='Nicks a user to their first name')
     @commands.check(verificationCheck)
