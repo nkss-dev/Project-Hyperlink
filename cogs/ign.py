@@ -8,49 +8,69 @@ from discord.ext import commands
 from typing import Optional
 
 class IGN(commands.Cog):
+    """Store IGNs for games"""
+
     def __init__(self, bot):
         self.bot = bot
 
         with open('db/games.json') as f:
-            self.data = json.load(f)
+            self.games = json.load(f)
 
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-    def get_ign(self, author_id):
+    def getIGNs(self, author_id: int) -> dict[str, str]:
+        """return the IGNs for the given user"""
         igns = self.c.execute(
             'select IGN from main where Discord_UID = (:uid)',
             {'uid': author_id}
         ).fetchone()[0]
         return json.loads(igns)
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'ign')
         return self.bot.verificationCheck(ctx)
 
-    @commands.group(brief='Shows the list of eligible games for which an IGN can be added.')
+    @commands.group(invoke_without_command=True)
     async def ign(self, ctx):
-        if not ctx.invoked_subcommand:
-            if not self.data:
-                await ctx.reply(self.l10n.format_value('game-list-notfound'))
-                return
+        """Show the list of eligible games for which an IGN can be added.
 
-            msg = ''
-            for i in self.data:
-                msg += f'\n{i}'
-
-            embed = discord.Embed(
-                title = self.l10n.format_value('game-list'),
-                description = msg,
-                color = discord.Colour.blurple()
-            )
-            await ctx.send(embed=embed)
+        This is also the parent command to perform any read/write operations \
+        to any of the user's IGNs.
+        """
+        if not self.games:
+            await ctx.reply(self.l10n.format_value('game-list-notfound'))
             return
 
-    @ign.command(brief='Used to add an IGN for a specified game.')
-    async def add(self, ctx, game, ign):
+        msg = ''
+        for game in self.games:
+            msg += f'\n{game}'
+
+        embed = discord.Embed(
+            title = self.l10n.format_value('game-list'),
+            description = msg,
+            color = discord.Color.blurple()
+        )
+        await ctx.send(embed=embed)
+
+    @ign.command()
+    async def add(self, ctx, game: str, ign: str):
+        """Add an IGN for the given game.
+
+        Parameters
+        ------------
+        `game`: <class 'str'>
+            The game for which an IGN is to be stored. It is case insensitive \
+            and can only contain a game that is stored in the memory \
+            (``games.json``); available games can be checked via the `ign` command.
+
+        `ign`: <class 'str'>
+            The IGN for the specified game. This can be anything as long as it \
+            it is a string (yes, a link too). However, this cannot contain \
+            tags like user/role mentions or `@everyone` and `@here`.
+        """
         flag = False
-        for allowed_game in self.data:
+        for allowed_game in self.games:
             if game.lower() == allowed_game.lower():
                 flag = True
                 break
@@ -62,7 +82,7 @@ class IGN(commands.Cog):
             await ctx.reply(self.l10n.format_value('nice-try'))
             return
 
-        igns = self.get_ign(ctx.author.id)
+        igns = self.getIGNs(ctx.author.id)
         igns[allowed_game] = ign
         self.c.execute(
             'update main set IGN = (:ign) where Discord_UID = (:uid)',
@@ -72,18 +92,29 @@ class IGN(commands.Cog):
 
         await ctx.reply(self.l10n.format_value('add-success', {'game': allowed_game}))
 
-    @ign.command(brief='Shows the IGN of the entered game (shows for all if none specified). If you want to see another user\'s IGN, type a part of their username (It is case sensitive) before the name of the game, which is also optional.')
-    async def show(self, ctx, user: Optional[discord.Member]=None, game: str='all'):
-        member = user or ctx.author
+    @ign.command()
+    async def show(self, ctx, user: Optional[discord.Member], *, game: str=None):
+        """Show the IGN(s) of a user.
 
-        if game.lower() == 'all':
-            single = False
-        else:
-            single = True
+        Displays one or all IGNs of the author of the command or of the \
+        specified user. Please note that if the specified user was not found, \
+        it will be added to the `game` parameter.
+
+        Parameters
+        ------------
+        `user`: Optional[discord.Member]
+            The name/ID/tag of a user. If specified, the IGNs returned will be \
+            of the user instead of the author of the command.
+
+        `game`: Optional[<class 'str'>]
+            The name of the game for which an IGN needs to be displayed.
+            Displays all the stored IGNs if not specified.
+        """
+        member = user or ctx.author
 
         oneself = ctx.author == member
 
-        igns = self.get_ign(member.id)
+        igns = self.getIGNs(member.id)
         if not igns:
             if oneself:
                 await ctx.reply(self.l10n.format_value('self-igns-notfound', {'prefix': ctx.prefix}))
@@ -95,7 +126,7 @@ class IGN(commands.Cog):
                 await ctx.reply(embed=embed)
             return
 
-        if single:
+        if game:
             flag = False
             for ign in igns:
                 if game.lower() == ign.lower():
@@ -134,9 +165,18 @@ class IGN(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @ign.command(brief='Deletes the IGN of the entered game. Deletes all IGNs if none entered', aliases=['del'])
+    @ign.command(aliases=['del'])
     async def delete(self, ctx, game: str=None):
-        igns = self.get_ign(ctx.author.id)
+        """Delete an IGN for the given game or all games.
+
+        Parameters
+        ------------
+        `game`: Optional[<class 'str'>]
+            The game for which an IGN is to be deleted. It is case insensitive \
+            and can only contain a game that has a corresponding IGN for the user.
+            If this is left blank, all the stored IGNs are deleted.
+        """
+        igns = self.getIGNs(ctx.author.id)
         if not igns:
             await ctx.reply(self.l10n.format_value('self-igns-notfound'))
             return
@@ -170,4 +210,5 @@ class IGN(commands.Cog):
         await ctx.reply(self.l10n.format_value('remove-success', {'game': ign}))
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(IGN(bot))

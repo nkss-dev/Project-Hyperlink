@@ -7,19 +7,22 @@ from discord import utils, AllowedMentions
 from discord.ext import commands
 
 class Tag(commands.Cog):
+    """Tag section/sub-sections"""
+
     def __init__(self, bot):
         self.bot = bot
 
         self.conn = sqlite3.connect('db/details.db')
         self.c = self.conn.cursor()
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         return self.bot.verificationCheck(ctx)
 
-    @commands.command(brief='Allows user to tag section/subsection roles')
+    @commands.command()
     @commands.guild_only()
-    async def tag(self, ctx, *, content):
-        """
+    async def tag(self, ctx, *, content: str):
+        """Allow the user to tag section/sub-section roles
+
         **Which all sections can I tag?**
 
         With this command, you're able to tag roles of subsections _given_\
@@ -35,10 +38,10 @@ class Tag(commands.Cog):
 
         The section/subsection follow the format as seen in the examples below:
         `Hello, @CE-01!`
-        `Hey, @it-b. Please help me with this. I'm in @iT-05.`
+        `Hey, @it-b; please help me with this. I'm in @iT-05.`
         """
 
-        webhook = await getWebhook(ctx.channel, self.bot.user)
+        webhook = await getWebhook(ctx.channel, ctx.guild.me)
 
         section = self.c.execute(
             'select Section from main where Discord_UID = (:uid)',
@@ -97,4 +100,5 @@ class Tag(commands.Cog):
         )
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(Tag(bot))

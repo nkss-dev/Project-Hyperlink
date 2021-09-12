@@ -4,7 +4,7 @@ import sqlite3
 
 class Constructor():
     def __init__(self, client):
-        print(f'Logged on as {client.user}')
+        print(f'Logged in as {client.user} (ID: {client.user.id})')
 
         try:
             os.mkdir('db')
@@ -25,10 +25,12 @@ class Constructor():
             self.VCs,
             self.loadCogs
         ]
+        for func in self.funcs:
+            func()
 
-    # boards.json
     @staticmethod
     def boards():
+        """create boards.json"""
         try:
             with open('db/boards.json') as f:
                 json.load(f)
@@ -36,9 +38,9 @@ class Constructor():
             with open('db/boards.json', 'w') as f:
                 json.dump({}, f)
 
-    # codes.json
     @staticmethod
     def codes():
+        """create codes.json"""
         try:
             with open('db/codes.json') as f:
                 json.load(f)
@@ -46,9 +48,9 @@ class Constructor():
             with open('db/codes.json', 'w') as f:
                 json.dump({}, f)
 
-    # details.db
     @staticmethod
     def details():
+        """create details.db"""
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
 
@@ -95,9 +97,9 @@ class Constructor():
         except sqlite3.OperationalError:
             pass
 
-    # emojis.json
     @staticmethod
     def emojis():
+        """create emojis.json"""
         try:
             with open('db/emojis.json') as f:
                 json.load(f)
@@ -114,9 +116,9 @@ class Constructor():
             with open('db/emojis.json', 'w') as f:
                 json.dump(emojis, f)
 
-    # games.json
     @staticmethod
     def games():
+        """create games.json"""
         try:
             with open('db/games.json') as f:
                 json.load(f)
@@ -124,8 +126,8 @@ class Constructor():
             with open('db/games.json', 'w') as f:
                 json.dump([], f)
 
-    # guilds.json
     def guilds(self):
+        """create guilds.json"""
         self.client.default_guild_details = {
             'prefix': ['%'],
             'roles': {
@@ -162,9 +164,9 @@ class Constructor():
             with open('db/guilds.json', 'w') as f:
                 json.dump(self.client.guild_data, f)
 
-    # links.json
     @staticmethod
     def links():
+        """create links.json"""
         try:
             with open('db/links.json') as f:
                 json.load(f)
@@ -204,9 +206,9 @@ class Constructor():
             with open('db/links.json', 'w') as f:
                 json.dump(links, f)
 
-    # muted.json
     @staticmethod
     def muted():
+        """create muted.json"""
         try:
             with open('db/muted.json') as f:
                 json.load(f)
@@ -214,9 +216,9 @@ class Constructor():
             with open('db/muted.json', 'w') as f:
                 json.dump([], f)
 
-    # reactionRoles.json
     @staticmethod
     def reactionRoles():
+        """create reactionRoles.json"""
         try:
             with open('db/reactionRoles.json') as f:
                 json.load(f)
@@ -224,9 +226,9 @@ class Constructor():
             with open('db/reactionRoles.json', 'w') as f:
                 json.dump({}, f)
 
-    # VCs.json
     @staticmethod
     def VCs():
+        """create VCs.json"""
         try:
             with open('db/VCs.json') as f:
                 json.load(f)
@@ -242,6 +244,7 @@ class Constructor():
                 json.dump(VCs, f)
 
     def loadCogs(self):
+        """load all the .py files in the `cogs` folder as extension"""
         errors = []
         for i, filename in enumerate(os.listdir('./cogs'), start=1):
             if filename.endswith('.py'):

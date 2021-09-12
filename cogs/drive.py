@@ -1,6 +1,6 @@
 import json
 import mimetypes
-from typing import Dict, Tuple
+from typing import Union
 
 from utils.l10n import get_l10n
 from utils.utils import getWebhook
@@ -17,6 +17,8 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
 class GoogleDrive():
+    """Drive API functions"""
+
     def __init__(self):
         SCOPES = ['https://www.googleapis.com/auth/drive']
         creds = None
@@ -36,13 +38,13 @@ class GoogleDrive():
 
         self.service = build('drive', 'v3', credentials=creds)
 
-    def createFolder(self, meta_data):
-        """creates a folder on the Drive"""
+    def createFolder(self, meta_data: dict[str, str]) -> str:
+        """create a folder on the Drive"""
         meta_data['mimeType'] = 'application/vnd.google-apps.folder'
-        self.service.files().create(body=meta_data).execute()
+        return self.service.files().create(body=meta_data, fields='id').execute()['id']
 
-    def uploadFile(self, name, parent_id=None) -> str:
-        """uploads specified file to the given folder"""
+    def uploadFile(self, name: str, parent_id: str=None) -> str:
+        """upload specified file to the given folder"""
         meta_data = {'name': name}
         if parent_id:
             meta_data['parents'] = [parent_id]
@@ -63,14 +65,14 @@ class GoogleDrive():
         while not response:
             _, response = request.next_chunk()
 
-        return request.execute().get('id')
+        return request.execute()['id']
 
-    def getItem(self, id) -> Tuple[str, str]:
-        """returns item details corresponding to a given ID"""
+    def getItem(self, id: str) -> tuple[str, str]:
+        """return item details corresponding to a given ID"""
         return self.service.files().get(fileId=id, fields='name, webViewLink').execute()
 
-    def listItems(self, query) -> Dict[str, str]:
-        """lists all items matching the given query"""
+    def listItems(self, query: str) -> dict[str, Union[str, bool, list]]:
+        """return all items matching the given query"""
         try:
             response = self.service.files().list(
                 q=query,
@@ -96,6 +98,8 @@ class GoogleDrive():
         return files
 
 class Drive(commands.Cog):
+    """Access notes and other material"""
+
     def __init__(self, bot):
         self.bot = bot
         self.drive = GoogleDrive()
@@ -104,8 +108,8 @@ class Drive(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     @staticmethod
-    def getSearchQuery(query, type: str='default') -> Tuple[str, str]:
-        """returns a compatible search query for the Drive API"""
+    def getSearchQuery(query: str, type: str='default') -> tuple[str, str]:
+        """return a compatible search query for the Drive API"""
         search_query = []
         ignored_args = []
 
@@ -125,14 +129,26 @@ class Drive(commands.Cog):
 
     @commands.group()
     async def drive(self, ctx):
-        """Main command for interacting with the Google Drive"""
+        """Command group for Google Drive functionality"""
         if not ctx.invoked_subcommand:
             await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
     @drive.command()
-    async def search(self, ctx, *query):
-        """Searches for the query and sends a corresponding embed"""
+    async def search(self, ctx, *query: list[str, ...]):
+        """Search for the given query and send a corresponding embed.
+
+        The input query is divided into separate keywords split by a space \
+        character. Any keyword with less than 3 characters is ignored.
+
+        Parameters
+        ------------
+        `query`: <class 'list'>
+            The list of keywords to be searched on the Drive.
+            Each keyword must be space separated and any multi-word keyword \
+            must be enclosed inside "double quotes". Any keyword less than 2 \
+            characters will be ignored.
+        """
         await ctx.message.add_reaction(self.emojis['loading'])
 
         search_query, ignored_args = self.getSearchQuery(query)
@@ -209,4 +225,5 @@ class Drive(commands.Cog):
         await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(Drive(bot))

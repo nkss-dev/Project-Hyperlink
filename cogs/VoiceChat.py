@@ -4,6 +4,8 @@ from discord import PermissionOverwrite
 from discord.ext import commands
 
 class VoiceChat(commands.Cog):
+    """Voice features"""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -12,12 +14,14 @@ class VoiceChat(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
+        """invoked when a member changes their VoiceState"""
         if member.bot:
             return
+
         if before.channel and before.channel != after.channel:
             if not before.channel.members:
                 if str(before.channel.id) in self.VCs['party_tchannels']:
-                    await self.bot.get_channel(self.VCs['party_tchannels'][str(before.channel.id)]).delete()
+                    await member.guild.get_channel(self.VCs['party_tchannels'][str(before.channel.id)]).delete()
                     del self.VCs['party_tchannels'][str(before.channel.id)]
                     self.save()
                 if before.channel.id in self.VCs['party_vchannels']:
@@ -25,7 +29,7 @@ class VoiceChat(commands.Cog):
                     self.VCs['party_vchannels'].remove(before.channel.id)
                     self.save()
             if str(before.channel.id) in self.VCs['party_tchannels']:
-                tc = self.bot.get_channel(self.VCs['party_tchannels'][str(before.channel.id)])
+                tc = member.guild.get_channel(self.VCs['party_tchannels'][str(before.channel.id)])
                 await tc.set_permissions(member, overwrite=None)
         if not after.channel:
             return
@@ -34,10 +38,10 @@ class VoiceChat(commands.Cog):
         else:
             member_name = member.name
         if str(after.channel.id) in self.VCs['party_tchannels']:
-            tc = self.bot.get_channel(self.VCs['party_tchannels'][str(after.channel.id)])
+            tc = member.guild.get_channel(self.VCs['party_tchannels'][str(after.channel.id)])
             await tc.set_permissions(member, read_messages=True)
             return
-        if after.channel.id in self.VCs['text_enabled_channels'] or (self.VCs['allow_text'][str(member.guild.id)] and after.channel.id in self.VCs['party_vchannels']):
+        if after.channel.id in self.VCs['text_enabled_channels'] or (member.guild.id in self.VCs['allow_text'] and after.channel.id in self.VCs['party_vchannels']):
             overwrites = {
                 member.guild.default_role: PermissionOverwrite(read_messages=False, read_message_history=False),
                 member: PermissionOverwrite(read_messages=True)
@@ -59,4 +63,5 @@ class VoiceChat(commands.Cog):
             json.dump(self.VCs, f)
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(VoiceChat(bot))

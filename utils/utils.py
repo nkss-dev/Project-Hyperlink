@@ -3,7 +3,7 @@ async def deleteOnReaction(ctx, message, emoji: str='🗑️'):
     await message.add_reaction(emoji)
 
     def check(reaction, member):
-        if reaction.emoji != emoji or member == ctx.guild.me:
+        if reaction.emoji != emoji or member == ctx.bot.user:
             return False
         if member != ctx.author and not member.guild_permissions.manage_messages:
             return False

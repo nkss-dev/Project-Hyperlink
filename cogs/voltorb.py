@@ -271,6 +271,8 @@ class voltorb_board:
         bg.save(name)
 
 class VoltorbFlip(commands.Cog):
+    """Voltorb Flip game"""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -377,4 +379,5 @@ class VoltorbFlip(commands.Cog):
             json.dump(self.data, f)
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(VoltorbFlip(bot))

@@ -9,6 +9,8 @@ import discord
 from discord.ext import commands
 
 class Events(commands.Cog):
+    """Handle events"""
+
     def __init__(self, bot):
         self.bot = bot
         self.bot.launch_time = datetime.utcnow()
@@ -20,7 +22,8 @@ class Events(commands.Cog):
         self.c = self.conn.cursor()
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
+        """called when a message is sent"""
         if not fullmatch(f'<@!?{self.bot.user.id}>', message.content):
             return
 
@@ -68,7 +71,8 @@ class Events(commands.Cog):
         await ping_msg.edit(content=None, embed=embed)
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
+        """called when a member joins a guild"""
         guild = member.guild
 
         details = self.bot.guild_data[str(guild.id)]
@@ -151,7 +155,8 @@ class Events(commands.Cog):
         await member.add_roles(role)
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: discord.Member):
+        """called when a member leaves a guild"""
         time = discord.utils.utcnow()
         guild = member.guild
 
@@ -177,7 +182,7 @@ class Events(commands.Cog):
         channel = self.bot.get_channel(events[action][0])
         if action != 'leave' and channel:
             for i in (('{user}', member.mention), ('{member}', entry.user.mention)):
-                events[action][1].replace(*i)
+                events[action][1] = events[action][1].replace(*i)
             message = events[action][1]
             message += l10n.format_value('leave-reason', {'reason': entry.reason or 'None'})
 
@@ -242,21 +247,25 @@ class Events(commands.Cog):
             await channel.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_guild_join(self, guild):
+    async def on_guild_join(self, guild: discord.Guild):
+        """called when the bot joins a guild"""
         self.bot.guild_data[str(guild.id)] = self.bot.default_guild_details
         self.save()
 
     @commands.Cog.listener()
-    async def on_guild_remove(self, guild):
+    async def on_guild_remove(self, guild: discord.Guild):
+        """called when the bot leaves a guild"""
         del self.bot.guild_data[str(guild.id)]
         self.save()
 
     def save(self):
+        """save the data to a json file"""
         with open('db/guilds.json', 'w') as f:
             json.dump(self.bot.guild_data, f)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        """called when any error is thrown"""
         l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'EventHandler')
 
         if isinstance(error, commands.CommandNotFound):

@@ -6,7 +6,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-def get_prefix(_, message):
+def get_prefix(_, message) -> str:
+    """return the bot's prefix for a guild or a DM"""
     if message.guild:
         return client.guild_data[str(message.guild.id)]['prefix']
     return '%'
@@ -19,7 +20,7 @@ client = Bot(
 
 @client.event
 async def on_ready():
-    for func in Constructor(client).funcs:
-        func()
+    """invoked when the bot logs in successfully"""
+    Constructor(client)
 
 client.run(os.environ['BOT_TOKEN'])

@@ -10,6 +10,8 @@ from math import floor
 from random import random
 
 class ReactionRoles(commands.Cog):
+    """Reaction role management"""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -19,7 +21,8 @@ class ReactionRoles(commands.Cog):
             self.emojis = json.load(f)['games']
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        """invoked when a reaction is added to a message"""
         if not (details := self.data.get(str(payload.guild_id))):
             return
 
@@ -44,7 +47,8 @@ class ReactionRoles(commands.Cog):
             self.save()
 
     @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        """invoked when a reaction is removed from a message"""
         if not (details := self.data.get(str(payload.guild_id))):
             return
 
@@ -69,21 +73,37 @@ class ReactionRoles(commands.Cog):
             self.data[str(payload.guild_id)].remove(reaction_role)
             self.save()
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'reactionRoles')
         return await self.bot.moderatorCheck(ctx)
 
-    @commands.group(brief='This adds/removes roles from a user based on reactions to a specified message', aliases=['rr'])
-    @commands.has_permissions(manage_roles=True)
+    @commands.group(aliases=['rr'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
+    @commands.has_permissions(manage_roles=True)
     @commands.guild_only()
     async def reactionrole(self, ctx):
+        """Command group for reaction role functionality"""
         if not ctx.invoked_subcommand:
             await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
             return
 
-    @reactionrole.command(brief='Adds a reaction role')
+    @reactionrole.command()
     async def add(self, ctx, message: discord.Message, role: discord.Role, *, game: str=None):
+        """Add a reaction role.
+
+        Parameters
+        ------------
+        `message`: discord.Message
+            The message on which reactions will be captured.
+
+        `role`: discord.Role
+            The role given when a user reacts.
+
+        `game`: Optional[<class 'str'>]
+            If inputted, this checks for a corresponding emoji in the memory to \
+            be added directly as a reaction. If left blank, the user is prompted \
+            to select a reaction emoji manually.
+        """
         if game:
             if game in self.emojis:
                 reaction = self.emojis[game]
@@ -136,8 +156,15 @@ class ReactionRoles(commands.Cog):
         else:
             await msg.edit(content=None, embed=embed)
 
-    @reactionrole.command(brief='Removes a reaction role')
+    @reactionrole.command()
     async def remove(self, ctx, ID: str):
+        """Remove a reaction role.
+
+        Parameters
+        ------------
+        `ID`: <class 'str'>
+            The ID of the reaction to be removed.
+        """
         if not (details := self.data.get(str(ctx.guild.id))):
             return
 
@@ -162,6 +189,7 @@ class ReactionRoles(commands.Cog):
         await ctx.reply(self.l10n.format_value('react-notfound', {'id': ID}))
 
     def generateID(self, IDs):
+        """return a unique ID for a reaction role"""
         sample_set = '01234567890123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         ID = ''
         for _ in range(5):
@@ -171,8 +199,10 @@ class ReactionRoles(commands.Cog):
         return ID
 
     def save(self):
+        """save the data to a json file"""
         with open('db/reactionRoles.json', 'w') as f:
             json.dump(self.data, f)
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(ReactionRoles(bot))

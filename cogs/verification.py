@@ -21,6 +21,8 @@ def basicVerificationCheck(ctx):
     return ctx.bot.basicVerificationCheck(ctx)
 
 class Verify(commands.Cog):
+    """Verification management"""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -43,14 +45,16 @@ class Verify(commands.Cog):
         )
 
     @staticmethod
-    def generateotp():
+    def generateotp() -> str:
+        """return a OTP string"""
         sample_set = '01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         OTP = ''
         for _ in range(5):
             OTP += sample_set[floor(random() * 46)]
         return OTP
 
-    async def sendEmail(self, ctx, name, email):
+    async def sendEmail(self, ctx, name: str, email: str):
+        """send a verification email to the given email"""
         await ctx.message.add_reaction(self.emojis['loading'])
 
         # Setting variables for the email
@@ -64,7 +68,10 @@ class Verify(commands.Cog):
         msg['From'] = EMAIL
         msg['To'] = email
         msg.set_content(
-            self.l10n.format_value('verify-email-HTML', {'user': name, 'otp': otp, 'guild': ctx.guild.name, 'prefix': ctx.prefix}),
+            self.l10n.format_value(
+                'verify-email-HTML',
+                {'user': name, 'otp': otp, 'guild': ctx.guild.name, 'prefix': ctx.prefix}
+            ),
             subtype='html'
         )
 
@@ -78,7 +85,8 @@ class Verify(commands.Cog):
         self.codes[str(ctx.author.id)] = otp
         self.save()
 
-    def checkCode(self, author_id, code):
+    def checkCode(self, author_id: str, code: str) -> bool:
+        """check if the entered code matches the OTP"""
         if self.codes[str(author_id)] == code:
             del self.codes[str(author_id)]
             self.save()
@@ -92,9 +100,10 @@ class Verify(commands.Cog):
             return True
         return False
 
-    @commands.group(brief='Registers the user in the database')
+    @commands.group()
     @commands.guild_only()
     async def verify(self, ctx):
+        """Command group for verification functionality"""
         self.l10n = get_l10n(ctx.guild.id, 'verification')
 
         if not ctx.invoked_subcommand:
@@ -113,8 +122,25 @@ class Verify(commands.Cog):
             else:
                 raise commands.CheckFailure('UserAlreadyVerified')
 
-    @verify.command(brief='Allows user to link their account to a record in the database')
+    @verify.command()
     async def basic(self, ctx, section: str, roll_no: int):
+        """Link a Discord account to a record in the database.
+
+        Parameters
+        ------------
+        `section`: <class 'str'>
+            The section the student is in. Must be either of the following:
+                CE-A, CE-B, CE-C,
+                CS-A, CS-B,
+                EC-A, EC-B, EC-C,
+                EE-A, EE-B, EE-C,
+                IT-A, IT-B,
+                ME-A, ME-B, ME-C,
+                PI-A, PI-B
+
+        `roll_no`: <class 'int'>
+            The roll number of the student.
+        """
         tuple = self.c.execute(
             'select Section, Subsection, Name, Institute_Email, Batch, Discord_UID, Guilds from main where Roll_Number = (:roll)',
             {'roll': roll_no}
@@ -206,9 +232,16 @@ class Verify(commands.Cog):
         first_name = tuple[2].split(' ', 1)[0].capitalize()
         await ctx.author.edit(nick=first_name)
 
-    @verify.command(brief='Allows user to verify their email')
+    @verify.command()
     @commands.check(basicVerificationCheck)
     async def email(self, ctx, email: str):
+        """Verify the user's identity by verifying their institute email.
+
+        Parameters
+        ------------
+        `email`: <class 'str'>
+            The institute email of the user.
+        """
         tuple = self.c.execute(
             'select Name, Institute_Email from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
@@ -225,6 +258,13 @@ class Verify(commands.Cog):
     @verify.command(brief='Used to input OTP that the user received in order to verify their email')
     @commands.check(basicVerificationCheck)
     async def code(self, ctx, code: str):
+        """Check if the inputted code matches the sent OTP.
+
+        Parameters
+        ------------
+        `code`: <class 'str'>
+            The code to be checked
+        """
         if str(ctx.author.id) not in self.codes:
             await ctx.reply(self.l10n.format_value('verify-not-received'))
             return
@@ -235,8 +275,10 @@ class Verify(commands.Cog):
             await ctx.reply(self.l10n.format_value('verify-code-incorrect'))
 
     def save(self):
+        """save the data to a json file"""
         with open('db/codes.json', 'w') as f:
             json.dump(self.codes, f)
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(Verify(bot))

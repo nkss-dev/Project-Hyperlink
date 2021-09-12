@@ -8,13 +8,15 @@ from utils.utils import deleteOnReaction
 import discord
 from discord.ext import commands
 
-def basicVerificationCheck(ctx):
+def basicVerificationCheck(ctx) -> bool:
     return ctx.bot.basicVerificationCheck(ctx)
 
-def verificationCheck(ctx):
+def verificationCheck(ctx) -> bool:
     return ctx.bot.verificationCheck(ctx)
 
 class ProfileChoice(discord.ui.View):
+    """UI class for profile"""
+
     def __init__(self, embed, l10n, user):
         super().__init__()
         self.embed = embed
@@ -22,8 +24,8 @@ class ProfileChoice(discord.ui.View):
         self.type = False
         self.user = user
 
-    async def interaction_check(self, interaction):
-        """checks if the interaction is authorised or not"""
+    async def interaction_check(self, interaction) -> bool:
+        """check if the interaction is authorised or not"""
         if interaction.user != self.user:
             await interaction.response.send_message(
                 content=self.l10n.format_value('incorrect-user'),
@@ -48,6 +50,8 @@ class ProfileChoice(discord.ui.View):
         self.stop()
 
 class Info(commands.Cog):
+    """Information commands"""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -58,7 +62,7 @@ class Info(commands.Cog):
         self.c = self.conn.cursor()
 
     async def getProfileEmbed(self, ctx, member) -> Optional[discord.Embed]:
-        """returns the details of the given user in an embed"""
+        """return the details of the given user in an embed"""
         tuple = self.c.execute(
             'select Roll_Number, Section, SubSection, Name, Institute_Email, Verified from main where Discord_UID = (:uid)',
             {'uid': member.id}
@@ -106,14 +110,27 @@ class Info(commands.Cog):
 
         return embed
 
-    def cog_check(self, ctx):
+    def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'info')
         return self.bot.basicVerificationCheck(ctx)
 
     @commands.command(aliases=['p'])
     @commands.check(basicVerificationCheck)
     async def profile(self, ctx, *, member: discord.Member=None):
-        """Displays the details of the user related to the server and college"""
+        """Show the user's profile in an embed.
+
+        The embed contains details related to both, the server and the college.
+        The user is given a choice between keeping the profile hidden or visible. \
+        If the command is invoked in a DM channel, the choice defaults to visible.
+
+        Parameters
+        ------------
+        `member`: Optional[discord.Member]
+            The member whose profile is displayed. If this is specified, \
+            a check is performed to see if the author of the command is \
+            authorised to view another user's profile. If left blank, the \
+            member defaults to the author of the command.
+        """
         member = member or ctx.author
         if member != ctx.author:
             await self.bot.moderatorCheck(ctx)
@@ -133,12 +150,21 @@ class Info(commands.Cog):
             message = await ctx.send(embed=embed)
         await deleteOnReaction(ctx, message)
 
-    @commands.command(brief='Nicks a user to their first name')
-    @commands.check(verificationCheck)
+    @commands.command()
     @commands.bot_has_permissions(manage_nicknames=True)
+    @commands.check(verificationCheck)
     @commands.guild_only()
-    async def nick(self, ctx, member: discord.Member=None):
-        """Enter a member to change their name or leave it blank to change your own"""
+    async def nick(self, ctx, *, member: discord.Member=None):
+        """Change the nick of a user to their first name.
+
+        Parameters
+        ------------
+        `member`: Optional[discord.Member]
+            The member whose nick is to be changed. If this is specified, \
+            a check is performed to see if the author of the command is \
+            authorised to change another user's nickname.
+            If left blank, the member defaults to the author of the command.
+        """
 
         member = member or ctx.author
         if await self.bot.is_owner(member):
@@ -169,7 +195,7 @@ class Info(commands.Cog):
 
         nick = {
             'member': member.mention,
-            'old': old_nick,
+            'old': f'{old_nick}',
             'new': member.nick
         }
         embed = discord.Embed(
@@ -178,10 +204,23 @@ class Info(commands.Cog):
         )
         await ctx.reply(embed=embed)
 
-    @commands.command(brief='Segregated display of the number of members')
+    @commands.command()
+    @commands.check(verificationCheck)
     async def memlist(self, ctx, batch: int):
-        """Displays the total number of members joined/remaining/verified members per section,
-        and their totals
+        """Show the stats of students of the specified batch.
+
+        The displayed table has 3 value columns and is separated by sub-sections
+        Columns:
+            `Joined`: Represents users that have linked their Discord account \
+                with a student's details in the database.
+            `Remaining`: Represents users that have not linked their Discord \
+                account with a student's details in the database.
+            `Verified`: Represents users whose identities have been confirmed.
+
+        Parameters
+        ------------
+        `batch`: <class 'int'>
+            The batch for which the stats are shown.
         """
 
         sections = (
@@ -238,8 +277,9 @@ class Info(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.command(brief='Gives invites of some servers', aliases=['inv'])
+    @commands.command(aliases=['inv'])
     async def invite(self, ctx):
+        """Send the invite of some Discord servers"""
         servers = (
             'NITKKR\'24: https://discord.gg/4eF7R6afqv',
             'kkr++: https://discord.gg/epaTW7tjYR'
@@ -253,4 +293,5 @@ class Info(commands.Cog):
         await ctx.send(embed=embed)
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(Info(bot))

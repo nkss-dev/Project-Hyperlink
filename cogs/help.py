@@ -5,6 +5,8 @@ from discord.ext import commands
 from utils.l10n import get_l10n
 
 class HelpEmbed(Embed):
+    """Base embed template class"""
+
     def __init__(self, l10n, **kwargs):
         super().__init__(**kwargs)
         self.timestamp = utils.utcnow()
@@ -12,6 +14,8 @@ class HelpEmbed(Embed):
         self.color = Color.blurple()
 
 class Help(commands.HelpCommand):
+    """Help commands"""
+
     def __init__(self):
         super().__init__(
             command_attrs={
@@ -45,8 +49,6 @@ class Help(commands.HelpCommand):
                     name = cog.qualified_name
                     description = cog.description or l10n.format_value('desc-notfound')
                 else:
-                    for command in commands:
-                        print(command)
                     name = l10n.format_value('category-notfound')
                     description = l10n.format_value('no-category-commands')
 
@@ -60,21 +62,24 @@ class Help(commands.HelpCommand):
         await self.send(embed=embed)
 
     async def send_command_help(self, command):
+        """invoked when `<prefix>help <command>` is called"""
         l10n = get_l10n(self.context.guild.id if self.context.guild else 0, 'help')
         prefix = self.context.clean_prefix
 
         embed = HelpEmbed(l10n, title=self.get_command_signature(command))
         embed.add_field(
             name=l10n.format_value('help'),
-            value=command.help or command.brief,
+            value=command.help or command.short_doc,
             inline=False
         )
 
         if cog := command.cog:
             embed.add_field(name=l10n.format_value('category'), value=cog.qualified_name)
 
+        usable = False
         with contextlib.suppress(commands.CommandError):
             usable = await command.can_run(self.context)
+
         embed.add_field(
             name=l10n.format_value('usable'),
             value=l10n.format_value('yes') if usable else l10n.format_value('no')
@@ -110,7 +115,7 @@ class Help(commands.HelpCommand):
             for command in filtered_commands:
                 embed.add_field(
                     name=self.get_command_signature(command),
-                    value=command.brief or command.help or l10n.format_value('help-notfound'),
+                    value=command.short_doc or l10n.format_value('help-notfound'),
                     inline=False
                 )
 
@@ -128,4 +133,5 @@ class Help(commands.HelpCommand):
         await self.send_help_embed(title, cog.description, cog.get_commands())
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.help_command = Help()

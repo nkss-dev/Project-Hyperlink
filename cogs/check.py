@@ -1,9 +1,10 @@
-import json
 import sqlite3
 
 from discord.ext import commands
 
 class Check(commands.Cog):
+    """Checks used in the bot"""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -14,7 +15,8 @@ class Check(commands.Cog):
         self.bot.basicVerificationCheck = self.basicVerificationCheck
         self.bot.verificationCheck = self.verificationCheck
 
-    def basicVerificationCheck(self, ctx):
+    def basicVerificationCheck(self, ctx) -> bool:
+        """check if the user has completed basic verification"""
         verified = self.c.execute(
             'select Verified from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
@@ -25,7 +27,8 @@ class Check(commands.Cog):
 
         return True
 
-    def verificationCheck(self, ctx):
+    def verificationCheck(self, ctx) -> bool:
+        """check if the user's identity has been verified"""
         verified = self.c.execute(
             'select Verified from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
@@ -37,7 +40,8 @@ class Check(commands.Cog):
             raise commands.CheckFailure('UserNotVerified')
         return True
 
-    async def moderatorCheck(self, ctx):
+    async def moderatorCheck(self, ctx) -> bool:
+        """check if the user is a moderator"""
         if not self.verificationCheck(ctx):
             return False
 
@@ -53,4 +57,5 @@ class Check(commands.Cog):
         return True
 
 def setup(bot):
+    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(Check(bot))
