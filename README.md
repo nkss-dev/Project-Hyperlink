@@ -2,11 +2,13 @@
 A moderation bot made specifically to be used in NITKKR only servers
 
 ## Prerequisites
-- Python 3.6+
+- Python 3.9+
 - discord.py 2.0
 - fluent.runtime
 - [googleapiclient](https://developers.google.com/docs/api/quickstart/python) (for [drive.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/drive.py))
+- Pillow
 - python.dotenv
+- pytz
 
 ## Running a local instance
 
