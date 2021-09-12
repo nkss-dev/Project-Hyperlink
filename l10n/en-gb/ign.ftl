@@ -21,6 +21,6 @@ remove-success = IGN for {$game} removed successfully.
 
 request = Requested by: {$author}
 
-self-ign-notfound = You have no IGN stored for {$game}!
+self-ign-notfound = You have no IGN stored for "{$game}"
 
 self-igns-notfound = Store some IGNs first by `{$prefix}ign add`.

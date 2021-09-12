@@ -6,8 +6,8 @@ guild-prefix = Prefix for this server is now `{$prefix}`.
 
 invalid-command = Invalid {$name} command passed.
 
-prefix-exists-true = `{$prefix}` already exists!
+exists-true = `{$prefix}` already exists!
 
-prefix-exists-false = `{$prefix}` does not exist!
+exists-false = `{$prefix}` does not exist!
 
 remove-success = `{$prefix}` removed successfully!

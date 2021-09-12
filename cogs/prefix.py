@@ -35,7 +35,7 @@ class Prefix(commands.Cog):
         prefixes = self.bot.guild_data[str(ctx.guild.id)]['prefix']
 
         if prefix in prefixes:
-            await ctx.reply(self.l10n.format_value('prefix-exists-true', {'prefix': prefix}))
+            await ctx.reply(self.l10n.format_value('exists-true', {'prefix': prefix}))
             return
 
         prefixes.append(prefix)
@@ -56,7 +56,7 @@ class Prefix(commands.Cog):
         prefixes = self.bot.guild_data[str(ctx.guild.id)]['prefix']
 
         if prefix not in prefixes:
-            await ctx.reply(self.l10n.format_value('prefix-exists-false', {'prefix': prefix}))
+            await ctx.reply(self.l10n.format_value('exists-false', {'prefix': prefix}))
             return
 
         if len(prefixes) == 1:
