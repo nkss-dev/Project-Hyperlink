@@ -1,5 +1,5 @@
-# KKR-Discord-Bot
-A moderation bot made specifically to be used in NITKKR only servers
+# Project-Hyperlink
+A moderation bot made specifically to be used in NITKKR-only servers
 
 ## Prerequisites
 - Python 3.9+
