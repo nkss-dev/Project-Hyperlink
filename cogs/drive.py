@@ -3,7 +3,6 @@ import mimetypes
 from typing import Union
 
 from utils.l10n import get_l10n
-from utils.utils import getWebhook
 
 import discord
 from discord.ext import commands
@@ -135,7 +134,7 @@ class Drive(commands.Cog):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'drive')
         return self.bot.verificationCheck(ctx)
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     async def drive(self, ctx):
         """Command group for Google Drive functionality"""
         if not ctx.invoked_subcommand:
@@ -143,7 +142,7 @@ class Drive(commands.Cog):
             return
 
     @drive.command()
-    async def search(self, ctx, *query: list[str, ...]):
+    async def search(self, ctx, *query: str):
         """Search for the given query and send a corresponding embed.
 
         The input query is divided into separate keywords split by a space \
@@ -217,18 +216,10 @@ class Drive(commands.Cog):
         if ignored_args:
             embeds.append(ignored_embed)
 
-        if len(embeds) > 1 and ctx.guild and (webhook := await getWebhook(ctx.channel, ctx.guild.me)):
-            try:
-                await webhook.send(
-                    embeds=embeds,
-                    username=ctx.guild.me.nick or ctx.guild.me.name,
-                    avatar_url=ctx.guild.me.avatar.url
-                )
-            except discord.errors.HTTPException:
-                await ctx.reply(self.l10n.format_value('body-too-long'))
-        else:
-            for embed in embeds:
-                await ctx.send(embed=embed)
+        try:
+            await ctx.send(embeds=embeds)
+        except discord.errors.HTTPException:
+            await ctx.reply(self.l10n.format_value('body-too-long'))
 
         await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
 
