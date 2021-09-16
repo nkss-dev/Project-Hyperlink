@@ -38,13 +38,17 @@ class GoogleDrive():
 
         self.service = build('drive', 'v3', credentials=creds)
 
-    def createFolder(self, meta_data: dict[str, str]) -> str:
-        """create a folder on the Drive"""
+    def createFolder(self, meta_data: dict[str, str]) -> dict[str, str]:
+        """Create a folder on the Drive"""
         meta_data['mimeType'] = 'application/vnd.google-apps.folder'
-        return self.service.files().create(body=meta_data, fields='id').execute()['id']
+        payload = self.service.files().create(
+            body=meta_data,
+            fields='id, name, webViewLink'
+        ).execute()
+        return payload
 
-    def uploadFile(self, name: str, parent_id: str=None) -> str:
-        """upload specified file to the given folder"""
+    def uploadFile(self, name: str, parent_id: str=None) -> dict[str, str]:
+        """Upload specified file to the given folder"""
         meta_data = {'name': name}
         if parent_id:
             meta_data['parents'] = [parent_id]
@@ -58,21 +62,25 @@ class GoogleDrive():
         request = self.service.files().create(
             body=meta_data,
             media_body=media,
-            fields='id'
+            fields='id, name, webViewLink'
         )
 
         response = None
         while not response:
             _, response = request.next_chunk()
 
-        return request.execute()['id']
+        return request.execute()
 
-    def getItem(self, id: str) -> tuple[str, str]:
-        """return item details corresponding to a given ID"""
-        return self.service.files().get(fileId=id, fields='name, webViewLink').execute()
+    def getItem(self, id: str) -> dict[str, str]:
+        """Return item details corresponding to a given ID"""
+        payload = {
+            'id': id,
+            **self.service.files().get(fileId=id, fields='name, webViewLink').execute()
+        }
+        return payload
 
-    def listItems(self, query: str) -> dict[str, Union[str, bool, list]]:
-        """return all items matching the given query"""
+    def listItems(self, query: str) -> dict[str, str]:
+        """Return all items matching the given query"""
         try:
             response = self.service.files().list(
                 q=query,
