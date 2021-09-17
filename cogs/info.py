@@ -1,7 +1,7 @@
 import json
 import sqlite3
 
-from typing import Optional
+from typing import Optional, Union
 from utils.l10n import get_l10n
 from utils.utils import deleteOnReaction
 
@@ -62,7 +62,9 @@ class Info(commands.Cog):
         self.c = self.conn.cursor()
 
     async def getProfileEmbed(self, ctx, member) -> Optional[discord.Embed]:
-        """return the details of the given user in an embed"""
+        """Return the details of the given user in an embed"""
+        member_guild = ctx.guild and isinstance(member, discord.Member)
+
         tuple = self.c.execute(
             'select Roll_Number, Section, SubSection, Name, Institute_Email, Verified from main where Discord_UID = (:uid)',
             {'uid': member.id}
@@ -72,41 +74,41 @@ class Info(commands.Cog):
             await ctx.reply(self.l10n.format_value('record-notfound'))
             return
 
-        if ctx.guild:
+        if member_guild:
             ignored_roles = [tuple[1], tuple[2], '@everyone']
             user_roles = [role.mention for role in member.roles if role.name not in ignored_roles]
             user_roles.reverse()
-            user_roles = ', '.join(user_roles)
-            if not user_roles:
+            if not (user_roles := ', '.join(user_roles)):
                 user_roles = self.l10n.format_value('roles-none')
         else:
             user_roles = self.l10n.format_value('roles-none')
 
-        status = ' '
         if tuple[5] == 'True':
-            status += self.emojis['verified']
+            status = self.emojis['verified']
         else:
-            status += self.emojis['not-verified']
+            status = self.emojis['not-verified']
 
         profile = {
             'roll': str(tuple[0]),
-            'section': tuple[1] + tuple[2][4:],
+            'section': tuple[1] + tuple[2][4],
             'roles': user_roles,
             'email': tuple[4]
         }
         embed = discord.Embed(
-            title = f'{tuple[3].title()}{status}',
+            title = f'{tuple[3].title()} {status}',
             description = self.l10n.format_value('profile', profile),
-            colour = member.top_role.color if ctx.guild else discord.Color.blurple()
+            color = member.top_role.color if member_guild else discord.Color.blurple()
         )
         embed.set_author(
             name = self.l10n.format_value('profile-name', {'member': str(member)}),
             icon_url = member.display_avatar.url
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        if ctx.guild:
-            date = member.joined_at.strftime('%b %d, %Y')
-            embed.set_footer(text=self.l10n.format_value('profile-join-date', {'date': date}))
+        if member_guild:
+            embed.set_footer(text=self.l10n.format_value(
+                'profile-join-date',
+                {'date': member.joined_at.strftime('%b %d, %Y')})
+            )
 
         return embed
 
@@ -116,7 +118,7 @@ class Info(commands.Cog):
 
     @commands.command(aliases=['p'])
     @commands.check(basicVerificationCheck)
-    async def profile(self, ctx, *, member: discord.Member=None):
+    async def profile(self, ctx, *, member: Union[discord.Member, discord.User]=None):
         """Show the user's profile in an embed.
 
         The embed contains details related to both, the server and the college.
@@ -135,7 +137,9 @@ class Info(commands.Cog):
         if member != ctx.author:
             await self.bot.moderatorCheck(ctx)
 
-        embed = await self.getProfileEmbed(ctx, member)
+        if not (embed := await self.getProfileEmbed(ctx, member)):
+            return
+
         if ctx.guild:
             view = ProfileChoice(embed, self.l10n, ctx.author)
             await ctx.send(self.l10n.format_value('choice'), view=view)
