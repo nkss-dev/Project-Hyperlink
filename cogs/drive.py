@@ -1,13 +1,13 @@
 import json
 import mimetypes
-from typing import Union
 
 from utils.l10n import get_l10n
+from utils.utils import yesOrNo
 
 import discord
 from discord.ext import commands
 
-import os.path
+import os
 from apiclient import errors
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
@@ -19,6 +19,9 @@ class GoogleDrive():
     """Drive API functions"""
 
     def __init__(self):
+        self.root = '1U2taK5kEhOiUJi70ZkU2aBWY83uVuMmD'
+        self.past_papers = '13dMpIfa1FPiAdNThWdkSXfhXLK3BL-kn'
+
         SCOPES = ['https://www.googleapis.com/auth/drive']
         creds = None
         if os.path.exists('db/token.json'):
@@ -48,7 +51,7 @@ class GoogleDrive():
 
     def uploadFile(self, name: str, parent_id: str=None) -> dict[str, str]:
         """Upload specified file to the given folder"""
-        meta_data = {'name': name}
+        meta_data = {'name': name.split('/')[-1]}
         if parent_id:
             meta_data['parents'] = [parent_id]
 
@@ -116,7 +119,7 @@ class Drive(commands.Cog):
 
     @staticmethod
     def getSearchQuery(query: str, type: str='default') -> tuple[str, str]:
-        """return a compatible search query for the Drive API"""
+        """Return a compatible search query for the Drive API"""
         search_query = []
         ignored_args = []
 
@@ -222,6 +225,170 @@ class Drive(commands.Cog):
             await ctx.reply(self.l10n.format_value('body-too-long'))
 
         await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
+
+    @commands.group()
+    async def driveAdmin(self, ctx):
+        """Command group for admin interaction with the Google Drive"""
+        await commands.is_owner().predicate(ctx)
+        if not ctx.invoked_subcommand:
+            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
+
+    @driveAdmin.command(name='upload')
+    async def uploadAttachment(self, ctx, option: str, *, file_path: str):
+        """Upload message attachment to the Google Drive.
+
+        Root folder defaults to `Notes` (ID: `1U2taK5kEhOiUJi70ZkU2aBWY83uVuMmD`)
+
+        Parameters
+        ------------
+        `option`: <class 'str'>
+            The procedure to be followed for uploading.
+            Available options are:
+                `default`: When using this option, `file_path` should be absolute. \
+                    The format is as follows: `path/to/file/[file name]`. The user will \
+                    be prompted each time a folder is not found in the given path. \
+                    Note: To upload in the root folder, write `/[file name]`.
+                `pp`: When using this option, `file_path` should be relative to the \
+                    course folder. The format is as follows: `folder/[file name]`, \
+                    where `folder` is the folder inside the course folder. Note \
+                    that this folder will be created automatically if it does not exist.
+
+        `file_path`: <class 'str'>
+            The path of the file to upload. Format: `path/to/file/[file name]`.
+            If the string ends with a `/`, i.e, if `[file name]` is not specified, \
+            the file name defaults to the name of the attachment. Note that a \
+            file extension needs to be specified.
+        """
+        if not ctx.message.attachments:
+            await ctx.reply(self.l10n.format_value('attachment-notfound'))
+            return
+
+        try:
+            await ctx.message.add_reaction(self.emojis['loading'])
+        except discord.Forbidden:
+            pass
+
+        # Create parent folder list
+        # The last folder in this list will be where the attachment is uploaded
+        parents = [self.drive.getItem(self.drive.root)]
+        if option == 'default':
+            *file_path, filename = file_path.split('/')
+
+            # Loop through each folder and append them to the parent folder list
+            for folder in file_path:
+                query = f"""name = '{folder}' and
+                    mimeType = 'application/vnd.google-apps.folder' and
+                    parents = '{parents[-1]['id']}'"""
+                folder_details = self.drive.listItems(query)
+
+                # Ask the user if they wish to create a new folder
+                if not folder_details:
+                    message = await ctx.reply(
+                        self.l10n.format_value('folder-notfound', {'folder': folder})
+                    )
+                    if await yesOrNo(ctx, message):
+                        meta_data = {'name': folder, 'parents': [parents[-1]['id']]}
+                        parents.append(self.drive.createFolder(meta_data))
+                    else:
+                        await ctx.send('upload-cancelled')
+                        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+                        return
+                else:
+                    parents.append(folder_details[0])
+
+            # Default to the attachment name if file name is not specified
+            if not filename:
+                filename = ctx.message.attachments[0].filename.replace('_', ' ')
+
+        elif option == 'pp':
+            folder, filename = file_path.split('/', 1)
+
+            # Default to the attachment name if file name is not specified
+            if not filename:
+                filename = ctx.message.attachments[0].filename.replace('_', ' ')
+
+            # Get main course folder
+            parents.append(self.drive.getItem(self.drive.past_papers))
+            query = f"""name contains '{filename.split(' ', 1)[0]}' and
+                mimeType = 'application/vnd.google-apps.folder' and
+                parents = '{parents[-1]['id']}'"""
+            course_folder = self.drive.listItems(query)
+
+            if not course_folder:
+                question = await ctx.reply(self.l10n.format_value('enter-folder-name'))
+
+                def check(message: discord.Message) -> bool:
+                    """Check if the message sent is by the command author in the right channel"""
+                    return message.author == ctx.author and message.channel == ctx.channel
+
+                # Wait for the user to give a name for the course folder
+                message = await self.bot.wait_for('message', check=check)
+                if message.content.lower() == 'cancel':
+                    await ctx.send('upload-cancelled')
+                    await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+                    return
+                await question.delete()
+                if ctx.guild and ctx.guild.me.guild_permissions.manage_messages:
+                    await message.delete()
+
+                # Create the course folder and the subsequent child folder
+                meta_data = {'name': message.content, 'parents': [parents[-1]['id']]}
+                parents.append(self.drive.createFolder(meta_data))
+                meta_data = {
+                    'name': folder,
+                    'parents': [parents[-1]['id']]
+                }
+                parents.append(self.drive.createFolder(meta_data))
+
+            else:
+                parents.append(course_folder[0])
+                query = f"""name = '{folder}' and
+                    mimeType = 'application/vnd.google-apps.folder' and
+                    parents = '{course_folder[0]['id']}'"""
+                parent = self.drive.listItems(query)
+
+                # Create the child folder
+                if not parent:
+                    meta_data = {'name': folder, 'parents': [course_folder[0]['id']]}
+                    parents.append(self.drive.createFolder(meta_data))
+                else:
+                    parents.append(parent[0])
+        else:
+            vars = {
+                'option': option,
+                'prefix': ctx.clean_prefix,
+                'command': ctx.command.qualified_name
+            }
+            await ctx.reply(self.l10n.format_value('invalid-option', vars))
+            await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+            return
+
+        # Download the attachment
+        try:
+            os.mkdir('temp')
+        except FileExistsError:
+            pass
+        await ctx.message.attachments[0].save(f'temp/{filename}')
+
+        # Upload the attachment
+        file = self.drive.uploadFile(f'temp/{filename}', parents[-1]['id'])
+
+        # Create directory tree string
+        tree = ''
+        for i, parent in enumerate(parents):
+            tree += f"[{parent['name']}]({parent['webViewLink']})\n{'​ '*i*6}╰> "
+        tree += f"[{file['name']}]({file['webViewLink']})"
+
+        embed = discord.Embed(
+            title=self.l10n.format_value('upload-successful'),
+            description=tree,
+            color=discord.Color.blurple()
+        )
+        await ctx.reply(embed=embed)
+        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+
+        # Cleanup
+        os.remove(f'temp/{filename}')
 
 def setup(bot):
     """invoked when this file is attempted to be loaded as an extension"""
