@@ -30,7 +30,7 @@ class Constructor():
 
     @staticmethod
     def boards():
-        """create boards.json"""
+        """Create boards.json"""
         try:
             with open('db/boards.json') as f:
                 json.load(f)
@@ -40,7 +40,7 @@ class Constructor():
 
     @staticmethod
     def codes():
-        """create codes.json"""
+        """Create codes.json"""
         try:
             with open('db/codes.json') as f:
                 json.load(f)
@@ -50,7 +50,7 @@ class Constructor():
 
     @staticmethod
     def details():
-        """create details.db"""
+        """Create details.db"""
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
 
@@ -62,6 +62,7 @@ class Constructor():
                     SubSection text,
                     Name text,
                     Gender text,
+                    Mobile text,
                     Institute_Email text,
                     Batch integer,
                     Discord_UID integer UNIQUE,
@@ -99,17 +100,19 @@ class Constructor():
 
     @staticmethod
     def emojis():
-        """create emojis.json"""
+        """Create emojis.json"""
         try:
             with open('db/emojis.json') as f:
                 json.load(f)
         except FileNotFoundError:
             emojis = {
                 'utility': {
-                    'verified': '',
+                    'loading': '',
+                    'no': '',
                     'not-verified': '',
                     'triggered': '',
-                    'loading': ''
+                    'verified': '',
+                    'yes': ''
                 },
                 'games': {}
             }
@@ -118,7 +121,7 @@ class Constructor():
 
     @staticmethod
     def games():
-        """create games.json"""
+        """Create games.json"""
         try:
             with open('db/games.json') as f:
                 json.load(f)
@@ -127,7 +130,7 @@ class Constructor():
                 json.dump([], f)
 
     def guilds(self):
-        """create guilds.json"""
+        """Create guilds.json"""
         self.client.default_guild_details = {
             'prefix': ['%'],
             'roles': {
@@ -166,7 +169,7 @@ class Constructor():
 
     @staticmethod
     def links():
-        """create links.json"""
+        """Create links.json"""
         try:
             with open('db/links.json') as f:
                 json.load(f)
@@ -208,7 +211,7 @@ class Constructor():
 
     @staticmethod
     def muted():
-        """create muted.json"""
+        """Create muted.json"""
         try:
             with open('db/muted.json') as f:
                 json.load(f)
@@ -218,7 +221,7 @@ class Constructor():
 
     @staticmethod
     def reactionRoles():
-        """create reactionRoles.json"""
+        """Create reactionRoles.json"""
         try:
             with open('db/reactionRoles.json') as f:
                 json.load(f)
@@ -228,7 +231,7 @@ class Constructor():
 
     @staticmethod
     def VCs():
-        """create VCs.json"""
+        """Create VCs.json"""
         try:
             with open('db/VCs.json') as f:
                 json.load(f)
