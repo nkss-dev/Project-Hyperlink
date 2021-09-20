@@ -48,7 +48,7 @@ class Links(commands.Cog):
         return True
 
     async def create(self, tuple: tuple[str, str]) -> str:
-        """return links for the given section"""
+        """Return links for the given section"""
         guild = self.bot.get_guild(self.links[str(tuple[1])]['server_ID'][0])
         self.l10n = get_l10n(guild.id, 'links')
 
@@ -82,19 +82,17 @@ class Links(commands.Cog):
         return description
 
     async def edit(self, message: discord.Message, description: str):
-        """edit the given message with a refreshed description"""
+        """Edit the given message with a refreshed description"""
         new_embed = discord.Embed(
             description = description,
             color = discord.Color.blurple()
         )
         await message.edit(embed=new_embed)
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     async def link(self, ctx):
         """Command group for links dashboard functionality"""
-        if not ctx.invoked_subcommand:
-            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
-            return
+        await ctx.send_help(ctx.command)
 
     @link.command(name='create')
     async def init(self, ctx):
@@ -223,7 +221,7 @@ class Links(commands.Cog):
 
     @tasks.loop(hours=24)
     async def linkUpdateLoop(self):
-        """update links in all embeds every 24 hours"""
+        """Update links in all embeds every 24 hours"""
         with open('db/links.json') as f:
             self.links = json.load(f)
 
@@ -241,7 +239,7 @@ class Links(commands.Cog):
 
     @linkUpdateLoop.before_loop
     async def delay(self):
-        """add delay before running daily loop"""
+        """Add delay before running daily loop"""
         IST = timezone('Asia/Kolkata')
         now = datetime.now(IST)
         next_run = now.replace(hour=17, minute=0, second=0)
@@ -250,10 +248,10 @@ class Links(commands.Cog):
         await sleep_until(next_run)
 
     def save(self):
-        """save the data to a json file"""
+        """Save the data to a json file"""
         with open('db/links.json', 'w') as f:
             json.dump(self.links, f)
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Links(bot))

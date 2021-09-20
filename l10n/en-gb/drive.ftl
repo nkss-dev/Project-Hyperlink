@@ -12,8 +12,6 @@ folder-notfound = No folder named `{$folder}` was found. Would you like to creat
 ignored = The following arguments were ignored:{"\u000a"}{$args}
 ignored-reason = Arguments must be at least 3 characters long
 
-invalid-command = Invalid {$name} command passed.
-
 invalid-option = The option, `{$option}`, is invalid. For valid options, please check `{$prefix}help {$command}`
 
 result-notfound = Could not find anything related to your search query.

@@ -13,19 +13,17 @@ class Prefix(commands.Cog):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'prefix')
         return self.bot.verificationCheck(ctx)
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.has_permissions(manage_guild=True)
     @commands.guild_only()
     async def prefix(self, ctx):
         """Command group for bot prefix functionality"""
-        if not ctx.invoked_subcommand:
-            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
-            return
+        await ctx.send_help(ctx.command)
 
     @prefix.command()
     async def add(self, ctx, prefix: str):
-        """Add a prefix for the server
+        """Add a prefix for the server.
 
         Paramters
         -----------
@@ -46,7 +44,7 @@ class Prefix(commands.Cog):
 
     @prefix.command()
     async def remove(self, ctx, prefix: str):
-        """Remove a prefix for the server
+        """Remove a prefix for the server.
 
         Paramters
         -----------
@@ -71,7 +69,7 @@ class Prefix(commands.Cog):
 
     @prefix.command()
     async def set(self, ctx, prefix: str):
-        """Remove all prefixes and set to the specified prefix
+        """Remove all prefixes and set to the specified prefix.
 
         Paramters
         -----------
@@ -84,10 +82,10 @@ class Prefix(commands.Cog):
         await ctx.reply(self.l10n.format_value('guild-prefix', {'prefix': prefix}))
 
     def save(self):
-        """save the data to a json file"""
+        """Save the data to a json file"""
         with open('db/guilds.json', 'w') as f:
             json.dump(self.bot.guild_data, f)
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Prefix(bot))

@@ -1,5 +1,3 @@
-invalid-command = Invalid {$name} command passed.
-
 link-embed-title = **Upcoming Classes:**
                 ({$date}){"\u000a"}{"\u000a"}
 

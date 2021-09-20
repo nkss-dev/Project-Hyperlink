@@ -22,7 +22,7 @@ class ReactionRoles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        """invoked when a reaction is added to a message"""
+        """Called when a reaction is added to a message"""
         if not (details := self.data.get(str(payload.guild_id))):
             return
 
@@ -48,7 +48,7 @@ class ReactionRoles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
-        """invoked when a reaction is removed from a message"""
+        """Called when a reaction is removed from a message"""
         if not (details := self.data.get(str(payload.guild_id))):
             return
 
@@ -83,9 +83,7 @@ class ReactionRoles(commands.Cog):
     @commands.guild_only()
     async def reactionrole(self, ctx):
         """Command group for reaction role functionality"""
-        if not ctx.invoked_subcommand:
-            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
-            return
+        await ctx.send_help(ctx.command)
 
     @reactionrole.command()
     async def add(self, ctx, message: discord.Message, role: discord.Role, *, game: str=None):
@@ -189,7 +187,7 @@ class ReactionRoles(commands.Cog):
         await ctx.reply(self.l10n.format_value('react-notfound', {'id': ID}))
 
     def generateID(self, IDs):
-        """return a unique ID for a reaction role"""
+        """Return a unique ID for a reaction role"""
         sample_set = '01234567890123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         ID = ''
         for _ in range(5):
@@ -199,10 +197,10 @@ class ReactionRoles(commands.Cog):
         return ID
 
     def save(self):
-        """save the data to a json file"""
+        """Save the data to a json file"""
         with open('db/reactionRoles.json', 'w') as f:
             json.dump(self.data, f)
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(ReactionRoles(bot))

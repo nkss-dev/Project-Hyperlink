@@ -1,5 +1,3 @@
-invalid-command = Invalid {$name} command passed.
-
 incorrect-server = Verification of the {$batch} batch is not allowed on this server.
 
 member-kick-old = User has verified with a new ID, {$user}.

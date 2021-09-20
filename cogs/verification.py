@@ -46,7 +46,7 @@ class Verify(commands.Cog):
 
     @staticmethod
     def generateotp() -> str:
-        """return a OTP string"""
+        """Return a OTP string"""
         sample_set = '01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         OTP = ''
         for _ in range(5):
@@ -54,7 +54,7 @@ class Verify(commands.Cog):
         return OTP
 
     async def sendEmail(self, ctx, name: str, email: str):
-        """send a verification email to the given email"""
+        """Send a verification email to the given email"""
         await ctx.message.add_reaction(self.emojis['loading'])
 
         # Setting variables for the email
@@ -86,7 +86,7 @@ class Verify(commands.Cog):
         self.save()
 
     def checkCode(self, author_id: str, code: str) -> bool:
-        """check if the entered code matches the OTP"""
+        """Check if the entered code matches the OTP"""
         if self.codes[str(author_id)] == code:
             del self.codes[str(author_id)]
             self.save()
@@ -107,7 +107,7 @@ class Verify(commands.Cog):
         self.l10n = get_l10n(ctx.guild.id, 'verification')
 
         if not ctx.invoked_subcommand:
-            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
+            await ctx.send_help(ctx.command)
             return
 
         verified = self.c.execute(
@@ -275,10 +275,10 @@ class Verify(commands.Cog):
             await ctx.reply(self.l10n.format_value('verify-code-incorrect'))
 
     def save(self):
-        """save the data to a json file"""
+        """Save the data to a json file"""
         with open('db/codes.json', 'w') as f:
             json.dump(self.codes, f)
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Verify(bot))

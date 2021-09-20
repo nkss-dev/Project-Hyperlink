@@ -4,8 +4,6 @@ atleast-one-required = This is the only remaining prefix. Add more after removin
 
 guild-prefix = Prefix for this server is now `{$prefix}`.
 
-invalid-command = Invalid {$name} command passed.
-
 exists-true = `{$prefix}` already exists!
 
 exists-false = `{$prefix}` does not exist!

@@ -140,9 +140,7 @@ class Drive(commands.Cog):
     @commands.group(invoke_without_command=True)
     async def drive(self, ctx):
         """Command group for Google Drive functionality"""
-        if not ctx.invoked_subcommand:
-            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
-            return
+        await ctx.send_help(ctx.command)
 
     @drive.command()
     async def search(self, ctx, *query: str):
@@ -231,7 +229,7 @@ class Drive(commands.Cog):
         """Command group for admin interaction with the Google Drive"""
         await commands.is_owner().predicate(ctx)
         if not ctx.invoked_subcommand:
-            await ctx.reply(self.l10n.format_value('invalid-command', {'name': ctx.command.name}))
+            await ctx.send_help(ctx.command)
 
     @driveAdmin.command(name='upload')
     async def uploadAttachment(self, ctx, option: str, *, file_path: str):
@@ -391,5 +389,5 @@ class Drive(commands.Cog):
         os.remove(f'temp/{filename}')
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Drive(bot))

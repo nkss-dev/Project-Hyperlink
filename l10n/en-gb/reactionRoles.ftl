@@ -1,7 +1,5 @@
 id = ID
 
-invalid-command = Invalid {$name} command passed.
-
 invalid-game = `{game}` is invalid!
 
 react-message = React to this message with the reaction you want to use for the reaction role.
