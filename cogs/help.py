@@ -30,7 +30,7 @@ class Help(commands.HelpCommand):
         await self.get_destination().send(**kwargs)
 
     async def send_bot_help(self, mapping):
-        """invoked when `<prefix>help` is called"""
+        """Called when `<prefix>help` is called"""
         l10n = get_l10n(self.context.guild.id if self.context.guild else 0, 'help')
         bot = self.context.me
         prefix = self.context.clean_prefix
@@ -43,8 +43,7 @@ class Help(commands.HelpCommand):
         for cog, commands in mapping.items():
             total += len(commands)
             if filtered_commands := await self.filter_commands(commands):
-                amount = len(filtered_commands)
-                usable += amount
+                usable += len(filtered_commands)
                 if cog:
                     name = cog.qualified_name
                     description = cog.description or l10n.format_value('desc-notfound')
@@ -52,25 +51,24 @@ class Help(commands.HelpCommand):
                     name = l10n.format_value('category-notfound')
                     description = l10n.format_value('no-category-commands')
 
-                embed.add_field(
-                    name=l10n.format_value('category-title', {'name': name, 'amt': amount}),
-                    value=description
-                )
+                embed.add_field(name=name, value=description)
 
         embed.description = l10n.format_value('help-desc', {'total': total, 'amt': usable})
 
         await self.send(embed=embed)
 
     async def send_command_help(self, command):
-        """invoked when `<prefix>help <command>` is called"""
+        """Called when `<prefix>help <command>` is called"""
         l10n = get_l10n(self.context.guild.id if self.context.guild else 0, 'help')
         prefix = self.context.clean_prefix
 
-        embed = HelpEmbed(l10n, title=self.get_command_signature(command))
-        embed.add_field(
-            name=l10n.format_value('help'),
-            value=command.help or command.short_doc,
-            inline=False
+        embed = HelpEmbed(
+            l10n,
+            title=self.get_command_signature(command),
+            description=l10n.format_value(
+                'command-help',
+                {'help': command.help or command.short_doc}
+            )
         )
 
         if cog := command.cog:
@@ -122,16 +120,16 @@ class Help(commands.HelpCommand):
         await self.send(embed=embed)
 
     async def send_group_help(self, group):
-        """invoked when `<prefix>help <group>` is called"""
+        """Called when `<prefix>help <group>` is called"""
         title = self.get_command_signature(group)
         await self.send_help_embed(title, group.help, group.commands)
 
     async def send_cog_help(self, cog):
-        """invoked when `<prefix>help <cog>` is called"""
+        """Called when `<prefix>help <cog>` is called"""
         l10n = get_l10n(self.context.guild.id if self.context.guild else 0, 'help')
         title = cog.qualified_name or l10n.format_value('category-notfound')
         await self.send_help_embed(title, cog.description, cog.get_commands())
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.help_command = Help()

@@ -1,4 +1,3 @@
-category-title = {$name} | [{$amt}]
 category-notfound = No Category
 no-category-commands = Commands with no category
 desc-notfound = No description
@@ -20,3 +19,5 @@ cooldown-value = {$rate} per {$per} seconds
 usable = Usable
 yes = Yes
 no = No
+
+command-help = {"**"}Help{"**\u000a"}{$help}
