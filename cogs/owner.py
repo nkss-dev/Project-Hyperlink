@@ -52,7 +52,7 @@ class OwnerOnly(commands.Cog):
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
-    @commands.command(brief='Reloads a cog')
+    @commands.command()
     async def reload(self, ctx, extension: str):
         """Reload an extension.
 
@@ -70,15 +70,7 @@ class OwnerOnly(commands.Cog):
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
-    @commands.command(brief='Restarts the bot')
-    async def restart(self, ctx):
-        """Restart the bot"""
-        if ctx.guild and ctx.guild.me.guild_permissions.manage_messages:
-            await ctx.message.delete()
-        else:
-            await ctx.message.add_reaction(self.emojis['verified'])
-        await self.bot.close()
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(OwnerOnly(bot))
