@@ -1,6 +1,8 @@
 import json
 import sqlite3
+import re
 from utils.l10n import get_l10n
+from utils.utils import getURLs
 
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -14,6 +16,8 @@ class Links(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.section = ''
+        self.batch = ''
 
         with open('db/links.json') as f:
             self.links = json.load(f)
@@ -32,62 +36,52 @@ class Links(commands.Cog):
         if not self.bot.verificationCheck(ctx):
             return False
 
-        self.tuple = self.c.execute(
+        self.section, self.batch = self.c.execute(
             'select Section, Batch from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
         ).fetchone()
+        self.batch = str(self.batch)
 
-        manager_roles = self.links[str(self.tuple[1])]['manager_roles']
+        manager_roles = self.links[self.batch]['manager_roles']
         await commands.has_any_role(*manager_roles).predicate(ctx)
 
-        channel = self.bot.get_channel(self.links[str(self.tuple[1])][self.tuple[0]]['channel'])
+        channel = self.bot.get_channel(self.links[self.batch][self.section]['channel'])
         if channel != ctx.channel:
             raise commands.CheckFailure('LinkProtection')
 
         self.l10n = get_l10n(ctx.guild.id, 'links')
         return True
 
-    async def create(self, tuple: tuple[str, str]) -> str:
+    def _replaceRoleTags(self, roles: list[discord.Role], string: str) -> str:
+        if role_IDs := re.findall('@[CEIMP][CEIST]-0[1-9]', string, flags=re.I):
+            for role_ID in role_IDs:
+                try:
+                    role = get(roles, name=role_ID[1:].upper())
+                    string = string.replace(role_ID, role.mention, 1)
+                except AttributeError:
+                    continue
+        return string
+
+    def create(self, section: str, batch: str) -> list:
         """Return links for the given section"""
-        guild = self.bot.get_guild(self.links[str(tuple[1])]['server_ID'][0])
+        guild = self.bot.get_guild(self.links[batch]['server_ID'][0])
         self.l10n = get_l10n(guild.id, 'links')
 
-        datetime_ist = datetime.now(timezone('Asia/Kolkata')) + timedelta(hours=7)
-        date = datetime_ist.strftime('%d-%m-%Y')
-        day = datetime_ist.strftime('%A')
-        timetable = self.links[str(tuple[1])][tuple[0]][day]
-        description = self.l10n.format_value('link-embed-title', {'date': date})
+        time = datetime.now(timezone('Asia/Kolkata')) + timedelta(hours=7)
+        date = time.strftime('%d-%m-%Y')
+        day = time.strftime('%A')
+        timetable = self.links[batch][section][day]
+        times = [date]
 
-        flag = False
         for lecture in timetable:
-            time = lecture['time']
-            subject = lecture['subject']
-            link = lecture['link']
-            if subject:
-                flag = True
-                temp = []
-                for i in range(len(link)):
-                    if link[i] == '@' and link[i+1] != '&':
-                        temp.append([link[i:i+6], get(guild.roles, name=link[i+1:i+6]).mention])
+            link = self._replaceRoleTags(guild.roles, lecture['link'])
 
-                for role in temp:
-                    link = link.replace(role[0], role[1])
-                if 'http' not in link:
-                    link += self.l10n.format_value('link-notfound')
-                description += f'\n{subject} ({time}):\n{link}\n'
+            if not getURLs(link):
+                link += self.l10n.format_value('link-notfound')
 
-        if not flag:
-            description += self.l10n.format_value('links-notfound')
+            times.append((f"{lecture['subject']} ({lecture['time']}):", link))
 
-        return description
-
-    async def edit(self, message: discord.Message, description: str):
-        """Edit the given message with a refreshed description"""
-        new_embed = discord.Embed(
-            description = description,
-            color = discord.Color.blurple()
-        )
-        await message.edit(embed=new_embed)
+        return times
 
     @commands.group(invoke_without_command=True)
     async def link(self, ctx):
@@ -97,20 +91,28 @@ class Links(commands.Cog):
     @link.command(name='create')
     async def init(self, ctx):
         """Send the links embed to a dashboard"""
+        times = self.create(self.section, self.batch)
+
         embed = discord.Embed(
-            description = await self.create(self.tuple),
-            color = discord.Color.blurple()
+            title=self.l10n.format_value('link-embed-title'),
+            description=times[0],
+            color=discord.Color.blurple()
         )
+        if len(times) == 1:
+            embed.set_footer(text=self.l10n.format_value('links-notfound'))
+        else:
+            for time, link in times[1:]:
+                embed.add_field(name=time, value=link, inline=False)
+        message = await ctx.send(embed=embed)
 
         # Delete an older embed if any
         try:
-            message_id = self.links[str(self.tuple[1])][self.tuple[0]]['message']
-            old_message = await ctx.channel.fetch_message(message_id)
-            await old_message.delete()
+            message_id = self.links[self.batch][self.section]['message']
+            await (await ctx.channel.fetch_message(message_id)).delete()
         except discord.NotFound:
             pass
 
-        self.links[str(self.tuple[1])][self.tuple[0]]['message'] = (await ctx.send(embed=embed)).id
+        self.links[self.batch][self.section]['message'] = message.id
         self.save()
 
         if ctx.guild.me.guild_permissions.manage_messages:
@@ -139,35 +141,61 @@ class Links(commands.Cog):
                 `@CS-01 only: link`, `@CS-01 and @CS-02 only: link`
             This will convert the section to a role tag for a better viewing experience.
         """
-        message = await ctx.fetch_message(self.links[str(self.tuple[1])][self.tuple[0]]['message'])
-        description = message.embeds[0].description
+        try:
+            time_obj = datetime.strptime(time, '%I:%M%p')
+        except ValueError:
+            await ctx.send(
+                self.l10n.format_value(
+                    'invalid-time-format',
+                    {'cmd': f'{ctx.clean_prefix}help {ctx.command.qualified_name}'}
+                ),
+                delete_after=5.0
+            )
+            return
 
-        if f'{subject} ({time}):' in description:
-            old_link = description.split(f'{subject} ({time}):\n', 1)[1].split('\n', 1)[0]
-            old = f'{subject} ({time}):\n{old_link}'
+        try:
+            message = await ctx.fetch_message(self.links[self.batch][self.section]['message'])
+            embed = message.embeds[0]
+        except discord.NotFound:
+            await ctx.send(
+                self.l10n.format_value(
+                    'embed-notfound',
+                    {'cmd': f'{ctx.clean_prefix}{ctx.command.parent} create'}
+                ),
+                delete_after=5.0
+            )
+            return
 
-            if self.l10n.format_value('section-check') in old_link:
-                new = f"{subject} ({time}):\n{old_link.split(': ')[0]}: {link}"
-            else:
-                new = f'{subject} ({time}):\n{link}'
+        if not embed.fields:
+            embed.add_field(name=f'{subject} ({time}):', value=link)
+            embed.remove_footer()
 
-            description = description.replace(old, new)
-        else:
-            times = [class_time.split(')')[0] for class_time in description.split('(')[2:]]
-            subjects = [lecture.split(' (')[0] for lecture in description.split('\n')[2:] if '(' in lecture]
+        exists = False
+        for i, field in enumerate(embed.fields):
+            if field.name == f'{subject} ({time}):':
+                exists = True
+                if re.search('<@&\d{18}>', field.value):
+                    value = f"{field.value.split(':')[0]}: {link}"
+                else:
+                    value = link
+                embed.set_field_at(i, name=field.name, value=value, inline=False)
 
-            flag = False
-            for lecture, class_time in zip(subjects, times):
-                if datetime.strptime(time, '%I:%M%p') < datetime.strptime(class_time, '%I:%M%p'):
-                    description = description.replace(f'{lecture} ({class_time})', f'{subject} ({time}):\n{link}\n\n{lecture} ({class_time})')
-                    flag = True
+        if not exists:
+            times = []
+            for i, field in enumerate(embed.fields):
+                if match := re.search('\d{1,2}:\d{2}[AP]M', field.name):
+                    times.append((i, datetime.strptime(match.group(0), '%I:%M%p')))
+
+            for i, class_time in times:
+                if time_obj < class_time:
+                    embed.insert_field_at(
+                        i,
+                        name=f'{subject} ({time}):',
+                        value=self._replaceRoleTags(message.guild.roles, link)
+                    )
                     break
 
-            if not flag:
-                description = description.replace(self.l10n.format_value('links-notfound'), '')
-                description += f'{subject} ({time}):\n{link}'
-
-        await self.edit(message, description)
+        await message.edit(embed=embed)
         if ctx.guild.me.guild_permissions.manage_messages:
             await ctx.message.delete()
 
@@ -184,19 +212,37 @@ class Links(commands.Cog):
         `subject`: <class 'str'>
             The subject of the class.
         """
-        message = await ctx.fetch_message(self.links[str(self.tuple[1])][self.tuple[0]]['message'])
-        description = message.embeds[0].description
+        try:
+            message = await ctx.fetch_message(self.links[self.batch][self.section]['message'])
+            embed = message.embeds[0]
+        except discord.NotFound:
+            await ctx.send(
+                self.l10n.format_value(
+                    'embed-notfound',
+                    {'cmd': f'{ctx.clean_prefix}{ctx.command.parent} create'}
+                ),
+                delete_after=5.0
+            )
+            return
 
-        if f'{subject} ({time}):' in description:
-            desc = description.split(f'\n\n{subject} ({time}):\n', 1)
-            try:
-                remainder = desc[1].split('\n', 1)[1]
-            except IndexError:
-                remainder = f"\n{self.l10n.format_value('links-notfound')}"
+        if not embed.fields:
+            await ctx.send(self.l10n.format_value('classes-notfound'), delete_after=5.0)
+            return
 
-            desc = f'{desc[0]}\n{remainder}'
+        exists = False
+        for i, field in enumerate(embed.fields):
+            if field.name == f'{subject} ({time}):':
+                exists = True
+                embed.remove_field(i)
+                if not embed.fields:
+                    embed.set_footer(text=self.l10n.format_value('links-notfound'))
 
-            await self.edit(message, desc)
+        if not exists:
+            await ctx.send(self.l10n.format_value('class-notfound'), delete_after=5.0)
+        else:
+            await message.edit(embed=embed)
+
+        if ctx.guild.me.guild_permissions.manage_messages:
             await ctx.message.delete()
 
     @link.command(name='set_default', aliases=['sd'])
@@ -233,7 +279,11 @@ class Links(commands.Cog):
                 if channel:
                     try:
                         message = await channel.fetch_message(self.links[batch][section]['message'])
-                        await self.edit(message, await self.create((section, batch)))
+                        times = self.create(section, batch)
+                        message.embeds[0].clear_fields()
+                        for time, link in times[1:]:
+                            message.embeds[0].add_field(name=time, value=link, inline=False)
+                        await message.edit(embed=message.embeds[0])
                     except discord.NotFound:
                         pass
 
