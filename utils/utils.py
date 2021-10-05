@@ -1,5 +1,7 @@
 import discord
 import json
+import re
+from typing import Optional
 
 async def deleteOnReaction(ctx, message: discord.Message, emoji: str='🗑️'):
     """Delete the given message when a certain reaction is used"""
@@ -19,7 +21,11 @@ async def deleteOnReaction(ctx, message: discord.Message, emoji: str='🗑️'):
     if ctx.guild and ctx.guild.me.guild_permissions.manage_messages:
         await ctx.message.delete()
 
-async def getWebhook(channel: discord.TextChannel, member: discord.Member):
+def getURLs(str: str) -> Optional[list]:
+    regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+    return [url[0] for url in re.findall(regex, str)]
+
+async def getWebhook(channel: discord.TextChannel, member: discord.Member) -> discord.Webhook:
     """Return a webhook"""
     for webhook in await channel.webhooks():
         if webhook.user == member:
