@@ -4,14 +4,14 @@ import discord
 from discord.ext import commands
 
 class Logger(commands.Cog):
-    """Message related audit log"""
+    """Logs edited and deleted messages"""
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
-        """invoked when a message is deleted"""
+        """Called when a message is deleted"""
         if message.author.bot or not message.guild:
             return
 
@@ -28,7 +28,7 @@ class Logger(commands.Cog):
             ),
             color = discord.Color.red()
         )
-        embed.set_author(name=message.author, icon_url=message.author.avatar.url)
+        embed.set_author(name=message.author, icon_url=message.author.display_avatar.url)
         embed.add_field(
             name = l10n.format_value('content'),
             value = message.content or l10n.format_value('content-notfound')
@@ -44,7 +44,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent):
-        """invoked when multiple messages are deleted"""
+        """Called when multiple messages are deleted"""
         channel_id = self.bot.guild_data[str(payload.guild_id)]['log'][0]
         if not (channel := self.bot.get_channel(channel_id)):
             return
@@ -66,7 +66,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
-        """invoked when a message is edited"""
+        """Called when a message is edited"""
         if before.author.bot or not before.guild:
             return
 
@@ -86,7 +86,7 @@ class Logger(commands.Cog):
             ),
             color = discord.Color.orange()
         )
-        embed.set_author(name=before.author, icon_url=before.author.avatar.url)
+        embed.set_author(name=before.author, icon_url=before.author.display_avatar.url)
 
         embed.add_field(
             name = l10n.format_value('message-old'),
@@ -103,5 +103,5 @@ class Logger(commands.Cog):
         await channel.send(embed=embed)
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Logger(bot))
