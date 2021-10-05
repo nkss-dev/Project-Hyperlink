@@ -209,12 +209,13 @@ class Events(commands.Cog):
             {'uid': member.id}
         ).fetchone()
 
-        if not tuple and channel:
-            keys = {
-                'member': member.mention,
-                'emoji': self.emojis['triggered']
-            }
-            await channel.send(l10n.format_value('leave-verification-notfound', keys))
+        if not tuple:
+            if channel:
+                keys = {
+                    'member': member.mention,
+                    'emoji': self.emojis['triggered']
+                }
+                await channel.send(l10n.format_value('leave-verification-notfound', keys))
             return
 
         # Removing the guild ID from the user's details
@@ -286,6 +287,9 @@ class Events(commands.Cog):
 
                 else:
                     await ctx.reply(error)
+
+            elif isinstance(error, commands.BadUnionArgument):
+                await ctx.reply(error)
 
             else:
                 raise error
