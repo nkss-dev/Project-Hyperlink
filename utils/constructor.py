@@ -15,7 +15,6 @@ class Constructor():
         self.funcs = [
             self.boards,
             self.codes,
-            self.details,
             self.emojis,
             self.games,
             self.guilds,
@@ -23,6 +22,7 @@ class Constructor():
             self.muted,
             self.reactionRoles,
             self.VCs,
+            self.sql_databases,
             self.loadCogs
         ]
         for func in self.funcs:
@@ -47,56 +47,6 @@ class Constructor():
         except FileNotFoundError:
             with open('db/codes.json', 'w') as f:
                 json.dump({}, f)
-
-    @staticmethod
-    def details():
-        """Create details.db"""
-        conn = sqlite3.connect('db/details.db')
-        c = conn.cursor()
-
-        try:
-            c.execute('''
-                CREATE TABLE main (
-                    Roll_Number integer PRIMARY KEY,
-                    Section text,
-                    SubSection text,
-                    Name text,
-                    Gender text,
-                    Mobile text,
-                    Institute_Email text,
-                    Batch integer,
-                    Discord_UID integer UNIQUE,
-                    Guilds text DEFAULT "[]",
-                    Verified text DEFAULT "False",
-                    IGN text DEFAULT '{}'
-                )
-            ''')
-            c.execute('''
-                CREATE TABLE voltorb (
-                    Discord_UID integer,
-                    level text,
-                    coins text,
-                    total text,
-                    lose text,
-                    win text,
-                    rip text,
-                    message text,
-                    row text,
-                    col text,
-                    board text,
-                    flip text,
-                    bg blob,
-                    voltorb_tile blob,
-                    tile_1 blob,
-                    tile_2 blob,
-                    tile_3 blob,
-                    hl_voltorb_tile blob,
-                    FOREIGN KEY(Discord_UID) REFERENCES main(Discord_UID)
-                )
-            ''')
-            conn.commit()
-        except sqlite3.OperationalError:
-            pass
 
     @staticmethod
     def emojis():
@@ -228,6 +178,18 @@ class Constructor():
         except FileNotFoundError:
             with open('db/reactionRoles.json', 'w') as f:
                 json.dump({}, f)
+    def sql_databases(self):
+        """Create details.db and self_roles.db"""
+        # details.db
+        conn = sqlite3.connect('db/details.db')
+        c = conn.cursor()
+
+        with open('utils/details.sql') as sql:
+            c.executescript(sql.read())
+            conn.commit()
+
+        self.client.db = conn
+        self.client.c = c
 
     @staticmethod
     def VCs():
