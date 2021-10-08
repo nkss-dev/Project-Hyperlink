@@ -3,9 +3,7 @@ import sqlite3
 
 from asyncio import TimeoutError
 from utils.l10n import get_l10n
-
-from math import floor
-from random import random
+from utils.utils import generateID
 
 from discord.ext import commands
 from discord import utils
@@ -44,15 +42,6 @@ class Verify(commands.Cog):
             'PI-A', 'PI-B'
         )
 
-    @staticmethod
-    def generateotp() -> str:
-        """Return a OTP string"""
-        sample_set = '01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        OTP = ''
-        for _ in range(5):
-            OTP += sample_set[floor(random() * 46)]
-        return OTP
-
     async def sendEmail(self, ctx, name: str, email: str):
         """Send a verification email to the given email"""
         await ctx.message.add_reaction(self.emojis['loading'])
@@ -60,7 +49,7 @@ class Verify(commands.Cog):
         # Setting variables for the email
         EMAIL = os.environ['EMAIL']
         PASSWORD = os.environ['PASSWORD']
-        otp = self.generateotp()
+        otp = generateID(seed='01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
         # Creating the email
         msg = EmailMessage()
