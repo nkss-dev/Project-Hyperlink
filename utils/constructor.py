@@ -12,21 +12,13 @@ class Constructor():
             pass
 
         self.client = client
-        self.funcs = [
-            self.boards,
-            self.codes,
-            self.emojis,
-            self.games,
-            self.guilds,
-            self.links,
-            self.muted,
-            self.reactionRoles,
-            self.VCs,
-            self.sql_databases,
-            self.loadCogs
-        ]
+        self.funcs = (
+            self.boards, self.codes, self.emojis, self.games, self.guilds,
+            self.links, self.muted, self.VCs, self.self_roles, self.sql_databases
+        )
         for func in self.funcs:
             func()
+        self.loadCogs()
 
     @staticmethod
     def boards():
@@ -170,14 +162,15 @@ class Constructor():
                 json.dump([], f)
 
     @staticmethod
-    def reactionRoles():
-        """Create reactionRoles.json"""
+    def self_roles():
+        """Create self_roles.json"""
         try:
-            with open('db/reactionRoles.json') as f:
+            with open('db/self_roles.json') as f:
                 json.load(f)
         except FileNotFoundError:
-            with open('db/reactionRoles.json', 'w') as f:
+            with open('db/self_roles.json', 'w') as f:
                 json.dump({}, f)
+
     def sql_databases(self):
         """Create details.db and self_roles.db"""
         # details.db
@@ -191,6 +184,14 @@ class Constructor():
         self.client.db = conn
         self.client.c = c
 
+        # self_roles.db
+        conn = sqlite3.connect('db/self_roles.db')
+        c = conn.cursor()
+
+        with open('utils/self_roles.sql') as sql:
+            c.executescript(sql.read())
+            conn.commit()
+
     @staticmethod
     def VCs():
         """Create VCs.json"""
@@ -201,7 +202,7 @@ class Constructor():
             VCs = {
                 'vc_enabled_channels': [],
                 'party_vchannels': [],
-                'allow_text': {},
+                'allow_text': [],
                 'text_enabled_channels': [],
                 'party_tchannels': {}
             }
@@ -209,7 +210,7 @@ class Constructor():
                 json.dump(VCs, f)
 
     def loadCogs(self):
-        """load all the .py files in the `cogs` folder as extension"""
+        """Load all the .py files in the `cogs` folder as extension"""
         errors = []
         for i, filename in enumerate(os.listdir('./cogs'), start=1):
             if filename.endswith('.py'):
@@ -218,6 +219,6 @@ class Constructor():
                 except Exception as error:
                     errors.append(error)
         i -= 1
-        print(f'{i-len(errors)}/{i} cogs loaded successfully!\n')
+        print(f'{i-len(errors)}/{i} files loaded successfully!\n')
         for error in errors:
             print(error)
