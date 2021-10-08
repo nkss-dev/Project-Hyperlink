@@ -1,5 +1,3 @@
-import sqlite3
-
 from discord.ext import commands
 
 class Check(commands.Cog):
@@ -8,16 +6,13 @@ class Check(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
-
         self.bot.moderatorCheck = self.moderatorCheck
         self.bot.basicVerificationCheck = self.basicVerificationCheck
         self.bot.verificationCheck = self.verificationCheck
 
     def basicVerificationCheck(self, ctx) -> bool:
         """check if the user has completed basic verification"""
-        verified = self.c.execute(
+        verified = self.bot.c.execute(
             'select Verified from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
         ).fetchone()
@@ -29,7 +24,7 @@ class Check(commands.Cog):
 
     def verificationCheck(self, ctx) -> bool:
         """check if the user's identity has been verified"""
-        verified = self.c.execute(
+        verified = self.bot.c.execute(
             'select Verified from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
         ).fetchone()

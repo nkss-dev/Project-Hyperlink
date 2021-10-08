@@ -1,5 +1,4 @@
 import json
-import sqlite3
 from utils.l10n import get_l10n
 
 import discord
@@ -16,12 +15,9 @@ class IGN(commands.Cog):
         with open('db/games.json') as f:
             self.games = json.load(f)
 
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
-
     def getIGNs(self, author_id: int) -> dict[str, str]:
         """return the IGNs for the given user"""
-        igns = self.c.execute(
+        igns = self.bot.c.execute(
             'select IGN from main where Discord_UID = (:uid)',
             {'uid': author_id}
         ).fetchone()[0]
@@ -84,11 +80,11 @@ class IGN(commands.Cog):
 
         igns = self.getIGNs(ctx.author.id)
         igns[allowed_game] = ign
-        self.c.execute(
+        self.bot.c.execute(
             'update main set IGN = (:ign) where Discord_UID = (:uid)',
             {'ign': json.dumps(igns), 'uid': ctx.author.id}
         )
-        self.conn.commit()
+        self.bot.conn.commit()
 
         await ctx.reply(self.l10n.format_value('add-success', {'game': allowed_game}))
 
@@ -182,11 +178,11 @@ class IGN(commands.Cog):
             return
 
         if not game:
-            self.c.execute(
+            self.bot.c.execute(
                 'update main set IGN = "{}" where Discord_UID = (:uid)',
                 {'uid': ctx.author.id}
             )
-            self.conn.commit()
+            self.bot.conn.commit()
             await ctx.reply(self.l10n.format_value('remove-all-success'))
             return
 
@@ -201,11 +197,11 @@ class IGN(commands.Cog):
             await ctx.reply(self.l10n.format_value('self-ign-notfound', {'ign': game}))
             return
 
-        self.c.execute(
+        self.bot.c.execute(
             'update main set IGN = (:ign) where Discord_UID = (:uid)',
             {'ign': json.dumps(igns), 'uid': ctx.author.id}
         )
-        self.conn.commit()
+        self.bot.conn.commit()
 
         await ctx.reply(self.l10n.format_value('remove-success', {'game': ign}))
 

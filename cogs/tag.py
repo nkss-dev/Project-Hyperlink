@@ -1,6 +1,4 @@
 import re
-import sqlite3
-
 from utils.utils import getWebhook
 
 from discord import utils, AllowedMentions
@@ -11,9 +9,6 @@ class Tag(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
 
     async def cog_check(self, ctx) -> bool:
         return self.bot.verificationCheck(ctx)
@@ -43,7 +38,7 @@ class Tag(commands.Cog):
 
         webhook = await getWebhook(ctx.channel, ctx.guild.me)
 
-        section = self.c.execute(
+        section = self.bot.c.execute(
             'select Section from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
         ).fetchone()[0]

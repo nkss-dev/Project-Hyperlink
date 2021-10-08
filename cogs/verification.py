@@ -1,5 +1,4 @@
 import json
-import sqlite3
 
 from asyncio import TimeoutError
 from utils.l10n import get_l10n
@@ -28,9 +27,6 @@ class Verify(commands.Cog):
             self.codes = json.load(codes)
         with open('db/emojis.json') as emojis:
             self.emojis = json.load(emojis)['utility']
-
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
 
         self.sections = (
             'CE-A', 'CE-B', 'CE-C',
@@ -81,11 +77,11 @@ class Verify(commands.Cog):
             self.save()
 
             # Marks user as verified in the database
-            self.c.execute(
+            self.bot.c.execute(
                 'update main set Verified = "True" where Discord_UID = (:uid)',
                 {'uid': author_id}
             )
-            self.conn.commit()
+            self.bot.conn.commit()
             return True
         return False
 
@@ -99,7 +95,7 @@ class Verify(commands.Cog):
             await ctx.send_help(ctx.command)
             return
 
-        verified = self.c.execute(
+        verified = self.bot.c.execute(
             'select Verified from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
         ).fetchone()
@@ -130,7 +126,7 @@ class Verify(commands.Cog):
         `roll_no`: <class 'int'>
             The roll number of the student.
         """
-        tuple = self.c.execute(
+        tuple = self.bot.c.execute(
             'select Section, Subsection, Name, Institute_Email, Batch, Discord_UID, Guilds from main where Roll_Number = (:roll)',
             {'roll': roll_no}
         ).fetchone()
@@ -176,7 +172,7 @@ class Verify(commands.Cog):
                 try:
                     ctx.message = await self.bot.wait_for('message', timeout=120.0, check=check)
                     if self.checkCode(ctx.author.id, ctx.message.content):
-                        self.c.execute(
+                        self.bot.c.execute(
                             'update main set Verified = "True" where Roll_Number = (:roll)',
                             {'roll': roll_no}
                         )
@@ -212,11 +208,11 @@ class Verify(commands.Cog):
             guilds.append(ctx.guild.id)
         guilds = json.dumps(guilds)
 
-        self.c.execute(
+        self.bot.c.execute(
             'update main set Discord_UID = (:uid), Guilds = (:guilds) where Roll_Number = (:roll)',
             {'uid': ctx.author.id, 'roll': roll_no, 'guilds': guilds}
         )
-        self.conn.commit()
+        self.bot.conn.commit()
 
         first_name = tuple[2].split(' ', 1)[0].capitalize()
         await ctx.author.edit(nick=first_name)
@@ -231,7 +227,7 @@ class Verify(commands.Cog):
         `email`: <class 'str'>
             The institute email of the user.
         """
-        tuple = self.c.execute(
+        tuple = self.bot.c.execute(
             'select Name, Institute_Email from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
         ).fetchone()

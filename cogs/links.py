@@ -1,5 +1,4 @@
 import json
-import sqlite3
 import re
 from utils.l10n import get_l10n
 from utils.utils import getURLs
@@ -22,9 +21,6 @@ class Links(commands.Cog):
         with open('db/links.json') as f:
             self.links = json.load(f)
 
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
-
         self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thrusday', 'Friday', 'Saturday', 'Sunday')
         self.time = ('8:30', '9:25', '10:40', '11:35', '12:30', '1:45', '2:40', '3:35', '4:30', '5:00')
 
@@ -36,7 +32,7 @@ class Links(commands.Cog):
         if not self.bot.verificationCheck(ctx):
             return False
 
-        self.section, self.batch = self.c.execute(
+        self.section, self.batch = self.bot.c.execute(
             'select Section, Batch from main where Discord_UID = (:uid)',
             {'uid': ctx.author.id}
         ).fetchone()
@@ -91,7 +87,7 @@ class Links(commands.Cog):
     @link.command(name='create')
     async def init(self, ctx):
         """Send the links embed to a dashboard"""
-        times = self.create(self.section, self.batch)
+        times = self.bot.create(self.section, self.batch)
 
         embed = discord.Embed(
             title=self.l10n.format_value('link-embed-title'),
@@ -167,7 +163,7 @@ class Links(commands.Cog):
             return
 
         if not embed.fields:
-            embed.add_field(name=f'{subject} ({time}):', value=link)
+            embed.add_field(name=f'{subject} ({time}):', value=link, inline=False)
             embed.remove_footer()
 
         exists = False
@@ -279,7 +275,7 @@ class Links(commands.Cog):
                 if channel:
                     try:
                         message = await channel.fetch_message(self.links[batch][section]['message'])
-                        times = self.create(section, batch)
+                        times = self.bot.create(section, batch)
                         message.embeds[0].clear_fields()
                         for time, link in times[1:]:
                             message.embeds[0].add_field(name=time, value=link, inline=False)

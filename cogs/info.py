@@ -1,5 +1,4 @@
 import json
-import sqlite3
 
 from typing import Optional, Union
 from utils.l10n import get_l10n
@@ -58,14 +57,11 @@ class Info(commands.Cog):
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
-        self.conn = sqlite3.connect('db/details.db')
-        self.c = self.conn.cursor()
-
     async def getProfileEmbed(self, ctx, member) -> Optional[discord.Embed]:
         """Return the details of the given user in an embed"""
         member_guild = ctx.guild and isinstance(member, discord.Member)
 
-        tuple = self.c.execute(
+        tuple = self.bot.c.execute(
             'select Roll_Number, Section, SubSection, Name, Institute_Email, Verified from main where Discord_UID = (:uid)',
             {'uid': member.id}
         ).fetchone()
@@ -180,7 +176,7 @@ class Info(commands.Cog):
             if not member.guild_permissions.change_nickname:
                 raise commands.MissingPermissions([discord.Permissions.change_nickname])
 
-        name = self.c.execute(
+        name = self.bot.c.execute(
             'select Name from main where Discord_UID = (:uid)',
             {'uid': member.id}
         ).fetchone()
@@ -241,7 +237,7 @@ class Info(commands.Cog):
         verified = []
 
         for section in sections:
-            tuple = self.c.execute(
+            tuple = self.bot.c.execute(
                 'select count(*), count(Discord_UID) from main where Section = (:section) and Batch = (:batch)',
                 {'section': section, 'batch': batch}
             ).fetchone()
@@ -249,13 +245,13 @@ class Info(commands.Cog):
             joined.append(tuple[1])
 
         for section in sections:
-            countVerified = self.c.execute(
+            countVerified = self.bot.c.execute(
                 'select count(*) from main where Section = (:section) and Verified = "True" and Batch = (:batch)',
                 {'section': section, 'batch': batch}
             ).fetchone()[0]
             verified.append(countVerified)
 
-        tuple = self.c.execute(
+        tuple = self.bot.c.execute(
             'select count(*), count(Discord_UID) from main where Batch = (:batch)',
             {'batch': batch}
         ).fetchone()
@@ -297,5 +293,5 @@ class Info(commands.Cog):
         await ctx.send(embed=embed)
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Info(bot))
