@@ -276,7 +276,7 @@ class ReactionRoles(commands.Cog):
             to select a reaction emoji manually.
         """
         if game:
-            if not (reaction := self.emojis.get(name, None))
+            if not (reaction := self.emojis.get(name, None)):
                 await ctx.reply(self.l10n.format_value('invalid-game', {'game': game}))
                 return
         else:

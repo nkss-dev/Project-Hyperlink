@@ -58,7 +58,7 @@ class Links(commands.Cog):
                     continue
         return string
 
-    def create(self, section: str, batch: str) -> list:
+    def create(self, section: str, batch: str) -> discord.Embed:
         """Return links for the given section"""
         guild = self.bot.get_guild(self.links[batch]['server_ID'][0])
         self.l10n = get_l10n(guild.id, 'links')
@@ -77,18 +77,6 @@ class Links(commands.Cog):
 
             times.append((f"{lecture['subject']} ({lecture['time']}):", link))
 
-        return times
-
-    @commands.group(invoke_without_command=True)
-    async def link(self, ctx):
-        """Command group for links dashboard functionality"""
-        await ctx.send_help(ctx.command)
-
-    @link.command(name='create')
-    async def init(self, ctx):
-        """Send the links embed to a dashboard"""
-        times = self.bot.create(self.section, self.batch)
-
         embed = discord.Embed(
             title=self.l10n.format_value('link-embed-title'),
             description=times[0],
@@ -99,17 +87,29 @@ class Links(commands.Cog):
         else:
             for time, link in times[1:]:
                 embed.add_field(name=time, value=link, inline=False)
-        message = await ctx.send(embed=embed)
 
-        # Delete an older embed if any
+        return embed
+
+    @commands.group(invoke_without_command=True)
+    async def link(self, ctx):
+        """Command group for links dashboard functionality"""
+        await ctx.send_help(ctx.command)
+
+    @link.command(aliases=['r'])
+    async def refresh(self, ctx):
+        """Refresh an existing link embed in a dashboard.
+
+        If an embed does not exist, a new one is created.
+        """
         try:
             message_id = self.links[self.batch][self.section]['message']
-            await (await ctx.channel.fetch_message(message_id)).delete()
+            message = await ctx.channel.fetch_message(message_id)
         except discord.NotFound:
-            pass
+            message = await ctx.channel.send('\u200b')
+            self.links[self.batch][self.section]['message'] = message.id
+            self.save()
 
-        self.links[self.batch][self.section]['message'] = message.id
-        self.save()
+        await message.edit(embed=self.create(self.section, self.batch))
 
         if ctx.guild.me.guild_permissions.manage_messages:
             await ctx.message.delete()
@@ -275,13 +275,9 @@ class Links(commands.Cog):
                 if channel:
                     try:
                         message = await channel.fetch_message(self.links[batch][section]['message'])
-                        times = self.bot.create(section, batch)
-                        message.embeds[0].clear_fields()
-                        for time, link in times[1:]:
-                            message.embeds[0].add_field(name=time, value=link, inline=False)
-                        await message.edit(embed=message.embeds[0])
                     except discord.NotFound:
-                        pass
+                        message = await channel.send('\u200b')
+                    await message.edit(embed=self.create(section, batch))
 
     @linkUpdateLoop.before_loop
     async def delay(self):
