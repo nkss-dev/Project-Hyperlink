@@ -23,7 +23,7 @@ class Events(commands.Cog):
         if not fullmatch(f'<@!?{self.bot.user.id}>', message.content):
             return
 
-        l10n = get_l10n(message.guild.id if message.guild else 0, 'EventHandler')
+        l10n = get_l10n(message.guild.id if message.guild else 0, 'events')
 
         embed = discord.Embed(
             title = l10n.format_value('details-title'),
@@ -128,7 +128,7 @@ class Events(commands.Cog):
             instruction = self.bot.get_channel(details['verification']['instruction'])
             command = self.bot.get_channel(details['verification']['command'])
 
-            l10n = get_l10n(guild.id, 'EventHandler')
+            l10n = get_l10n(guild.id, 'events')
             keys = {
                 'instruction-channel': instruction.mention,
                 'command-channel': command.mention,
@@ -161,7 +161,7 @@ class Events(commands.Cog):
         if not (events := details.get('events')):
             return
 
-        l10n = get_l10n(guild.id, 'EventHandler')
+        l10n = get_l10n(guild.id, 'events')
 
         action = 'leave'
         if guild.me.guild_permissions.view_audit_log:
@@ -263,7 +263,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         """called when any error is thrown"""
-        l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'EventHandler')
+        l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'events')
 
         if isinstance(error, commands.CommandNotFound):
             pass
