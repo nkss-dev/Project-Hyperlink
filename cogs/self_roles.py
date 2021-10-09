@@ -139,24 +139,38 @@ class ButtonRoles(commands.Cog):
 
     @roles.command(aliases=['rm'])
     async def remove(self, ctx, ID: str):
-        """Remove a reaction role.
+        """Remove a button role.
 
         Parameters
         ------------
         `ID`: <class 'str'>
             The ID of the reaction to be removed.
         """
-        message_Id = self.c.execute(
-            'select Message_ID from buttons where Button_ID = "95s05"',
-            {'id': ID}
+        IDs = self.c.execute(
+            '''select v.Channel_ID, v.Message_ID from views v join buttons b
+            on v.Message_ID = b.Message_ID where b.Button_ID = ?''', (ID,)
         ).fetchone()
-        if not message_Id:
+        if not IDs:
             await ctx.reply(self.l10n.format_value('react-notfound', {'id': ID}))
             return
+        channel = ctx.guild.get_channel(IDs[0])
+        message = await channel.fetch_message(IDs[1])
 
-        self.c.execute('delete from buttons where Button_ID = "95s05"', {'id': ID})
-        item = discord.utils.get(self.views[message_Id[0]], custom_id=ID)
-        self.views[message_Id[0]].remove_item(item)
+        item = discord.utils.get(self.views[message.id].children, custom_id=ID)
+        self.views[message.id].remove_item(item)
+
+        self.c.execute('pragma foreign_keys = ON')
+
+        if not self.views[message.id].children:
+            await message.edit(view=None)
+            del self.views[message.id]
+            self.c.execute('delete from views where Message_ID = ?', (message.id,))
+        else:
+            await message.edit(view=self.views[message.id])
+            self.c.execute('delete from buttons where Button_ID = ?', (ID,))
+        self.conn.commit()
+
+        await ctx.reply(self.l10n.format_value('remove-success', {'id': ID}))
 
     async def load_views(self):
         views = self.c.execute(
