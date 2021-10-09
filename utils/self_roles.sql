@@ -9,6 +9,6 @@ create table if not exists buttons (
     Label text not null,
     Emoji text,
     Role_IDs text not null,
-    Message_ID text not null,
-    foreign key(Message_ID) references views(Message_ID) on update cascade
+    Message_ID int not null,
+    foreign key(Message_ID) references views(Message_ID) on update cascade on delete cascade
 );
