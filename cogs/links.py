@@ -42,7 +42,7 @@ class Links(commands.Cog):
         await commands.has_any_role(*manager_roles).predicate(ctx)
 
         channel = self.bot.get_channel(self.links[self.batch][self.section]['channel'])
-        if channel != ctx.channel:
+        if channel != ctx.channel and ctx.author != ctx.guild.owner:
             raise commands.CheckFailure('LinkProtection')
 
         self.l10n = get_l10n(ctx.guild.id, 'links')
@@ -95,7 +95,7 @@ class Links(commands.Cog):
         """Command group for links dashboard functionality"""
         await ctx.send_help(ctx.command)
 
-    @link.command(aliases=['r'])
+    @link.group(aliases=['r'], invoke_without_command=True)
     async def refresh(self, ctx):
         """Refresh an existing link embed in a dashboard.
 
@@ -113,6 +113,13 @@ class Links(commands.Cog):
 
         if ctx.guild.me.guild_permissions.manage_messages:
             await ctx.message.delete()
+
+    @refresh.command()
+    @commands.is_owner()
+    async def all(self, ctx):
+        """Refresh links in all given channels"""
+        await self.linkUpdateLoop()
+        await ctx.send(self.l10n.format_value('links-update-success'))
 
     @link.command()
     async def add(self, ctx, time: str, subject: str, *, link: str='Link unavailable'):
@@ -277,7 +284,9 @@ class Links(commands.Cog):
                         message = await channel.fetch_message(self.links[batch][section]['message'])
                     except discord.NotFound:
                         message = await channel.send('\u200b')
+                        self.links[batch][section]['message'] = message.id
                     await message.edit(embed=self.create(section, batch))
+        self.save()
 
     @linkUpdateLoop.before_loop
     async def delay(self):
