@@ -121,7 +121,7 @@ class Events(commands.Cog):
                     'update main set Guilds = (:guilds) where Discord_UID = (:uid)',
                     {'uid': member.id, 'guilds': guilds}
                 )
-                self.bot.conn.commit()
+                self.bot.db.commit()
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
@@ -224,14 +224,14 @@ class Events(commands.Cog):
                 'update main set Discord_UID = NULL, Guilds = "[]" where Discord_UID = (:uid)',
                 {'uid': member.id}
             )
-            self.bot.conn.commit()
+            self.bot.db.commit()
 
         else:
             self.bot.c.execute(
                 'update main set Guilds = (:guilds) where Discord_UID = (:uid)',
                 {'uid': member.id, 'guilds': json.dumps(guilds)}
             )
-            self.bot.conn.commit()
+            self.bot.db.commit()
 
         # Sends exit message to the server's channel
         if channel:

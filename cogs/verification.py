@@ -72,18 +72,19 @@ class Verify(commands.Cog):
 
     def checkCode(self, author_id: str, code: str) -> bool:
         """Check if the entered code matches the OTP"""
-        if self.codes[str(author_id)] == code:
-            del self.codes[str(author_id)]
-            self.save()
+        if not self.codes[str(author_id)] == code:
+            return False
 
-            # Marks user as verified in the database
-            self.bot.c.execute(
-                'update main set Verified = "True" where Discord_UID = (:uid)',
-                {'uid': author_id}
-            )
-            self.bot.conn.commit()
-            return True
-        return False
+        del self.codes[str(author_id)]
+        self.save()
+
+        # Marks user as verified in the database
+        self.bot.c.execute(
+            'update main set Verified = "True" where Discord_UID = (:uid)',
+            {'uid': author_id}
+        )
+        self.bot.db.commit()
+        return True
 
     @commands.group()
     @commands.guild_only()
@@ -212,7 +213,7 @@ class Verify(commands.Cog):
             'update main set Discord_UID = (:uid), Guilds = (:guilds) where Roll_Number = (:roll)',
             {'uid': ctx.author.id, 'roll': roll_no, 'guilds': guilds}
         )
-        self.bot.conn.commit()
+        self.bot.db.commit()
 
         first_name = tuple[2].split(' ', 1)[0].capitalize()
         await ctx.author.edit(nick=first_name)

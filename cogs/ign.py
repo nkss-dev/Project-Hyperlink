@@ -84,7 +84,7 @@ class IGN(commands.Cog):
             'update main set IGN = (:ign) where Discord_UID = (:uid)',
             {'ign': json.dumps(igns), 'uid': ctx.author.id}
         )
-        self.bot.conn.commit()
+        self.bot.db.commit()
 
         await ctx.reply(self.l10n.format_value('add-success', {'game': allowed_game}))
 
@@ -182,7 +182,7 @@ class IGN(commands.Cog):
                 'update main set IGN = "{}" where Discord_UID = (:uid)',
                 {'uid': ctx.author.id}
             )
-            self.bot.conn.commit()
+            self.bot.db.commit()
             await ctx.reply(self.l10n.format_value('remove-all-success'))
             return
 
@@ -201,7 +201,7 @@ class IGN(commands.Cog):
             'update main set IGN = (:ign) where Discord_UID = (:uid)',
             {'ign': json.dumps(igns), 'uid': ctx.author.id}
         )
-        self.bot.conn.commit()
+        self.bot.db.commit()
 
         await ctx.reply(self.l10n.format_value('remove-success', {'game': ign}))
 
