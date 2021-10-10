@@ -66,7 +66,7 @@ class ButtonRoles(commands.Cog):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles')
         return await self.bot.moderatorCheck(ctx)
 
-    @commands.group(name='self_role', aliases=['sr'], invoke_without_command=True)
+    @commands.group(name='button_role', aliases=['br'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.has_permissions(manage_roles=True)
     @commands.guild_only()
@@ -76,7 +76,7 @@ class ButtonRoles(commands.Cog):
 
     @roles.command()
     async def add(self, ctx, name: str, message: discord.Message, roles: commands.Greedy[discord.Role]):
-        """Add a reaction role.
+        """Add a button role.
 
         Parameters
         ------------
@@ -91,6 +91,10 @@ class ButtonRoles(commands.Cog):
         `roles`: List[discord.Role]
             The list of roles given when a user reacts.
         """
+        if message.author != self.bot.user:
+            await ctx.reply(self.l10n.format_value('message-author-not-self'))
+            return
+
         if not (reaction := self.emojis.get(name, None)):
             msg = await ctx.reply(self.l10n.format_value('react-message'))
 
@@ -135,7 +139,10 @@ class ButtonRoles(commands.Cog):
             name=self.l10n.format_value('react-success'),
             value=self.l10n.format_value('id', {'id': ID})
         )
-        await ctx.send(embed=embed)
+        try:
+            await msg.edit(content=None, embed=embed)
+        except NameError:
+            await ctx.send(embed=embed)
 
     @roles.command(aliases=['rm'])
     async def remove(self, ctx, ID: str):
@@ -264,7 +271,7 @@ class ReactionRoles(commands.Cog):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles')
         return await self.bot.moderatorCheck(ctx)
 
-    @commands.group(name='reactionrole', aliases=['rr'], invoke_without_command=True)
+    @commands.group(name='reaction_role', aliases=['rr'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.has_permissions(manage_roles=True)
     @commands.guild_only()
