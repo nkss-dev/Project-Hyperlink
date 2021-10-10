@@ -1,4 +1,5 @@
 import json
+import re
 
 from asyncio import TimeoutError
 from utils.l10n import get_l10n
@@ -38,7 +39,7 @@ class Verify(commands.Cog):
             'PI-A', 'PI-B'
         )
 
-    async def sendEmail(self, ctx, name: str, email: str):
+    async def sendEmail(self, ctx, name: str, email: str, manual=True):
         """Send a verification email to the given email"""
         await ctx.message.add_reaction(self.emojis['loading'])
 
@@ -52,13 +53,22 @@ class Verify(commands.Cog):
         msg['Subject'] = f'Verification of {ctx.author} in {ctx.guild}'
         msg['From'] = EMAIL
         msg['To'] = email
-        msg.set_content(
-            self.l10n.format_value(
-                'verify-email-HTML',
-                {'user': name, 'otp': otp, 'guild': ctx.guild.name, 'prefix': ctx.prefix}
-            ),
-            subtype='html'
-        )
+
+        if manual:
+            command = f'{ctx.clean_prefix}{ctx.command.parent} code {otp}'
+        else:
+            command = otp
+        vars = {
+            '{$user}': name,
+            '{$otp}': otp,
+            '{$guild}': ctx.guild.name,
+            '{$channel}': f'https://discord.com/channels/{ctx.guild.id}/{ctx.channel.id}',
+            '{$command}': command
+        }
+        with open('utils/verification.html') as f:
+            html = f.read()
+        html = re.sub('({\$\w+})', lambda x: vars[x.group(0)], html)
+        msg.set_content(html, subtype='html')
 
         # Sending the email
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
@@ -163,7 +173,7 @@ class Verify(commands.Cog):
             return
 
         if user := ctx.guild.get_member(tuple[5]):
-            await self.sendEmail(ctx, tuple[2].title().strip(), tuple[3])
+            await self.sendEmail(ctx, tuple[2].title().strip(), tuple[3], False)
             await ctx.reply(self.l10n.format_value('verify-basic-already-claimed', {'user': f'{user}', 'email': tuple[3]}))
 
             def check(msg):
