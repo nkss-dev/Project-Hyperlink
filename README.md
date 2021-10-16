@@ -4,7 +4,7 @@ A moderation bot made specifically to be used in NITKKR-only servers.
 
 ## Running a local instance
 
-Preferably, you would want to just invite [my instance](https://discord.com/api/oauth2/authorize?client_id=789474485555953694&permissions=275834711254&scope=bot "Bot's invite link") of the bot. That way you get a bot that's always online and has all the latest updates as they roll out (or even earlier).
+Ideally, you'd invite [my instance](https://discord.com/api/oauth2/authorize?client_id=789474485555953694&permissions=275834711254&scope=bot "Bot's invite link") of the bot. This allows it to always stay online and receive updates as they roll out.
 
 Nevertheless, here are the installation steps:
 
