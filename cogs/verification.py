@@ -1,3 +1,4 @@
+import config
 import json
 import re
 
@@ -11,9 +12,6 @@ from discord import utils
 import smtplib
 from email.message import EmailMessage
 
-import os
-from dotenv import load_dotenv
-load_dotenv()
 
 def basicVerificationCheck(ctx):
     return ctx.bot.basicVerificationCheck(ctx)
@@ -43,15 +41,12 @@ class Verify(commands.Cog):
         """Send a verification email to the given email"""
         await ctx.message.add_reaction(self.emojis['loading'])
 
-        # Setting variables for the email
-        EMAIL = os.environ['EMAIL']
-        PASSWORD = os.environ['PASSWORD']
         otp = generateID(seed='01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
         # Creating the email
         msg = EmailMessage()
         msg['Subject'] = f'Verification of {ctx.author} in {ctx.guild}'
-        msg['From'] = EMAIL
+        msg['From'] = config.email
         msg['To'] = email
 
         if manual:
@@ -72,7 +67,7 @@ class Verify(commands.Cog):
 
         # Sending the email
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL, PASSWORD)
+            smtp.login(config.email, config.password_token)
             smtp.send_message(msg)
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)

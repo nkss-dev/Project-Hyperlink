@@ -1,4 +1,6 @@
-.env
-db/
+/config.py
+
 __pycache__/
 boards/
+db/
+venv/
