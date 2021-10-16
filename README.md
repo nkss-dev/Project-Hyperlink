@@ -1,25 +1,22 @@
-# Project-Hyperlink
-A moderation bot made specifically to be used in NITKKR-only servers
+# Project Hyperlink
 
-## Prerequisites
-- Python 3.9+
-- discord.py 2.0
-- fluent.runtime
-- [googleapiclient](https://developers.google.com/docs/api/quickstart/python) (for [drive.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/drive.py))
-- Pillow
-- python.dotenv
-- pytz
+A moderation bot made specifically to be used in NITKKR-only servers.
 
 ## Running a local instance
 
-### In [.env.sample](https://github.com/GetPsyched/Project-Hyperlink/blob/main/.env.sample)
-- Rename `.env.sample` to `.env`
-- Replace `<bot-token>` with your bot token
-- Replace `<ID>` with any user ID that you want to be added as a bot owner
-    - Remove any extra `<ID>` placeholder
-    - Trailing commas are not allowed
-- If you choose to use [verification.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/verification.py):
-    - Replace `<email-here>` with the Google email with which you want the verification emails to be sent
-    - Replace `<password-token-here>` with the password token of said email given by Google after turning on Developer Mode from [here](https://support.google.com/a/answer/10621196?hl=en)
-- If you choose to use [drive.py](https://github.com/GetPsyched/Project-Hyperlink/blob/main/cogs/drive.py):
-    - Follow the instructions given [here](https://developers.google.com/drive/api/v3/quickstart/python) and store the resultant json file in the `db` folder (generated automatically after the bot is run at least once) and rename it to `credentials.json`
+Preferably, you would want to just invite [my instance](https://discord.com/api/oauth2/authorize?client_id=789474485555953694&permissions=275834711254&scope=bot "Bot's invite link") of the bot. That way you get a bot that's always online and has all the latest updates as they roll out (or even earlier).
+
+Nevertheless, here are the installation steps:
+
+1. **Ensure that you have Python 3.9 or higher.**
+
+2. **Set up the virtual environment:** `python 3.9 -m venv venv`<br>
+    Activate it using: `source venv/bin/activate`
+
+3. **Install the dependencies:** `pip install -U -r requirements.txt`
+
+4. **Setup configuration:**<br>
+    Rename the `config-sample.py` file in the root directory to `config.py` and populate it with the corresponding values.
+
+5. **For [drive.py](cogs/drive.py "Queries a linked Google Drive"):**<br>
+    Follow the instructions given [here](https://developers.google.com/drive/api/v3/quickstart/python "Setup instructions for the Google Drive API in Python") and store the resultant `.json` file in the `db` folder (generated automatically after the bot is run at least once) and rename it to `credentials.json`
