@@ -1,13 +1,12 @@
 import json
-from utils.l10n import get_l10n
-from utils.utils import yesOrNo
+import os
 
 import discord
 from discord.ext import commands
 
-import os
-from dotenv import load_dotenv
-load_dotenv()
+from utils.l10n import get_l10n
+from utils.utils import yesOrNo
+
 
 class OwnerOnly(commands.Cog):
     """Bot owner commands"""
@@ -88,12 +87,23 @@ class OwnerOnly(commands.Cog):
         Paramters
         -----------
         `filenames`: Optional[list[str]]
-            A list of file names of the files to archive. If not specified, all \
-            files in the database folder will be archived.
+            A list of file names of the files to archive. If not specified, \
+            all files in the database folder will be archived.
         """
-        if isinstance(ctx.channel, discord.TextChannel):
-            members = [member for member in ctx.channel.members if not member.bot]
-            if len(members) > 1:
+        if isinstance(ctx.channel, (discord.TextChannel, discord.Thread)):
+            members_exist = False
+            if isinstance(ctx.channel, discord.Thread):
+                for member in await ctx.channel.fetch_members():
+                    if not ctx.guild.get_member(member.id).bot and member.id != ctx.author.id:
+                        members_exist = True
+                        break
+            else:
+                for member in ctx.channel.members:
+                    if not member.bot:
+                        members_exist = True
+                        break
+
+            if members_exist:
                 message = await ctx.reply(self.l10n.format_value('reveal-check'))
                 if not await yesOrNo(ctx, message):
                     await ctx.send(self.l10n.format_value('archive-cancel'))
@@ -160,6 +170,7 @@ class OwnerOnly(commands.Cog):
             os.remove(f'db/{filename}')
 
         await ctx.send(self.l10n.format_value('remove-success'))
+
 
 def setup(bot):
     """Called when this file is attempted to be loaded as an extension"""
