@@ -99,29 +99,18 @@ class Events(commands.Cog):
             return
 
         tuple = self.bot.c.execute(
-            'select Section, SubSection, Guilds, Verified from main where Discord_UID = (:uid)',
-            {'uid': member.id}
+            'select Section, SubSection, Verified from main where Discord_UID = ?',
+            (member.id,)
         ).fetchone()
 
         if tuple:
-            if tuple[3] == 'True':
-                # Adding the guild ID to the user's details
-                guilds = json.loads(tuple[2])
-                if guild.id not in guilds:
-                    guilds.append(guild.id)
-                guilds = json.dumps(guilds)
-
+            if tuple[2] == 'True':
                 # Assigning Section and Sub-Section roles to the user
-                role = discord.utils.get(guild.roles, name = tuple[0])
-                await member.add_roles(role)
-                role = discord.utils.get(guild.roles, name = tuple[1])
-                await member.add_roles(role)
+                if role := discord.utils.get(guild.roles, name=tuple[0]):
+                    await member.add_roles(role)
+                if role := discord.utils.get(guild.roles, name=tuple[1]):
+                    await member.add_roles(role)
 
-                self.bot.c.execute(
-                    'update main set Guilds = (:guilds) where Discord_UID = (:uid)',
-                    {'uid': member.id, 'guilds': guilds}
-                )
-                self.bot.db.commit()
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
@@ -214,22 +203,12 @@ class Events(commands.Cog):
                 await channel.send(l10n.format_value('leave-verification-notfound', keys))
             return
 
-        # Removing the guild ID from the user's details
-        guilds = json.loads(tuple[0])
-        guilds.remove(guild.id)
-
-        # Removing the user's entry if they don't share any guild with the bot and are not verified
-        if tuple[1] == 'False' and not guilds:
+        # Removing the user's entry if they don't share
+        # any guild with the bot and are not verified
+        if verified[0] == 'False':
             self.bot.c.execute(
-                'update main set Discord_UID = NULL, Guilds = "[]" where Discord_UID = (:uid)',
-                {'uid': member.id}
-            )
-            self.bot.db.commit()
-
-        else:
-            self.bot.c.execute(
-                'update main set Guilds = (:guilds) where Discord_UID = (:uid)',
-                {'uid': member.id, 'guilds': json.dumps(guilds)}
+                'update main set Discord_UID = null where Discord_UID = ?',
+                (member.id,)
             )
             self.bot.db.commit()
 

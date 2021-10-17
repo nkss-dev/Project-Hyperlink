@@ -10,7 +10,6 @@ create table if not exists main (
     Hostel_Number int,
     Room_Number text,
     Discord_UID integer unique,
-    Guilds text default '[]',
     Verified text default 'False',
     IGN text default '{}'
 );

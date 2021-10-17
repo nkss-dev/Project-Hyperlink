@@ -134,15 +134,14 @@ class Verify(commands.Cog):
             The roll number of the student.
         """
         tuple = self.bot.c.execute(
-            'select Section, Subsection, Name, Institute_Email, Batch, Discord_UID, Guilds from main where Roll_Number = (:roll)',
-            {'roll': roll_no}
+            'select Section, Subsection, Name, Institute_Email, Batch, Discord_UID from main where Roll_Number = ?',
+            (roll_no,)
         ).fetchone()
 
         if not tuple:
             await ctx.reply(self.l10n.format_value('verify-basic-record-notfound'))
             return
 
-        override = False
         if details := self.bot.guild_data[str(ctx.guild.id)].get('verification'):
             if tuple[4] != details['batch']:
                 await ctx.reply(self.l10n.format_value(
@@ -157,8 +156,8 @@ class Verify(commands.Cog):
             try:
                 message = await self.bot.wait_for(
                     'message', timeout=60.0, check=check_owner)
-                if message.content.lower() == 'override':
-                    override = True
+                if message.content.lower() != 'override':
+                    return
             except TimeoutError:
                 return
 
@@ -211,19 +210,13 @@ class Verify(commands.Cog):
         await ctx.reply(self.l10n.format_value('verify-basic-success'))
 
         # Removing restricting role
-        role_id = self.bot.guild_data[str(ctx.guild.id)]['verification']['role']
-        if role := ctx.guild.get_role(role_id):
-            await ctx.author.remove_roles(role)
-
-        # Input changes to the database
-        guilds = json.loads(tuple[6])
-        if not override and ctx.guild.id not in guilds:
-            guilds.append(ctx.guild.id)
-        guilds = json.dumps(guilds)
+        if ids := self.bot.guild_data[str(ctx.guild.id)].get('verification'):
+            if role := ctx.guild.get_role(ids['role']):
+                await ctx.author.remove_roles(role)
 
         self.bot.c.execute(
-            'update main set Discord_UID = (:uid), Guilds = (:guilds) where Roll_Number = (:roll)',
-            {'uid': ctx.author.id, 'roll': roll_no, 'guilds': guilds}
+            'update main set Discord_UID = (:uid) where Roll_Number = (:roll)',
+            {'uid': ctx.author.id, 'roll': roll_no}
         )
         self.bot.db.commit()
 
