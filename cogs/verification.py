@@ -6,8 +6,8 @@ from asyncio import TimeoutError
 from utils.l10n import get_l10n
 from utils.utils import generateID
 
+import discord
 from discord.ext import commands
-from discord import utils
 
 import smtplib
 from email.message import EmailMessage
@@ -15,6 +15,7 @@ from email.message import EmailMessage
 
 def basicVerificationCheck(ctx):
     return ctx.bot.basicVerificationCheck(ctx)
+
 
 class Verify(commands.Cog):
     """Verification management"""
@@ -53,7 +54,7 @@ class Verify(commands.Cog):
             command = f'{ctx.clean_prefix}{ctx.command.parent} code {otp}'
         else:
             command = otp
-        vars = {
+        variables = {
             '{$user}': name,
             '{$otp}': otp,
             '{$guild}': ctx.guild.name,
@@ -62,7 +63,7 @@ class Verify(commands.Cog):
         }
         with open('utils/verification.html') as f:
             html = f.read()
-        html = re.sub('({\$\w+})', lambda x: vars[x.group(0)], html)
+        html = re.sub(r'({\$\w+})', lambda x: variables[x.group(0)], html)
         msg.set_content(html, subtype='html')
 
         # Sending the email
@@ -144,69 +145,75 @@ class Verify(commands.Cog):
         override = False
         if details := self.bot.guild_data[str(ctx.guild.id)].get('verification'):
             if tuple[4] != details['batch']:
-                await ctx.reply(self.l10n.format_value('incorrect-server', {'batch': int(tuple[4])}))
+                await ctx.reply(self.l10n.format_value(
+                        'incorrect-server', {'batch': int(tuple[4])}))
                 return
         else:
             await ctx.reply(self.l10n.format_value('server-not-allowed'))
 
-            def check(msg):
+            def check_owner(msg):
                 return msg.author.id in self.bot.owner_ids and msg.channel == ctx.channel
 
             try:
-                message = await self.bot.wait_for('message', timeout=60.0, check=check)
+                message = await self.bot.wait_for(
+                    'message', timeout=60.0, check=check_owner)
                 if message.content.lower() == 'override':
                     override = True
             except TimeoutError:
                 return
 
         if section not in self.sections:
-            await ctx.reply(self.l10n.format_value('verify-basic-section-notfound', {'section': section}))
+            await ctx.reply(self.l10n.format_value(
+                    'verify-basic-section-notfound', {'section': section}))
             return
 
         if section != tuple[0]:
-            await ctx.reply(self.l10n.format_value('verify-basic-section-mismatch'))
+            await ctx.reply(
+                self.l10n.format_value('verify-basic-section-mismatch'))
             return
 
         if user := ctx.guild.get_member(tuple[5]):
             await self.sendEmail(ctx, tuple[2].title().strip(), tuple[3], False)
-            await ctx.reply(self.l10n.format_value('verify-basic-already-claimed', {'user': f'{user}', 'email': tuple[3]}))
+            await ctx.reply(self.l10n.format_value(
+                    'verify-basic-already-claimed',
+                    {'user': f'{user}', 'email': tuple[3]}))
 
             def check(msg):
                 return msg.author == ctx.author and msg.channel == ctx.channel
 
             while True:
                 try:
-                    ctx.message = await self.bot.wait_for('message', timeout=120.0, check=check)
+                    ctx.message = await self.bot.wait_for(
+                        'message', timeout=120.0, check=check)
                     if self.checkCode(ctx.author.id, ctx.message.content):
                         self.bot.c.execute(
                             'update main set Verified = "True" where Roll_Number = (:roll)',
                             {'roll': roll_no}
                         )
-                        await user.kick(reason=self.l10n.format_value('member-kick-old', {'user': ctx.author.mention}))
+                        await user.kick(reason=self.l10n.format_value(
+                                'member-kick-old',
+                                {'user': ctx.author.mention}))
                         break
 
-                    await ctx.reply(self.l10n.format_value('verify-code-retry', {'code': ctx.message.content}))
+                    await ctx.reply(self.l10n.format_value(
+                            'verify-code-retry',
+                            {'code': ctx.message.content}))
                 except TimeoutError:
                     await ctx.send(self.l10n.format_value('react-timeout'))
                     return
 
         # Assigning section/sub-section roles to the user
-        try:
-            role = utils.get(ctx.guild.roles, name=tuple[0])
+        if role := discord.utils.get(ctx.guild.roles, name=tuple[0]):
             await ctx.author.add_roles(role)
-            role = utils.get(ctx.guild.roles, name=tuple[1])
+        if role := discord.utils.get(ctx.guild.roles, name=tuple[1]):
             await ctx.author.add_roles(role)
-        except:
-            pass
 
         await ctx.reply(self.l10n.format_value('verify-basic-success'))
 
         # Removing restricting role
-        try:
-            role = utils.get(ctx.guild.roles, name='Not-Verified')
+        role_id = self.bot.guild_data[str(ctx.guild.id)]['verification']['role']
+        if role := ctx.guild.get_role(role_id):
             await ctx.author.remove_roles(role)
-        except:
-            pass
 
         # Input changes to the database
         guilds = json.loads(tuple[6])
@@ -246,7 +253,7 @@ class Verify(commands.Cog):
 
         await ctx.reply(self.l10n.format_value('verify-check-email', {'prefix': ctx.prefix}))
 
-    @verify.command(brief='Used to input OTP that the user received in order to verify their email')
+    @verify.command()
     @commands.check(basicVerificationCheck)
     async def code(self, ctx, code: str):
         """Check if the inputted code matches the sent OTP.
@@ -269,6 +276,7 @@ class Verify(commands.Cog):
         """Save the data to a json file"""
         with open('db/codes.json', 'w') as f:
             json.dump(self.codes, f)
+
 
 def setup(bot):
     """Called when this file is attempted to be loaded as an extension"""
