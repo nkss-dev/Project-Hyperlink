@@ -28,7 +28,7 @@ async def on_ready():
 
 @client.before_invoke
 async def bracketCheck(ctx):
-    if re.search(r'<.+>', ctx.message.content):
+    if re.search(r'<[^#@].+>', ctx.message.content):
         raise commands.CheckFailure('AngularBracketsNotAllowed')
 
 client.run(config.bot_token)
