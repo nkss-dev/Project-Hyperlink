@@ -48,7 +48,8 @@ class Links(commands.Cog):
         self.l10n = get_l10n(ctx.guild.id, 'links')
         return True
 
-    def _replaceRoleTags(self, roles: list[discord.Role], string: str) -> str:
+    @staticmethod
+    def replace_role_tags(roles: list[discord.Role], string: str) -> str:
         if role_IDs := re.findall('@[CEIMP][CEIST]-0[1-9]', string, flags=re.I):
             for role_ID in role_IDs:
                 try:
@@ -70,7 +71,7 @@ class Links(commands.Cog):
         times = [date]
 
         for lecture in timetable:
-            link = self._replaceRoleTags(guild.roles, lecture['link'])
+            link = self.replace_role_tags(guild.roles, lecture['link'])
 
             if not getURLs(link):
                 link += self.l10n.format_value('link-notfound')
@@ -170,7 +171,11 @@ class Links(commands.Cog):
             return
 
         if not embed.fields:
-            embed.add_field(name=f'{subject} ({time}):', value=link, inline=False)
+            embed.add_field(
+                name=f'{subject} ({time}):',
+                value=link,
+                inline=False
+            )
             embed.remove_footer()
 
         exists = False
@@ -181,7 +186,13 @@ class Links(commands.Cog):
                     value = f"{field.value.split(':')[0]}: {link}"
                 else:
                     value = link
-                embed.set_field_at(i, name=field.name, value=value, inline=False)
+                embed.set_field_at(
+                    i,
+                    name=field.name,
+                    value=value,
+                    inline=False
+                )
+                break
 
         if not exists:
             times = []
@@ -189,14 +200,23 @@ class Links(commands.Cog):
                 if match := re.search('\d{1,2}:\d{2}[AP]M', field.name):
                     times.append((i, datetime.strptime(match.group(0), '%I:%M%p')))
 
+            inserted = False
             for i, class_time in times:
                 if time_obj < class_time:
+                    inserted = True
                     embed.insert_field_at(
                         i,
                         name=f'{subject} ({time}):',
-                        value=self._replaceRoleTags(message.guild.roles, link)
+                        value=self.replace_role_tags(message.guild.roles, link)
                     )
                     break
+
+            if not inserted:
+                embed.add_field(
+                    name=f'{subject} ({time}):',
+                    value=self.replace_role_tags(message.guild.roles, link),
+                    inline=False
+                )
 
         await message.edit(embed=embed)
         if ctx.guild.me.guild_permissions.manage_messages:
