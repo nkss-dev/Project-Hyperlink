@@ -2,6 +2,7 @@ import json
 import os
 import sqlite3
 
+
 class Constructor():
     def __init__(self, client):
         print(f'Logged in as {client.user} (ID: {client.user.id})')
@@ -13,8 +14,8 @@ class Constructor():
 
         self.client = client
         self.funcs = (
-            self.boards, self.codes, self.emojis, self.games, self.guilds,
-            self.links, self.muted, self.VCs, self.self_roles, self.sql_databases
+            self.sql_databases, self.boards, self.codes, self.emojis,
+            self.guilds, self.links, self.muted, self.VCs, self.self_roles
         )
         for func in self.funcs:
             func()
@@ -60,16 +61,6 @@ class Constructor():
             }
             with open('db/emojis.json', 'w') as f:
                 json.dump(emojis, f)
-
-    @staticmethod
-    def games():
-        """Create games.json"""
-        try:
-            with open('db/games.json') as f:
-                json.load(f)
-        except FileNotFoundError:
-            with open('db/games.json', 'w') as f:
-                json.dump([], f)
 
     def guilds(self):
         """Create guilds.json"""

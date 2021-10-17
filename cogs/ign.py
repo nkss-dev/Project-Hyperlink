@@ -1,10 +1,11 @@
-import json
-from utils.l10n import get_l10n
+import sqlite3
+from typing import Optional
 
 import discord
 from discord.ext import commands
 
-from typing import Optional
+from utils.l10n import get_l10n
+
 
 class IGN(commands.Cog):
     """Store IGNs for games"""
@@ -12,16 +13,28 @@ class IGN(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        with open('db/games.json') as f:
-            self.games = json.load(f)
+    def get_IGNs(self, author_id: int) -> sqlite3.Cursor:
+        """Return the IGNs of the given user"""
+        cursor = self.bot.c.execute(
+            'select * from ign where Discord_UID = ?', (author_id,)
+        )
+        return cursor
 
-    def getIGNs(self, author_id: int) -> dict[str, str]:
-        """return the IGNs for the given user"""
-        igns = self.bot.c.execute(
-            'select IGN from main where Discord_UID = (:uid)',
-            {'uid': author_id}
-        ).fetchone()[0]
-        return json.loads(igns)
+    async def exists(self, ctx, game) -> Optional[str]:
+        """Check if entered game exists in the database"""
+        flag = False
+        for _game in self.get_IGNs(ctx.author.id).description[1:]:
+            if game.lower() == _game[0].lower():
+                flag = True
+                break
+        if not flag:
+            content = self.l10n.format_value(
+                'game-notfound',
+                {'game': game, 'cmd': f'{ctx.clean_prefix}{ctx.command.parent}'}
+            )
+            await ctx.reply(content)
+            return None
+        return _game[0]
 
     async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'ign')
@@ -34,18 +47,17 @@ class IGN(commands.Cog):
         This is also the parent command to perform any read/write operations \
         to any of the user's IGNs.
         """
-        if not self.games:
+        games = self.bot.c.execute(
+            'select * from ign where Discord_UID = null'
+        ).description[1:]
+        if not games:
             await ctx.reply(self.l10n.format_value('game-list-notfound'))
             return
 
-        msg = ''
-        for game in self.games:
-            msg += f'\n{game}'
-
         embed = discord.Embed(
-            title = self.l10n.format_value('game-list'),
-            description = msg,
-            color = discord.Color.blurple()
+            title=self.l10n.format_value('game-list'),
+            description='\n'.join([game[0] for game in games]),
+            color=discord.Color.blurple()
         )
         await ctx.send(embed=embed)
 
@@ -65,31 +77,30 @@ class IGN(commands.Cog):
             it is a string (yes, a link too). However, this cannot contain \
             tags like user/role mentions or `@everyone` and `@here`.
         """
-        flag = False
-        for allowed_game in self.games:
-            if game.lower() == allowed_game.lower():
-                flag = True
-                break
-        if not flag:
-            await ctx.reply(self.l10n.format_value('game-notfound', {'game': game, 'prefix': ctx.prefix}))
+        if not (game := await self.exists(ctx, game)):
             return
 
-        if '@everyone' in ign or '@here' in ign:
-            await ctx.reply(self.l10n.format_value('nice-try'))
+        if ctx.message.mentions:
+            await ctx.reply(self.l10n.format_value('mentions-not-allowed'))
             return
 
-        igns = self.getIGNs(ctx.author.id)
-        igns[allowed_game] = ign
-        self.bot.c.execute(
-            'update main set IGN = (:ign) where Discord_UID = (:uid)',
-            {'ign': json.dumps(igns), 'uid': ctx.author.id}
-        )
+        exists = self.get_IGNs(ctx.author.id).fetchone()
+        if not exists:
+            self.bot.c.execute(
+                f'insert into ign (Discord_UID, {game}) values(?,?)',
+                (ctx.author.id, ign,)
+            )
+        else:
+            self.bot.c.execute(
+                f'update ign set {game} = ? where Discord_UID = ?',
+                (ign, ctx.author.id,)
+            )
         self.bot.db.commit()
 
-        await ctx.reply(self.l10n.format_value('add-success', {'game': allowed_game}))
+        await ctx.reply(self.l10n.format_value('add-success', {'game': game}))
 
     @ign.command()
-    async def show(self, ctx, user: Optional[discord.Member], *, game: str=None):
+    async def show(self, ctx, user: Optional[discord.Member], *, game: str = None):
         """Show the IGN(s) of a user.
 
         Displays one or all IGNs of the author of the command or of the \
@@ -107,62 +118,82 @@ class IGN(commands.Cog):
             Displays all the stored IGNs if not specified.
         """
         member = user or ctx.author
-
         oneself = ctx.author == member
+        if ctx.guild:
+            color = member.top_role.color
+        else:
+            color = discord.Color.blurple()
 
-        igns = self.getIGNs(member.id)
-        if not igns:
+        cursor = self.get_IGNs(member.id)
+        if not (igns := cursor.fetchone()):
             if oneself:
-                await ctx.reply(self.l10n.format_value('self-igns-notfound', {'prefix': ctx.prefix}))
+                await ctx.reply(self.l10n.format_value(
+                        'self-igns-notfound',
+                        {'cmd': ctx.clean_prefix + ctx.command.parent.name}))
             else:
                 embed = discord.Embed(
-                    description = self.l10n.format_value('other-igns-notfound', {'member': member.mention}),
-                    color = member.top_role.color if ctx.guild else discord.Color.blurple()
+                    description=self.l10n.format_value(
+                        'other-igns-notfound', {'member': member.mention}),
+                    color=color
                 )
                 await ctx.reply(embed=embed)
             return
 
         if game:
-            flag = False
-            for ign in igns:
-                if game.lower() == ign.lower():
-                    flag = True
-                    break
-            if flag:
-                embed = discord.Embed(
-                    description = igns[ign],
-                    color = member.top_role.color if ctx.guild else discord.Color.blurple()
+            try:
+                ign = self.bot.c.execute(
+                    f'select {game} from ign where Discord_UID = ?',
+                    (member.id,)
+                ).fetchone()
+            except sqlite3.OperationalError:
+                content = self.l10n.format_value(
+                    'game-notfound',
+                    {'game': game, 'cmd': f'{ctx.clean_prefix}{ctx.command.parent}'}
                 )
+                await ctx.reply(content)
+                return
+            if ign and ign[0]:
+                embed = discord.Embed(description=ign[0], color=color)
                 await ctx.reply(embed=embed)
             elif oneself:
-                await ctx.reply(self.l10n.format_value('self-ign-notfound', {'game': game}))
+                await ctx.reply(self.l10n.format_value(
+                        'self-ign-notfound', {'game': game}))
             else:
                 embed = discord.Embed(
-                    description = self.l10n.format_value('other-ign-notfound', {'member': member.mention, 'game': game}),
-                    color = member.top_role.color if ctx.guild else discord.Color.blurple()
+                    description=self.l10n.format_value(
+                        'other-ign-notfound',
+                        {'member': member.mention, 'game': game}
+                    ),
+                    color=color
                 )
                 await ctx.reply(embed=embed)
             return
 
-        ign = ''
-        for game in igns:
-            ign += f'\n**{game}:** {igns[game]}'
+        user_igns = []
+        for game, ign in zip(cursor.description[1:], igns[1:]):
+            if ign:
+                user_igns.append(f'**{game[0]}:** {ign}')
+
         embed = discord.Embed(
-            title = self.l10n.format_value('igns-title', {'member': f'{member}'}),
-            description = ign,
-            color = member.top_role.color if ctx.guild else discord.Color.blurple()
+            title=self.l10n.format_value(
+                'igns-title', {'member': f'{member}'}
+            ),
+            description='\n'.join(user_igns),
+            color=color
         )
-        embed.set_thumbnail(url=member.avatar.url)
+        embed.set_thumbnail(url=member.display_avatar.url)
         if not oneself:
             embed.set_footer(
-                text=self.l10n.format_value('request', {'author': f'{ctx.author}'}),
+                text=self.l10n.format_value(
+                    'request', {'author': f'{ctx.author}'}
+                ),
                 icon_url=ctx.author.avatar.url
             )
 
         await ctx.send(embed=embed)
 
-    @ign.command(aliases=['del'])
-    async def delete(self, ctx, game: str=None):
+    @ign.command(aliases=['del', 'remove', 'rm'])
+    async def delete(self, ctx, game: str = None):
         """Delete an IGN for the given game or all games.
 
         Parameters
@@ -172,39 +203,48 @@ class IGN(commands.Cog):
             and can only contain a game that has a corresponding IGN for the user.
             If this is left blank, all the stored IGNs are deleted.
         """
-        igns = self.getIGNs(ctx.author.id)
-        if not igns:
-            await ctx.reply(self.l10n.format_value('self-igns-notfound'))
+        cursor = self.get_IGNs(ctx.author.id)
+        if not (igns := cursor.fetchone()):
+            await ctx.reply(self.l10n.format_value(
+                    'self-igns-notfound',
+                    {'cmd': f'{ctx.clean_prefix}{ctx.command.parent}'}))
             return
 
         if not game:
             self.bot.c.execute(
-                'update main set IGN = "{}" where Discord_UID = (:uid)',
-                {'uid': ctx.author.id}
+                'delete from ign where Discord_UID = ?', (ctx.author.id,)
             )
             self.bot.db.commit()
             await ctx.reply(self.l10n.format_value('remove-all-success'))
             return
 
-        flag = False
-        for ign in igns:
-            if game.lower() == ign.lower():
-                flag = True
-                break
-        if flag:
-            igns.pop(ign)
-        else:
-            await ctx.reply(self.l10n.format_value('self-ign-notfound', {'ign': game}))
+        if not (game := await self.exists(ctx, game)):
             return
 
-        self.bot.c.execute(
-            'update main set IGN = (:ign) where Discord_UID = (:uid)',
-            {'ign': json.dumps(igns), 'uid': ctx.author.id}
-        )
-        self.bot.db.commit()
+        ign = self.bot.c.execute(
+            f'select {game} from ign where Discord_UID = ?', (ctx.author.id,)
+        ).fetchone()
+        if ign and ign[0]:
+            igns = (ign for ign in igns[1:] if ign)
+            if len(igns) > 1:
+                self.bot.c.execute(
+                    f'update ign set {game} = null where Discord_UID = ?',
+                    (ctx.author.id,)
+                )
+            else:
+                self.bot.c.execute(
+                    'delete from ign where Discord_UID = ?', (ctx.author.id,)
+                )
+            self.bot.db.commit()
+            await ctx.reply(
+                self.l10n.format_value('remove-success', {'game': game})
+            )
+        else:
+            await ctx.reply(
+                self.l10n.format_value('self-ign-notfound', {'game': game})
+            )
 
-        await ctx.reply(self.l10n.format_value('remove-success', {'game': ign}))
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(IGN(bot))

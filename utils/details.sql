@@ -10,8 +10,26 @@ create table if not exists main (
     Hostel_Number int,
     Room_Number text,
     Discord_UID integer unique,
-    Verified text default 'False',
-    IGN text default '{}'
+    Verified text default 'False'
+);
+
+create table if not exists ign (
+    `Discord_UID`     int primary key not null,
+    `Chess`           text,
+    `Clash of Clans`  text,
+    `Clash Royale`    text,
+    `Call of Duty`    text,
+    `CSGO`            text,
+    `Fortnite`        text,
+    `Genshin Impact`  text,
+    `GTAV`            text,
+    `Minecraft`       text,
+    `osu!`            text,
+    `Paladins`        text,
+    `PUBG`            text,
+    `Rocket League`   text,
+    `Valorant`        text,
+    foreign key(Discord_UID) references main(Discord_UID)
 );
 
 create table if not exists voltorb (
