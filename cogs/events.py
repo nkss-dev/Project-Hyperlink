@@ -1,11 +1,12 @@
 import json
-from utils.l10n import get_l10n
-
+import re
 from datetime import datetime, timedelta
-from re import fullmatch
 
 import discord
 from discord.ext import commands
+
+from utils.l10n import get_l10n
+
 
 class Events(commands.Cog):
     """Handle events"""
@@ -19,56 +20,58 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        """called when a message is sent"""
-        if not fullmatch(f'<@!?{self.bot.user.id}>', message.content):
+        """Called when a message is sent"""
+        if not re.fullmatch(f'<@!?{self.bot.user.id}>', message.content):
             return
 
         l10n = get_l10n(message.guild.id if message.guild else 0, 'events')
 
         embed = discord.Embed(
-            title = l10n.format_value('details-title'),
-            color = discord.Color.blurple()
+            title=l10n.format_value('details-title'),
+            color=discord.Color.blurple()
         )
 
         if message.guild:
             prefixes = self.bot.guild_data[str(message.guild.id)]['prefix']
+            p_list = [f'{i+1}. {prefix}' for i, prefix in enumerate(prefixes)]
             embed.add_field(
-                name = l10n.format_value('prefix'),
-                value = '\n'.join([f'{i+1}. {prefix}' for i, prefix in enumerate(prefixes)]),
-                inline = False
+                name=l10n.format_value('prefix'),
+                value='\n'.join(p_list),
+                inline=False
             )
         else:
-            embed.add_field(name=l10n.format_value('prefix'), value='%', inline=False)
+            embed.add_field(
+                name=l10n.format_value('prefix'), value='%', inline=False)
 
         delta_uptime = datetime.utcnow() - self.bot.launch_time
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
         embed.add_field(
-            name = l10n.format_value('uptime'),
-            value = f'{days}d, {hours}h, {minutes}m, {seconds}s',
-            inline = False
+            name=l10n.format_value('uptime'),
+            value=f'{days}d, {hours}h, {minutes}m, {seconds}s',
+            inline=False
         )
 
-        ping_msg = await message.channel.send(l10n.format_value('ping-initiate'))
+        ping = await message.channel.send(l10n.format_value('ping-initiate'))
         start = datetime.utcnow()
-        await ping_msg.edit(content=l10n.format_value('ping-calc'))
+        await ping.edit(content=l10n.format_value('ping-calc'))
         delta_uptime = (datetime.utcnow() - start)
 
         embed.add_field(
-            name = l10n.format_value('ping-r-latency'),
-            value = f'```{int(delta_uptime.total_seconds()*1000)}ms```'
+            name=l10n.format_value('ping-r-latency'),
+            value=f'```{int(delta_uptime.total_seconds()*1000)}ms```'
         )
         embed.add_field(
-            name = l10n.format_value('ping-w-latency'),
-            value = f'```{int(self.bot.latency*1000)}ms```'
+            name=l10n.format_value('ping-w-latency'),
+            value=f'```{int(self.bot.latency*1000)}ms```'
         )
 
-        await ping_msg.edit(content=None, embed=embed)
+        await ping.edit(content=None, embed=embed)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        """called when a member joins a guild"""
+        """Called when a member joins a guild"""
         guild = member.guild
 
         details = self.bot.guild_data[str(guild.id)]
@@ -88,14 +91,15 @@ class Events(commands.Cog):
                 await member.send(dm.replace('{server}', guild.name))
 
             # Gives roles to the new user
-            for role in details['roles']['join']:
-                if new_role := guild.get_role(role):
-                    await member.add_roles(new_role)
+            for role_id in details['roles']['join']:
+                if role := guild.get_role(role_id):
+                    await member.add_roles(role)
                 else:
-                    self.bot.guild_data[str(guild.id)]['roles']['join'].remove(role)
-                    self.save()
+                    details['roles']['join'].remove(role_id)
+            self.bot.guild_data[str(guild.id)] = details
+            self.save()
 
-        if not details.get('verification'):
+        if not (details := details.get('verification')):
             return
 
         tuple = self.bot.c.execute(
@@ -114,34 +118,34 @@ class Events(commands.Cog):
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
-            instruction = self.bot.get_channel(details['verification']['instruction'])
-            command = self.bot.get_channel(details['verification']['command'])
+            instruction = self.bot.get_channel(details['instruction'])
+            command = self.bot.get_channel(details['command'])
 
             l10n = get_l10n(guild.id, 'events')
-            keys = {
+            mentions = {
                 'instruction-channel': instruction.mention,
                 'command-channel': command.mention,
                 'owner': guild.owner.mention
             }
             embed = discord.Embed(
-                title = l10n.format_value('dm-title', {'guild': guild.name}),
-                description = l10n.format_value('dm-description', keys),
-                color = discord.Color.blurple()
+                title=l10n.format_value('dm-title', {'guild': guild.name}),
+                description=l10n.format_value('dm-description', mentions),
+                color=discord.Color.blurple()
             )
             embed.set_footer(text=l10n.format_value('dm-footer'))
 
             try:
                 await member.send(embed=embed)
-            except:
+            except discord.Forbidden:
                 pass
 
-        # Adding a role that restricts the user to view any channel on the server
-        role = guild.get_role(details['verification']['not-verified_role'])
+        # Adding a role that restricts the user to view channels on the server
+        role = guild.get_role(details['role'])
         await member.add_roles(role)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        """called when a member leaves a guild"""
+        """Called when a member leaves a guild"""
         time = discord.utils.utcnow()
         guild = member.guild
 
@@ -156,7 +160,8 @@ class Events(commands.Cog):
         if guild.me.guild_permissions.view_audit_log:
             # Checking the audit log entries to check for a kick or a ban
             async for entry in guild.audit_logs():
-                if str(entry.target) == str(member) and (time - entry.created_at) < timedelta(seconds=1):
+                check = str(entry.target) == str(member)
+                if check and (time - entry.created_at) < timedelta(seconds=1):
                     if entry.action is discord.AuditLogAction.kick:
                         action = 'kick'
                         break
@@ -166,14 +171,15 @@ class Events(commands.Cog):
 
         channel = self.bot.get_channel(events[action][0])
         if action != 'leave' and channel:
-            for i in (('{user}', member.mention), ('{member}', entry.user.mention)):
-                events[action][1] = events[action][1].replace(*i)
-            message = events[action][1]
-            message += l10n.format_value('leave-reason', {'reason': entry.reason or 'None'})
+            message = events[action][1].replace('{user}', member.mention)
+            message = message.replace('{member}', entry.user.mention)
+
+            message += l10n.format_value(
+                'leave-reason', {'reason': entry.reason or 'None'})
 
             embed = discord.Embed(
-                description = message,
-                color = discord.Color.blurple()
+                description=message,
+                color=discord.Color.blurple()
             )
             await channel.send(embed=embed)
             channel = None
@@ -183,24 +189,24 @@ class Events(commands.Cog):
                 message = events['leave'][1].replace('{user}', member.mention)
 
                 embed = discord.Embed(
-                    description = message,
-                    color = discord.Color.blurple()
+                    description=message,
+                    color=discord.Color.blurple()
                 )
                 await channel.send(embed=embed)
             return
 
-        tuple = self.bot.c.execute(
-            'select Guilds, Verified FROM main where Discord_UID = (:uid)',
-            {'uid': member.id}
+        verified = self.bot.c.execute(
+            'select Verified from main where Discord_UID = ?', (member.id,)
         ).fetchone()
 
-        if not tuple:
+        if not verified:
             if channel:
                 keys = {
                     'member': member.mention,
                     'emoji': self.emojis['triggered']
                 }
-                await channel.send(l10n.format_value('leave-verification-notfound', keys))
+                await channel.send(l10n.format_value(
+                        'leave-verification-notfound', keys))
             return
 
         # Removing the user's entry if they don't share
@@ -217,20 +223,20 @@ class Events(commands.Cog):
             message = events['leave'][1].replace('{user}', member.mention)
 
             embed = discord.Embed(
-                description = message,
-                color = discord.Color.blurple()
+                description=message,
+                color=discord.Color.blurple()
             )
             await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        """called when the bot joins a guild"""
+        """Called when the bot joins a guild"""
         self.bot.guild_data[str(guild.id)] = self.bot.default_guild_details
         self.save()
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
-        """called when the bot leaves a guild"""
+        """Called when the bot leaves a guild"""
         del self.bot.guild_data[str(guild.id)]
         self.save()
 
@@ -241,7 +247,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        """called when any error is thrown"""
+        """Called when any error is thrown"""
         l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'events')
 
         if isinstance(error, commands.CommandNotFound):
@@ -249,12 +255,9 @@ class Events(commands.Cog):
 
         elif isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):
-                await ctx.reply(
-                    l10n.format_value(
+                await ctx.reply(l10n.format_value(
                         'UserInputError-MissingRequiredArgument',
-                        {'arg': error.param.name}
-                    )
-                )
+                        {'arg': error.param.name}))
 
             elif isinstance(error, commands.BadArgument):
                 if isinstance(error, commands.MessageNotFound):
@@ -280,13 +283,15 @@ class Events(commands.Cog):
                 await ctx.reply(error)
 
             elif isinstance(error, commands.MissingAnyRole):
-                roles = ', '.join([ctx.guild.get_role(role).mention for role in error.missing_roles])
+                missing_roles = []
+                for role in error.missing_roles:
+                    missing_roles.append(ctx.guild.get_role(role).mention)
                 embed = discord.Embed(
-                    description = l10n.format_value(
+                    description=l10n.format_value(
                         'CheckFailure-MissingAnyRole',
-                        {'roles': roles}
+                        {'roles': ', '.join(missing_roles)}
                     ),
-                    color = discord.Color.blurple()
+                    color=discord.Color.blurple()
                 )
                 await ctx.reply(embed=embed)
 
@@ -299,13 +304,15 @@ class Events(commands.Cog):
 
             elif isinstance(error.original, commands.ExtensionError):
                 await ctx.reply(error.original)
-                await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+                await ctx.message.remove_reaction(
+                    self.emojis['loading'], self.bot.user)
 
             else:
                 raise error
 
         else:
             raise error
+
 
 def setup(bot):
     bot.add_cog(Events(bot))
