@@ -1,8 +1,10 @@
 import re
-from utils.utils import getWebhook
 
 from discord import utils, AllowedMentions
 from discord.ext import commands
+
+from utils.utils import getWebhook
+
 
 class Tag(commands.Cog):
     """Tag section/sub-sections"""
@@ -44,13 +46,12 @@ class Tag(commands.Cog):
         ).fetchone()[0]
 
         # Store roles that the user is allowed to tag
-        if section[3] == 'A':
-            validTags = [f'{section[:3]}01', f'{section[:3]}02', f'{section[:3]}03']
-        elif section[3] == 'B':
-            validTags = [f'{section[:3]}04', f'{section[:3]}05', f'{section[:3]}06']
-        elif section[3] == 'C':
-            validTags = [f'{section[:3]}07', f'{section[:3]}08', f'{section[:3]}09']
-        validTags.append(section)
+        sections = {
+            'A': ('01', '02', '03', 'A'),
+            'B': ('04', '05', '06', 'B'),
+            'C': ('07', '08', '09', 'C')
+        }
+        validTags = [f'{section[:2]}-{key}' for key in sections[section[3]]]
 
         if result := re.findall('@[CEIMP][CEIST]-0[1-9]', content, flags=re.I):
             tags = result
@@ -89,10 +90,11 @@ class Tag(commands.Cog):
         await ctx.message.delete()
         await webhook.send(
             content.strip(),
-            username = ctx.author.nick or ctx.author.name,
-            avatar_url = ctx.author.avatar.url,
-            allowed_mentions = allowed_mentions
+            username=ctx.author.display_name,
+            avatar_url=ctx.author.avatar.url,
+            allowed_mentions=allowed_mentions
         )
+
 
 def setup(bot):
     """invoked when this file is attempted to be loaded as an extension"""
