@@ -1,16 +1,16 @@
 create table if not exists main (
-    Roll_Number integer primary key,
-    Section text,
-    SubSection text,
-    Name text,
-    Gender text,
-    Mobile text,
-    Institute_Email text,
-    Batch integer,
-    Hostel_Number int,
-    Room_Number text,
-    Discord_UID integer unique,
-    Verified text default 'False'
+    Roll_Number      int primary key,
+    Section          text check(Section like '__-_'),
+    SubSection       text check(SubSection like '__-0_'),
+    Name             text,
+    Gender           text check(Gender='Male' or Gender='Female'),
+    Mobile           text,
+    Institute_Email  text check(Institute_Email like '%___@___%.__%'),
+    Batch            int check(length(Batch)=4),
+    Hostel_Number    text check(Hostel_Number like '%H_'),
+    Room_Number      text,
+    Discord_UID      int unique,
+    Verified         text check(Verified='True' or Verified='False') default 'False'
 );
 
 create table if not exists ign (
