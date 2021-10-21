@@ -28,15 +28,9 @@ class Verify(commands.Cog):
         with open('db/emojis.json') as emojis:
             self.emojis = json.load(emojis)['utility']
 
-        self.sections = (
-            'CE-A', 'CE-B', 'CE-C',
-            'CS-A', 'CS-B',
-            'EC-A', 'EC-B', 'EC-C',
-            'EE-A', 'EE-B', 'EE-C',
-            'IT-A', 'IT-B',
-            'ME-A', 'ME-B', 'ME-C',
-            'PI-A', 'PI-B'
-        )
+        sections = self.bot.c.execute(
+            'select distinct Section from main').fetchall()
+        self.sections = [section[0] for section in sections]
 
     async def sendEmail(self, ctx, name: str, email: str, manual=True):
         """Send a verification email to the given email"""
