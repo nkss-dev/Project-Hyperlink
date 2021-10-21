@@ -133,19 +133,24 @@ class Verify(commands.Cog):
         `roll_no`: <class 'int'>
             The roll number of the student.
         """
+        if str(ctx.author.id) in self.codes:
+            await ctx.reply('pending-verification')
+            return
+
         tuple = self.bot.c.execute(
             'select Section, Subsection, Name, Institute_Email, Batch, Discord_UID from main where Roll_Number = ?',
             (roll_no,)
         ).fetchone()
 
         if not tuple:
-            await ctx.reply(self.l10n.format_value('verify-basic-record-notfound'))
+            await ctx.reply(self.l10n.format_value('record-notfound'))
             return
 
-        if details := self.bot.guild_data[str(ctx.guild.id)].get('verification'):
+        guild = ctx.guild
+        if details := self.bot.guild_data[str(guild.id)].get('verification'):
             if tuple[4] != details['batch']:
                 await ctx.reply(self.l10n.format_value(
-                        'incorrect-server', {'batch': int(tuple[4])}))
+                        'incorrect-server', {'batch': tuple[4]}))
                 return
         else:
             await ctx.reply(self.l10n.format_value('server-not-allowed'))
@@ -163,19 +168,23 @@ class Verify(commands.Cog):
 
         if section not in self.sections:
             await ctx.reply(self.l10n.format_value(
-                    'verify-basic-section-notfound', {'section': section}))
+                    'section-notfound', {'section': section}))
             return
 
         if section != tuple[0]:
             await ctx.reply(
-                self.l10n.format_value('verify-basic-section-mismatch'))
+                self.l10n.format_value('section-mismatch'))
             return
 
-        if user := ctx.guild.get_member(tuple[5]):
-            await self.sendEmail(ctx, tuple[2].title().strip(), tuple[3], False)
-            await ctx.reply(self.l10n.format_value(
-                    'verify-basic-already-claimed',
-                    {'user': f'{user}', 'email': tuple[3]}))
+        if tuple[5]:
+            user = guild.get_member(tuple[5]) or self.bot.get_user(tuple[5])
+            values = {'email': tuple[3]}
+            if user:
+                values['another_user'] = f'{user}'
+            message = self.l10n.format_value('record-claimed', values)
+
+            await self.sendEmail(ctx, tuple[2], tuple[3], False)
+            await ctx.reply(message.replace('another_user', 'another user', 1))
 
             def check(msg):
                 return msg.author == ctx.author and msg.channel == ctx.channel
@@ -184,34 +193,48 @@ class Verify(commands.Cog):
                 try:
                     ctx.message = await self.bot.wait_for(
                         'message', timeout=120.0, check=check)
-                    if self.checkCode(ctx.author.id, ctx.message.content):
-                        self.bot.c.execute(
-                            'update main set Verified = "True" where Roll_Number = (:roll)',
-                            {'roll': roll_no}
-                        )
-                        await user.kick(reason=self.l10n.format_value(
-                                'member-kick-old',
-                                {'user': ctx.author.mention}))
-                        break
-
-                    await ctx.reply(self.l10n.format_value(
-                            'verify-code-retry',
-                            {'code': ctx.message.content}))
                 except TimeoutError:
                     await ctx.send(self.l10n.format_value('react-timeout'))
                     return
+                else:
+                    if not self.checkCode(ctx.author.id, ctx.message.content):
+                        await ctx.reply(self.l10n.format_value(
+                                'code-retry',
+                                {'code': ctx.message.content}))
+                        continue
+                    self.bot.c.execute(
+                        'update main set Verified="True" where Roll_Number=?',
+                        roll_no
+                    )
+
+                    # Fetch the user ID again in case another
+                    # account has verified in the meantime
+                    user = self.bot.c.execute(
+                        'select Discord_UID from main where Roll_Number = ?',
+                        roll_no
+                    ).fetchone()
+                    user = guild.get_member(tuple[5])
+                    if not user:
+                        user = self.bot.get_user(tuple[5])
+
+                    # Kick the old account if any
+                    if isinstance(user, discord.Member):
+                        await user.kick(reason=self.l10n.format_value(
+                                'member-kick-old',
+                                {'user': ctx.author.mention}))
+                    break
 
         # Assigning section/sub-section roles to the user
-        if role := discord.utils.get(ctx.guild.roles, name=tuple[0]):
+        if role := discord.utils.get(guild.roles, name=tuple[0]):
             await ctx.author.add_roles(role)
-        if role := discord.utils.get(ctx.guild.roles, name=tuple[1]):
+        if role := discord.utils.get(guild.roles, name=tuple[1]):
             await ctx.author.add_roles(role)
 
-        await ctx.reply(self.l10n.format_value('verify-basic-success'))
+        await ctx.reply(self.l10n.format_value('basic-success'))
 
         # Removing restricting role
-        if ids := self.bot.guild_data[str(ctx.guild.id)].get('verification'):
-            if role := ctx.guild.get_role(ids['role']):
+        if ids := self.bot.guild_data[str(guild.id)].get('verification'):
+            if role := guild.get_role(ids['role']):
                 await ctx.author.remove_roles(role)
 
         self.bot.c.execute(
@@ -220,7 +243,7 @@ class Verify(commands.Cog):
         )
         self.bot.db.commit()
 
-        first_name = tuple[2].split(' ', 1)[0].capitalize()
+        first_name = tuple[2].split(' ', 1)[0]
         await ctx.author.edit(nick=first_name)
 
     @verify.command()
@@ -239,12 +262,13 @@ class Verify(commands.Cog):
         ).fetchone()
 
         if email.lower() != tuple[1]:
-            await ctx.reply(self.l10n.format_value('verify-email-mismatch'))
+            await ctx.reply(self.l10n.format_value('email-mismatch'))
             return
 
         await self.sendEmail(ctx, tuple[0].title().strip(), tuple[1])
 
-        await ctx.reply(self.l10n.format_value('verify-check-email', {'prefix': ctx.prefix}))
+        await ctx.reply(self.l10n.format_value(
+                'check-email', {'prefix': ctx.clean_prefix}))
 
     @verify.command()
     @commands.check(basicVerificationCheck)
@@ -257,13 +281,13 @@ class Verify(commands.Cog):
             The code to be checked
         """
         if str(ctx.author.id) not in self.codes:
-            await ctx.reply(self.l10n.format_value('verify-not-received'))
+            await ctx.reply(self.l10n.format_value('email-not-received'))
             return
 
         if self.checkCode(ctx.author.id, code):
-            await ctx.reply(self.l10n.format_value('verify-email-success', {'emoji': self.emojis['verified']}))
+            await ctx.reply(self.l10n.format_value('email-success', {'emoji': self.emojis['verified']}))
         else:
-            await ctx.reply(self.l10n.format_value('verify-code-incorrect'))
+            await ctx.reply(self.l10n.format_value('code-incorrect'))
 
     def save(self):
         """Save the data to a json file"""
