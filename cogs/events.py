@@ -250,10 +250,7 @@ class Events(commands.Cog):
         """Called when any error is thrown"""
         l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'events')
 
-        if isinstance(error, commands.CommandNotFound):
-            pass
-
-        elif isinstance(error, commands.UserInputError):
+        if isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):
                 await ctx.reply(l10n.format_value(
                         'UserInputError-MissingRequiredArgument',
@@ -271,6 +268,9 @@ class Events(commands.Cog):
 
             else:
                 raise error
+
+        elif isinstance(error, commands.CommandNotFound):
+            pass
 
         elif isinstance(error, commands.CheckFailure):
             if isinstance(error, commands.NotOwner):
@@ -309,6 +309,9 @@ class Events(commands.Cog):
 
             else:
                 raise error
+
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.reply(error)
 
         else:
             raise error
