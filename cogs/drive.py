@@ -143,6 +143,7 @@ class Drive(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @drive.command()
+    @commands.cooldown(2, 10.0, commands.BucketType.user)
     async def search(self, ctx, *query: str):
         """Search for the given query and send a corresponding embed.
 
