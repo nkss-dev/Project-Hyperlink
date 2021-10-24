@@ -12,6 +12,7 @@ class IGN(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.games = []
 
     def get_IGNs(self, author_id: int) -> sqlite3.Cursor:
         """Return the IGNs of the given user"""
@@ -22,41 +23,44 @@ class IGN(commands.Cog):
 
     async def exists(self, ctx, game) -> Optional[str]:
         """Check if entered game exists in the database"""
-        flag = False
-        for _game in self.get_IGNs(ctx.author.id).description[1:]:
+        result = None
+        for _game in self.games:
             if game.lower() == _game[0].lower():
-                flag = True
+                result = _game[0]
                 break
-        if not flag:
+
+        if not result:
             content = self.l10n.format_value(
                 'game-notfound',
                 {'game': game, 'cmd': f'{ctx.clean_prefix}{ctx.command.parent}'}
             )
             await ctx.reply(content)
-            return None
-        return _game[0]
+        return result
 
     async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'ign')
         return self.bot.verificationCheck(ctx)
 
-    @commands.group(invoke_without_command=True)
+    @commands.group()
     async def ign(self, ctx):
         """Show the list of eligible games for which an IGN can be added.
 
         This is also the parent command to perform any read/write operations \
         to any of the user's IGNs.
         """
-        games = self.bot.c.execute(
+        self.games = self.bot.c.execute(
             'select * from ign where Discord_UID = null'
         ).description[1:]
-        if not games:
+        if not self.games:
             await ctx.reply(self.l10n.format_value('game-list-notfound'))
+            return
+
+        if ctx.invoked_subcommand:
             return
 
         embed = discord.Embed(
             title=self.l10n.format_value('game-list'),
-            description='\n'.join([game[0] for game in games]),
+            description='\n'.join([game[0] for game in self.games]),
             color=discord.Color.blurple()
         )
         await ctx.send(embed=embed)
@@ -70,10 +74,11 @@ class IGN(commands.Cog):
         `game`: <class 'str'>
             The game for which an IGN is to be stored. It is case insensitive \
             and can only contain a game that is stored in the memory \
-            (``games.json``); available games can be checked via the `ign` command.
+            (``games.json``).
+            Available games can be checked via the `ign` command.
 
         `ign`: <class 'str'>
-            The IGN for the specified game. This can be anything as long as it \
+            The IGN for the specified game. This can be anything as long as \
             it is a string (yes, a link too). However, this cannot contain \
             tags like user/role mentions or `@everyone` and `@here`.
         """
@@ -110,8 +115,8 @@ class IGN(commands.Cog):
         Parameters
         ------------
         `user`: Optional[discord.Member]
-            The name/ID/tag of a user. If specified, the IGNs returned will be \
-            of the user instead of the author of the command.
+            The name/ID/tag of a user. If specified, the IGNs returned will \
+            be of the user instead of the author of the command.
 
         `game`: Optional[<class 'str'>]
             The name of the game for which an IGN needs to be displayed.
@@ -193,14 +198,15 @@ class IGN(commands.Cog):
         await ctx.send(embed=embed)
 
     @ign.command(aliases=['del', 'remove', 'rm'])
-    async def delete(self, ctx, game: str = None):
+    async def delete(self, ctx, *, game: str = None):
         """Delete an IGN for the given game or all games.
 
         Parameters
         ------------
         `game`: Optional[<class 'str'>]
-            The game for which an IGN is to be deleted. It is case insensitive \
-            and can only contain a game that has a corresponding IGN for the user.
+            The game for which an IGN is to be deleted. It is case \
+            insensitive and can only contain a game that has a corresponding \
+            IGN for the user.
             If this is left blank, all the stored IGNs are deleted.
         """
         cursor = self.get_IGNs(ctx.author.id)
@@ -225,7 +231,7 @@ class IGN(commands.Cog):
             f'select {game} from ign where Discord_UID = ?', (ctx.author.id,)
         ).fetchone()
         if ign and ign[0]:
-            igns = (ign for ign in igns[1:] if ign)
+            igns = [ign for ign in igns[1:] if ign]
             if len(igns) > 1:
                 self.bot.c.execute(
                     f'update ign set {game} = null where Discord_UID = ?',
