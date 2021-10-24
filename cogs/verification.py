@@ -52,7 +52,8 @@ class Verify(commands.Cog):
             '{$user}': name,
             '{$otp}': otp,
             '{$guild}': ctx.guild.name,
-            '{$channel}': f'https://discord.com/channels/{ctx.guild.id}/{ctx.channel.id}',
+            '{$channel}': 'https://discord.com/channels/'
+            + f'{ctx.guild.id}/{ctx.channel.id}',
             '{$command}': command
         }
         with open('utils/verification.html') as f:
@@ -65,14 +66,15 @@ class Verify(commands.Cog):
             smtp.login(config.email, config.password_token)
             smtp.send_message(msg)
 
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+        await ctx.message.remove_reaction(
+            self.emojis['loading'], self.bot.user)
 
         self.codes[str(ctx.author.id)] = otp
         self.save()
 
-    def checkCode(self, author_id: str, code: str) -> bool:
+    def checkCode(self, author_id: int, code: str) -> bool:
         """Check if the entered code matches the OTP"""
-        if not self.codes[str(author_id)] == code:
+        if self.codes[str(author_id)] != code:
             return False
 
         del self.codes[str(author_id)]
@@ -80,8 +82,8 @@ class Verify(commands.Cog):
 
         # Marks user as verified in the database
         self.bot.c.execute(
-            'update main set Verified = "True" where Discord_UID = (:uid)',
-            {'uid': author_id}
+            'update main set Verified = "True" where Discord_UID = ?',
+            (author_id,)
         )
         self.bot.db.commit()
         return True
@@ -97,8 +99,7 @@ class Verify(commands.Cog):
             return
 
         verified = self.bot.c.execute(
-            'select Verified from main where Discord_UID = (:uid)',
-            {'uid': ctx.author.id}
+            'select Verified from main where Discord_UID = ?', (ctx.author.id,)
         ).fetchone()
 
         if verified:
@@ -132,8 +133,9 @@ class Verify(commands.Cog):
             return
 
         tuple = self.bot.c.execute(
-            'select Section, Subsection, Name, Institute_Email, Batch, Discord_UID from main where Roll_Number = ?',
-            (roll_no,)
+            '''select
+            Section, Subsection, Name, Institute_Email, Batch, Discord_UID
+            from main where Roll_Number = ?''', (roll_no,)
         ).fetchone()
 
         if not tuple:
@@ -150,7 +152,8 @@ class Verify(commands.Cog):
             await ctx.reply(self.l10n.format_value('server-not-allowed'))
 
             def check_owner(msg):
-                return msg.author.id in self.bot.owner_ids and msg.channel == ctx.channel
+                return msg.author.id in self.bot.owner_ids \
+                    and msg.channel == ctx.channel
 
             try:
                 message = await self.bot.wait_for(
@@ -172,13 +175,13 @@ class Verify(commands.Cog):
 
         if tuple[5]:
             user = guild.get_member(tuple[5]) or self.bot.get_user(tuple[5])
-            values = {'email': tuple[3]}
-            if user:
-                values['another_user'] = f'{user}'
-            message = self.l10n.format_value('record-claimed', values)
+            values = {
+                'email': tuple[3],
+                'user': user.mention if user else 'another user'
+            }
 
             await self.sendEmail(ctx, tuple[2], tuple[3], False)
-            await ctx.reply(message.replace('another_user', 'another user', 1))
+            await ctx.reply(self.l10n.format_value('record-claimed', values))
 
             def check(msg):
                 return msg.author == ctx.author and msg.channel == ctx.channel
@@ -198,14 +201,14 @@ class Verify(commands.Cog):
                         continue
                     self.bot.c.execute(
                         'update main set Verified="True" where Roll_Number=?',
-                        roll_no
+                        (roll_no,)
                     )
 
                     # Fetch the user ID again in case another
                     # account has verified in the meantime
                     user = self.bot.c.execute(
                         'select Discord_UID from main where Roll_Number = ?',
-                        roll_no
+                        (roll_no,)
                     ).fetchone()
                     user = guild.get_member(tuple[5])
                     if not user:
@@ -250,19 +253,21 @@ class Verify(commands.Cog):
         `email`: <class 'str'>
             The institute email of the user.
         """
-        tuple = self.bot.c.execute(
-            'select Name, Institute_Email from main where Discord_UID = (:uid)',
-            {'uid': ctx.author.id}
+        name, institute_email = self.bot.c.execute(
+            'select Name, Institute_Email from main where Discord_UID = ?',
+            (ctx.author.id,)
         ).fetchone()
 
-        if email.lower() != tuple[1]:
+        if email.lower() != institute_email:
             await ctx.reply(self.l10n.format_value('email-mismatch'))
             return
 
-        await self.sendEmail(ctx, tuple[0].title().strip(), tuple[1])
+        await self.sendEmail(ctx, name, institute_email)
 
         await ctx.reply(self.l10n.format_value(
-                'check-email', {'prefix': ctx.clean_prefix}))
+                'check-email',
+                {'cmd': ctx.clean_prefix + ctx.command.parent.name}
+            ))
 
     @verify.command()
     @commands.check(basicVerificationCheck)
@@ -279,7 +284,8 @@ class Verify(commands.Cog):
             return
 
         if self.checkCode(ctx.author.id, code):
-            await ctx.reply(self.l10n.format_value('email-success', {'emoji': self.emojis['verified']}))
+            await ctx.reply(self.l10n.format_value(
+                    'email-success', {'emoji': self.emojis['verified']}))
         else:
             await ctx.reply(self.l10n.format_value('code-incorrect'))
 
