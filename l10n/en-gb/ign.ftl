@@ -9,6 +9,9 @@ game-list-notfound = No games have been added yet. Contact a moderator to get so
 game-notfound = The game, `{$game}`, does not exist in the database. If you want it added, contact a moderator.
                 For a list of available games, type `{$cmd}`.
 
+igns-for = IGNs for {$game}:
+ign-notfound = No IGN found for {$game} :(
+
 igns-title = {$member}'s IGNs:
 
 mentions-not-allowed = Do not mention any user/channel/role in your command.

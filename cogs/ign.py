@@ -250,6 +250,31 @@ class IGN(commands.Cog):
                 self.l10n.format_value('self-ign-notfound', {'game': game})
             )
 
+    @ign.command(name='for')
+    async def igns(self, ctx, *, game: str = None):
+        if not (game := await self.exists(ctx, game)):
+            return
+
+        igns = self.bot.c.execute(
+            f'''select main.Discord_UID, ign.`{game}` from ign
+            join main on main.Discord_UID = ign.Discord_UID
+            where ign.`{game}` not null'''
+        ).fetchall()
+        if not igns:
+            await ctx.reply(self.l10n.format_value('ign-notfound', {'game': game}))
+
+        formatted_igns = []
+        for id, ign in igns:
+            if member := ctx.guild.get_member(id):
+                formatted_igns.append(f'{member.mention}: {ign}')
+
+        embed = discord.Embed(
+            title=self.l10n.format_value('igns-for', {'game': game}),
+            description='\n'.join(formatted_igns),
+            color=discord.Color.blurple()
+        )
+        await ctx.send(embed=embed)
+
 
 def setup(bot):
     """Called when this file is attempted to be loaded as an extension"""
