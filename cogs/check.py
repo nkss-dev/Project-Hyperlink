@@ -46,10 +46,10 @@ class Check(commands.Cog):
 
         # Fetches the moderator roles set for the guild
         mod_roles = self.bot.c.execute(
-            'select prefix from prefixes where ID = ?', (ctx.guild.id,)
+            'select role from mod_roles where ID = ?', (ctx.guild.id,)
         ).fetchall()
-        if mod_roles:
-            await commands.has_any_role(*mod_roles).predicate(ctx)
+        if roles := [role[0] for role in mod_roles]:
+            await commands.has_any_role(*roles).predicate(ctx)
         else:
             raise commands.CheckFailure('MissingModeratorRoles')
 
