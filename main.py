@@ -55,7 +55,14 @@ class ProjectHyperlink(commands.Bot):
         if not msg.guild:
             base.append('%')
         else:
-            base.extend(bot.guild_data[str(msg.guild.id)]['prefix'])
+            prefixes = bot.c.execute(
+                'select prefix from prefixes where ID = ?', (msg.guild.id,)
+            ).fetchall()
+            if prefixes:
+                prefixes = [prefix[0] for prefix in prefixes]
+            else:
+                prefixes = ['%']
+            base.extend(prefixes)
         return base
 
     async def construct(self):
