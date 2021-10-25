@@ -17,7 +17,7 @@ class Constructor():
         self.client = client
         self.funcs = (
             self.sql_databases, self.boards, self.codes, self.emojis,
-            self.guilds, self.links, self.muted, self.VCs, self.self_roles
+            self.links, self.muted, self.VCs, self.self_roles
         )
         for func in self.funcs:
             func()
@@ -62,44 +62,6 @@ class Constructor():
             }
             with open('db/emojis.json', 'w') as f:
                 json.dump(emojis, f)
-
-    def guilds(self):
-        """Create guilds.json"""
-        self.client.default_guild_details = {
-            'prefix': ['%'],
-            'roles': {
-                'bot': 0,
-                'join': [],
-                'mod': [],
-                'mute': 0
-            },
-            'events': {
-                'join': [0, '{user} has joined the server!'],
-                'leave': [0, '{user} has left the server.'],
-                'kick': [0, '{user} has been kicked from the server by {member}.'],
-                'ban': [0, '{user} has been banned from the server by {member}.'],
-                'welcome': ''
-            },
-            'log': [0, 0]
-        }
-
-        try:
-            with open('db/guilds.json') as f:
-                self.client.guild_data = json.load(f)
-
-            for guild in self.client.guild_data:
-                for key in self.client.default_guild_details:
-                    if key not in self.client.guild_data[guild]:
-                        self.client.guild_data[guild][key] = self.client.default_guild_details[key]
-
-            with open('db/guilds.json', 'w') as f:
-                json.dump(self.client.guild_data, f)
-        except FileNotFoundError:
-            self.client.guild_data = {
-                str(guild.id): self.client.default_guild_details for guild in self.client.guilds
-            }
-            with open('db/guilds.json', 'w') as f:
-                json.dump(self.client.guild_data, f)
 
     @staticmethod
     def links():
@@ -164,14 +126,16 @@ class Constructor():
                 json.dump({}, f)
 
     def sql_databases(self):
-        """Create details.db and self_roles.db"""
+        """Create the sql database files"""
         # details.db
         conn = sqlite3.connect('db/details.db')
         c = conn.cursor()
 
         with open('utils/details.sql') as sql:
             c.executescript(sql.read())
-            conn.commit()
+        with open('utils/guilds.sql') as sql:
+            c.executescript(sql.read())
+        conn.commit()
 
         self.client.db = conn
         self.client.c = c
