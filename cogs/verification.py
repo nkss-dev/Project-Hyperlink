@@ -146,7 +146,7 @@ class Verify(commands.Cog):
         if details := self.bot.guild_data[str(guild.id)].get('verification'):
             if tuple[4] != details['batch']:
                 await ctx.reply(self.l10n.format_value(
-                        'incorrect-server', {'batch': tuple[4]}))
+                        'incorrect-server', {'batch': str(tuple[4])}))
                 return
         else:
             await ctx.reply(self.l10n.format_value('server-not-allowed'))
