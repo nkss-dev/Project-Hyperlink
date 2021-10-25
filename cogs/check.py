@@ -1,5 +1,6 @@
 from discord.ext import commands
 
+
 class Check(commands.Cog):
     """Checks used in the bot"""
 
@@ -11,10 +12,9 @@ class Check(commands.Cog):
         self.bot.verificationCheck = self.verificationCheck
 
     def basicVerificationCheck(self, ctx) -> bool:
-        """check if the user has completed basic verification"""
+        """Check if the user has completed basic verification"""
         verified = self.bot.c.execute(
-            'select Verified from main where Discord_UID = (:uid)',
-            {'uid': ctx.author.id}
+            'select Verified from main where Discord_UID = ?', (ctx.author.id,)
         ).fetchone()
 
         if not verified:
@@ -23,34 +23,39 @@ class Check(commands.Cog):
         return True
 
     def verificationCheck(self, ctx) -> bool:
-        """check if the user's identity has been verified"""
+        """Check if the user's identity has been verified"""
         verified = self.bot.c.execute(
-            'select Verified from main where Discord_UID = (:uid)',
-            {'uid': ctx.author.id}
+            'select Verified from main where Discord_UID = ?', (ctx.author.id,)
         ).fetchone()
 
         if not verified:
             raise commands.CheckFailure('AccountNotLinked')
-        if verified[0] == 'False':
+        if not verified[0]:
             raise commands.CheckFailure('UserNotVerified')
         return True
 
     async def moderatorCheck(self, ctx) -> bool:
-        """check if the user is a moderator"""
+        """Check if the user is a moderator"""
         if not self.verificationCheck(ctx):
             return False
 
-        if await self.bot.is_owner(ctx.author) or ctx.author == ctx.guild.owner:
+        if await self.bot.is_owner(ctx.author):
+            return True
+        if ctx.author.guild_permissions.administrator:
             return True
 
         # Fetches the moderator roles set for the guild
-        if mod_roles := self.bot.guild_data[str(ctx.guild.id)]['roles']['mod']:
+        mod_roles = self.bot.c.execute(
+            'select prefix from prefixes where ID = ?', (ctx.guild.id,)
+        ).fetchall()
+        if mod_roles:
             await commands.has_any_role(*mod_roles).predicate(ctx)
         else:
             raise commands.CheckFailure('MissingModeratorRoles')
 
         return True
 
+
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Check(bot))
