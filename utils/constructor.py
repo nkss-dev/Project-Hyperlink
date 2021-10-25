@@ -4,6 +4,8 @@ import sqlite3
 
 
 class Constructor():
+    """Constructs all necessary database files"""
+
     def __init__(self, client):
         print(f'Logged in as {client.user} (ID: {client.user.id})')
 
@@ -19,7 +21,6 @@ class Constructor():
         )
         for func in self.funcs:
             func()
-        self.loadCogs()
 
     @staticmethod
     def boards():
@@ -199,17 +200,3 @@ class Constructor():
             }
             with open('db/VCs.json', 'w') as f:
                 json.dump(VCs, f)
-
-    def loadCogs(self):
-        """Load all the .py files in the `cogs` folder as extension"""
-        errors = []
-        for i, filename in enumerate(os.listdir('./cogs'), start=1):
-            if filename.endswith('.py'):
-                try:
-                    self.client.load_extension(f'cogs.{filename[:-3]}')
-                except Exception as error:
-                    errors.append(error)
-        i -= 1
-        print(f'{i-len(errors)}/{i} files loaded successfully!\n')
-        for error in errors:
-            print(error)

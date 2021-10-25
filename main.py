@@ -1,10 +1,30 @@
 import config
 import re
+import traceback
 
 import discord
 from discord.ext import commands
 
 from utils.constructor import Constructor
+
+initial_extensions = (
+    'cogs.check',
+    'cogs.drive',
+    'cogs.events',
+    'cogs.help',
+    'cogs.ign',
+    'cogs.info',
+    'cogs.links',
+    'cogs.logger',
+    'cogs.mod',
+    'cogs.owner',
+    'cogs.prefix',
+    'cogs.self_roles',
+    'cogs.tag',
+    'cogs.verification',
+    'cogs.VoiceChat',
+    'cogs.voltorb',
+)
 
 
 class ProjectHyperlink(commands.Bot):
@@ -42,6 +62,14 @@ class ProjectHyperlink(commands.Bot):
         """Setup all initial requirements"""
         await self.wait_until_ready()
         Constructor(self)
+
+        # Load all the extensions
+        for extension in initial_extensions:
+            try:
+                self.load_extension(extension)
+            except Exception:
+                print(f'\nFailed to load extension {extension}.\n')
+                traceback.print_exc()
 
     def run(self):
         super().run(config.bot_token, reconnect=True)
