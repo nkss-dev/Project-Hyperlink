@@ -16,18 +16,17 @@ create table if not exists prefixes (
 
 create table if not exists join_roles (
     ID    int references guilds(ID),
-    role  int not null,
-    primary key (ID, role)
+    role  int primary key
 );
 
 create table if not exists mod_roles (
     ID    int references guilds(ID),
-    role  int not null,
-    primary key (ID, role)
+    role  int primary key
 );
 
 create table if not exists verified_servers (
-    Batch                int primary key references guilds(Batch),
+    ID                   int primary key references guilds(ID),
+    Batch                int references guilds(Batch),
     Instruction_Channel  int,
     Command_Channel      int,
     Guest_Role           int
