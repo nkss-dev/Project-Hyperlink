@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import discord
 from discord.ext import commands
@@ -13,8 +13,6 @@ class Events(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.bot.launch_time = datetime.utcnow()
-
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
@@ -32,7 +30,7 @@ class Events(commands.Cog):
         )
 
         if message.guild:
-            prefixes = self.bot.guild_data[str(message.guild.id)]['prefix']
+            prefixes = self.bot.command_prefix(self.bot, message)
             p_list = [f'{i+1}. {prefix}' for i, prefix in enumerate(prefixes)]
             embed.add_field(
                 name=l10n.format_value('prefix'),
@@ -43,7 +41,7 @@ class Events(commands.Cog):
             embed.add_field(
                 name=l10n.format_value('prefix'), value='%', inline=False)
 
-        delta_uptime = datetime.utcnow() - self.bot.launch_time
+        delta_uptime = discord.utils.utcnow() - self.bot.launch_time
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
@@ -54,9 +52,9 @@ class Events(commands.Cog):
         )
 
         ping = await message.channel.send(l10n.format_value('ping-initiate'))
-        start = datetime.utcnow()
+        start = discord.utils.utcnow()
         await ping.edit(content=l10n.format_value('ping-calc'))
-        delta_uptime = (datetime.utcnow() - start)
+        delta_uptime = (discord.utils.utcnow() - start)
 
         embed.add_field(
             name=l10n.format_value('ping-r-latency'),
@@ -69,62 +67,78 @@ class Events(commands.Cog):
 
         await ping.edit(content=None, embed=embed)
 
+    async def join_handler(self, events, member, guild):
+        if events:
+            # Sends welcome message on the server's channel
+            if channel := guild.get_channel(events[0]):
+                await channel.send(events[1].replace('{$user}', member.mention))
+
+            # Sends welcome message to the user's DM
+            if events[2]:
+                await member.send(events[2].replace('{$server}', guild.name))
+
+        role_ids = self.bot.c.execute(
+            'select role from join_roles where ID = ?', (guild.id,)
+        ).fetchall()
+        for role_id in role_ids:
+            if role := guild.get_role(role_id):
+                await member.add_roles(role)
+            else:
+                self.c.execute(
+                    'delete from join_roles where role = ?', (role_id,)
+                )
+        self.bot.db.commit()
+
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Called when a member joins a guild"""
         guild = member.guild
 
-        details = self.bot.guild_data[str(guild.id)]
-
+        # Assign the bot role if any
         if member.bot:
-            if botRole := guild.get_role((details['roles']['bot'])):
-                await member.add_roles(botRole)
+            bot_role_id = self.bot.c.execute(
+                'select Bot_Role from guilds where ID = ?', (guild.id,)
+            )
+            if bot_role := guild.get_role(bot_role_id):
+                await member.add_roles(bot_role)
             return
 
-        if events := details.get('events'):
-            # Sends welcome message on the server's channel
-            if channel := self.bot.get_channel(events['join'][0]):
-                await channel.send(events['join'][1].replace('{user}', member.mention))
+        events = self.bot.c.execute(
+            '''select Join_Channel, Join_Message, Welcome_Message
+                from events where Guild_ID = ?''',
+            (guild.id,)
+        ).fetchone()
+        await self.join_handler(events, member, guild)
 
-            # Sends welcome message to the user's DM
-            if dm := events['welcome']:
-                await member.send(dm.replace('{server}', guild.name))
-
-            # Gives roles to the new user
-            for role_id in details['roles']['join']:
-                if role := guild.get_role(role_id):
-                    await member.add_roles(role)
-                else:
-                    details['roles']['join'].remove(role_id)
-            self.bot.guild_data[str(guild.id)] = details
-            self.save()
-
-        if not (details := details.get('verification')):
+        details = self.bot.c.execute(
+            'select * from verified_servers where ID = ?', (guild.id,)
+        ).fetchone()
+        if not details:
             return
 
-        tuple = self.bot.c.execute(
-            'select Section, SubSection, Verified from main where Discord_UID = ?',
+        record = self.bot.c.execute(
+            '''select Section, SubSection, Batch, Verified
+                from main where Discord_UID = ?''',
             (member.id,)
         ).fetchone()
 
-        if tuple:
-            if tuple[2] == 'True':
+        if record:
+            if record[3] and record[2] == details[1]:
                 # Assigning Section and Sub-Section roles to the user
-                if role := discord.utils.get(guild.roles, name=tuple[0]):
+                if role := discord.utils.get(guild.roles, name=record[0]):
                     await member.add_roles(role)
-                if role := discord.utils.get(guild.roles, name=tuple[1]):
+                if role := discord.utils.get(guild.roles, name=record[1]):
                     await member.add_roles(role)
-
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
-            instruction = self.bot.get_channel(details['instruction'])
-            command = self.bot.get_channel(details['command'])
+            instruction_channel = self.bot.get_channel(details[2])
+            command_channel = self.bot.get_channel(details[3])
 
             l10n = get_l10n(guild.id, 'events')
             mentions = {
-                'instruction-channel': instruction.mention,
-                'command-channel': command.mention,
+                'instruction-channel': instruction_channel.mention,
+                'command-channel': command_channel.mention,
                 'owner': guild.owner.mention
             }
             embed = discord.Embed(
@@ -139,24 +153,15 @@ class Events(commands.Cog):
             except discord.Forbidden:
                 pass
 
-        # Adding a role that restricts the user to view channels on the server
-        role = guild.get_role(details['role'])
+        # Add a restricting guest role to the user
+        role = guild.get_role(details[4])
         await member.add_roles(role)
 
-    @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member):
-        """Called when a member leaves a guild"""
+    @staticmethod
+    async def leave_handler(events, guild, member, l10n):
         time = discord.utils.utcnow()
-        guild = member.guild
-
-        details = self.bot.guild_data[str(guild.id)]
-
-        if not (events := details.get('events')):
-            return
-
-        l10n = get_l10n(guild.id, 'events')
-
         action = 'leave'
+
         if guild.me.guild_permissions.view_audit_log:
             # Checking the audit log entries to check for a kick or a ban
             async for entry in guild.audit_logs():
@@ -169,10 +174,15 @@ class Events(commands.Cog):
                         action = 'ban'
                         break
 
-        channel = self.bot.get_channel(events[action][0])
+        channel = guild.get_channel(events[action][0])
         if action != 'leave' and channel:
-            message = events[action][1].replace('{user}', member.mention)
-            message = message.replace('{member}', entry.user.mention)
+            mentions = {
+                '{$user}': member.mention, '{$member}': entry.user.mention
+            }
+            message = re.sub(
+                r'({\$\w+})', lambda x: mentions[x.group(0)],
+                events[action][1]
+            )
 
             message += l10n.format_value(
                 'leave-reason', {'reason': entry.reason or 'None'})
@@ -184,44 +194,12 @@ class Events(commands.Cog):
             await channel.send(embed=embed)
             channel = None
 
-        if not details.get('verification'):
-            if channel:
-                message = events['leave'][1].replace('{user}', member.mention)
+        return channel
 
-                embed = discord.Embed(
-                    description=message,
-                    color=discord.Color.blurple()
-                )
-                await channel.send(embed=embed)
-            return
-
-        verified = self.bot.c.execute(
-            'select Verified from main where Discord_UID = ?', (member.id,)
-        ).fetchone()
-
-        if not verified:
-            if channel:
-                keys = {
-                    'member': member.mention,
-                    'emoji': self.emojis['triggered']
-                }
-                await channel.send(l10n.format_value(
-                        'leave-verification-notfound', keys))
-            return
-
-        # Removing the user's entry if they don't share
-        # any guild with the bot and are not verified
-        if verified[0] == 'False':
-            self.bot.c.execute(
-                'update main set Discord_UID = null where Discord_UID = ?',
-                (member.id,)
-            )
-            self.bot.db.commit()
-
-        # Sends exit message to the server's channel
+    @staticmethod
+    async def send_leave_message(channel, member, message):
         if channel:
-            message = events['leave'][1].replace('{user}', member.mention)
-
+            message = message.replace('{$user}', member.mention)
             embed = discord.Embed(
                 description=message,
                 color=discord.Color.blurple()
@@ -229,21 +207,45 @@ class Events(commands.Cog):
             await channel.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_guild_join(self, guild: discord.Guild):
-        """Called when the bot joins a guild"""
-        self.bot.guild_data[str(guild.id)] = self.bot.default_guild_details
-        self.save()
+    async def on_member_remove(self, member: discord.Member):
+        """Called when a member leaves a guild"""
+        guild = member.guild
+        l10n = get_l10n(guild.id, 'events')
 
-    @commands.Cog.listener()
-    async def on_guild_remove(self, guild: discord.Guild):
-        """Called when the bot leaves a guild"""
-        del self.bot.guild_data[str(guild.id)]
-        self.save()
+        events = self.bot.c.execute(
+            '''select Leave_Channel, Leave_Message, Kick_Channel, Kick_Message,
+                Ban_Channel, Ban_Message from events where Guild_ID = ?''',
+            (guild.id,)
+        ).fetchone()
+        if events:
+            events = {
+                'leave': (events[0], events[1]),
+                'kick': (events[2], events[3]),
+                'ban': (events[4], events[5]),
+            }
+            channel = await self.leave_handler(events, guild, member, l10n)
 
-    def save(self):
-        """save the data to a json file"""
-        with open('db/guilds.json', 'w') as f:
-            json.dump(self.bot.guild_data, f)
+        details = self.bot.c.execute(
+            'select * from verified_servers where ID = ?', (guild.id,)
+        ).fetchone()
+        if not details:
+            await self.send_leave_message(channel, member, events['leave'][1])
+            return
+
+        verified = self.bot.c.execute(
+            'select Verified from main where Discord_UID = ?', (member.id,)
+        ).fetchone()
+        if not verified:
+            return
+
+        if not verified[0]:
+            self.bot.c.execute(
+                'update main set Discord_UID = null where Discord_UID = ?',
+                (member.id,)
+            )
+            self.bot.db.commit()
+
+        await self.send_leave_message(channel, member, events['leave'][1])
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):

@@ -8,8 +8,6 @@ dm-title = Welcome to {$guild}!
 
 leave-reason = {"\u000a"}**Reason:** {$reason}
 
-leave-verification-notfound = {$member} has left the server because they didn't know how to verify {$emoji}
-
 ping-initiate = Initiated!
 ping-calc = Calculating ping...
 ping-r-latency = Response Latency

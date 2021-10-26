@@ -2,7 +2,7 @@ basic-success = Your record was found and verified!
             Please check the channel list of the server to see the unlocked channels. If you still do not see the channels then please re-launch the app.
 email-success = Your email has been verified successfully {$emoji}!
 
-check-email = Please check your institute email for the OTP and enter it here using `{$prefix}verify code [OTP here]`.
+check-email = Please check your institute email for the OTP and enter it here using `{$cmd} code [OTP here]`.
 
 code-incorrect = The code you entered is incorrect.
 code-retry = `{$code}` is incorrect. Please try again with the correct code.
@@ -14,7 +14,7 @@ member-kick-old = User has verified with a new ID, {$user}.
 
 pending-verification = Please complete your pending verification before trying again
 
-record-claimed = The details you entered is of a record already claimed by `{$another_user}`.
+record-claimed = The details you entered is of a record already claimed by {$user}.
             An email has been sent to your institute email ID, `{$email}`. Paste the code here to complete your verification.
 
 record-notfound = The requested record was not found. Please re-check the entered details and try again
