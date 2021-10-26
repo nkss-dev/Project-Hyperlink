@@ -3,6 +3,7 @@ from utils.l10n import get_l10n
 
 from discord.ext import commands
 
+
 class Prefix(commands.Cog):
     """Bot prefix management"""
 
@@ -30,15 +31,18 @@ class Prefix(commands.Cog):
         `prefix`: <class 'str'>
             The prefix to add.
         """
-        prefixes = self.bot.guild_data[str(ctx.guild.id)]['prefix']
+        prefixes = self.bot.c.execute(
+            'select prefix from prefixes where ID = ?', (ctx.guild.id,)
+        ).fetchall()
 
         if prefix in prefixes:
             await ctx.reply(self.l10n.format_value('exists-true', {'prefix': prefix}))
             return
 
-        prefixes.append(prefix)
-        self.bot.guild_data[str(ctx.guild.id)]['prefix'] = prefixes
-        self.save()
+        self.bot.c.execute(
+            'insert into prefixes values(?,?)', (ctx.guild.id, prefix,)
+        )
+        self.bot.db.commit()
 
         await ctx.reply(self.l10n.format_value('add-success', {'prefix': prefix}))
 
@@ -51,19 +55,19 @@ class Prefix(commands.Cog):
         `prefix`: <class 'str'>
             The prefix to remove.
         """
-        prefixes = self.bot.guild_data[str(ctx.guild.id)]['prefix']
+        prefixes = self.bot.c.execute(
+            'select prefix from prefixes where ID = ?', (ctx.guild.id,)
+        ).fetchall()
 
-        if prefix not in prefixes:
+        if (prefix,) not in prefixes:
             await ctx.reply(self.l10n.format_value('exists-false', {'prefix': prefix}))
             return
 
-        if len(prefixes) == 1:
-            await ctx.reply(self.l10n.format_value('atleast-one-required'))
-            return
-
-        prefixes.remove(prefix)
-        self.bot.guild_data[str(ctx.guild.id)]['prefix'] = prefixes
-        self.save()
+        self.bot.c.execute(
+            'delete from prefixes where ID = ? and prefix = ?',
+            (ctx.guild.id, prefix,)
+        )
+        self.bot.db.commit()
 
         await ctx.reply(self.l10n.format_value('remove-success', {'prefix': prefix}))
 
@@ -76,15 +80,16 @@ class Prefix(commands.Cog):
         `prefix`: <class 'str'>
             The prefix to set.
         """
-        self.bot.guild_data[str(ctx.guild.id)]['prefix'] = [prefix]
-        self.save()
+        self.bot.c.execute(
+            'delete from prefixes where ID = ?', (ctx.guild.id,)
+        )
+        self.bot.c.execute(
+            'insert into prefixes values(?,?)', (ctx.guild.id, prefix,)
+        )
+        self.bot.db.commit()
 
         await ctx.reply(self.l10n.format_value('guild-prefix', {'prefix': prefix}))
 
-    def save(self):
-        """Save the data to a json file"""
-        with open('db/guilds.json', 'w') as f:
-            json.dump(self.bot.guild_data, f)
 
 def setup(bot):
     """Called when this file is attempted to be loaded as an extension"""
