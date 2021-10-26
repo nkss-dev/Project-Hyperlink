@@ -10,6 +10,6 @@ message-new = **New Message**
 
 message-old = **Old Message**
 
-messages-delete = {$count} messages were deleted in {$channel}
+messages-delete = { NUMBER($count, useGrouping: 0) } messages were deleted in {$channel}
 
-user-id = User ID: {$id}
+user-id = User ID: { NUMBER($id, useGrouping: 0) }

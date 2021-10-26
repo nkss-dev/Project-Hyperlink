@@ -11,6 +11,7 @@ from discord.utils import sleep_until
 from datetime import datetime, timedelta
 from typing import Union
 
+
 class Mod(commands.Cog):
     """Moderator-only commands"""
 
@@ -29,7 +30,7 @@ class Mod(commands.Cog):
         return self.bot.moderatorCheck(ctx)
 
     @commands.command(aliases=['m'])
-    async def mute(self, ctx, item: Union[discord.Member, discord.Role], duration: str, channel: discord.TextChannel=None):
+    async def mute(self, ctx, item: Union[discord.Member, discord.Role], duration: str, channel: discord.TextChannel = None):
         """Mute user/role from the server or a single channel.
 
         Parameters
@@ -103,12 +104,14 @@ class Mod(commands.Cog):
                 await ctx.reply(self.l10n.format_value('mute-role-not-allowed'))
                 return
 
-            mute_role_id = self.bot.guild_data[str(ctx.guild.id)]['roles']['mute']
-            if not (mute_role := ctx.guild.get_role(mute_role_id)):
+            mute_role_id = self.bot.c.execute(
+                'select Mute_Role from guilds where ID = ?', (ctx.guild.id,)
+            ).fetchone()
+            if not mute_role_id:
                 await ctx.reply(self.l10n.format_value('mute-role-notfound'))
                 return
 
-            await item.add_roles(mute_role)
+            await item.add_roles(ctx.guild.get_role(mute_role_id))
 
             muted_item = [
                 ctx.guild.id,
@@ -179,6 +182,7 @@ class Mod(commands.Cog):
         """save the data to a json file"""
         with open('db/muted.json', 'w') as muted:
             json.dump(self.muted, muted)
+
 
 def setup(bot):
     """invoked when this file is attempted to be loaded as an extension"""

@@ -143,8 +143,11 @@ class Verify(commands.Cog):
             return
 
         guild = ctx.guild
-        if details := self.bot.guild_data[str(guild.id)].get('verification'):
-            if tuple[4] != details['batch']:
+        batch = self.bot.c.execute(
+            'select Batch from verified_servers where ID = ?', (guild.id,)
+        ).fetchone()
+        if batch:
+            if tuple[4] != batch[0]:
                 await ctx.reply(self.l10n.format_value(
                         'incorrect-server', {'batch': str(tuple[4])}))
                 return
@@ -230,9 +233,12 @@ class Verify(commands.Cog):
         await ctx.reply(self.l10n.format_value('basic-success'))
 
         # Removing restricting role
-        if ids := self.bot.guild_data[str(guild.id)].get('verification'):
-            if role := guild.get_role(ids['role']):
-                await ctx.author.remove_roles(role)
+        guest_role_id = self.bot.c.execute(
+            'select Guest_Role from verified_servers where ID = ?', (guild.id,)
+        ).fetchone()
+        if guest_role_id:
+            if guest_role := guild.get_role(guest_role_id):
+                await ctx.author.remove_roles(guest_role)
 
         self.bot.c.execute(
             'update main set Discord_UID = (:uid) where Roll_Number = (:roll)',
