@@ -111,7 +111,8 @@ class Mod(commands.Cog):
                 await ctx.reply(self.l10n.format_value('mute-role-notfound'))
                 return
 
-            await item.add_roles(ctx.guild.get_role(mute_role_id))
+            mute_role = ctx.guild.get_role(mute_role_id)
+            await item.add_roles(mute_role)
 
             muted_item = [
                 ctx.guild.id,
