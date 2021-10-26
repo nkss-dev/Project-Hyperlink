@@ -7,8 +7,6 @@ class Constructor():
     """Constructs all necessary database files"""
 
     def __init__(self, client):
-        print(f'Logged in as {client.user} (ID: {client.user.id})')
-
         try:
             os.mkdir('db')
         except FileExistsError:

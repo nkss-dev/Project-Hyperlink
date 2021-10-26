@@ -65,6 +65,12 @@ class ProjectHyperlink(commands.Bot):
             base.extend(prefixes)
         return base
 
+    async def on_ready(self):
+        if not hasattr(self, 'launch_time'):
+            self.launch_time = discord.utils.utcnow()
+
+        print(f'Logged in as {self.user} (ID: {self.user.id})')
+
     async def construct(self):
         """Setup all initial requirements"""
         await self.wait_until_ready()
