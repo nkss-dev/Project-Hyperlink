@@ -3,11 +3,21 @@ from utils.l10n import get_l10n
 import discord
 from discord.ext import commands
 
+
 class Logger(commands.Cog):
     """Logs edited and deleted messages"""
 
     def __init__(self, bot):
         self.bot = bot
+        self.cache = {}
+
+        guild_channels = bot.c.execute(
+            'select ID, Edit_Channel, Delete_Channel from guilds'
+        ).fetchall()
+        for channels in guild_channels:
+            edit = self.bot.get_channel(channels[1])
+            delete = self.bot.get_channel(channels[2])
+            self.cache[channels[0]] = edit, delete
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
@@ -15,54 +25,56 @@ class Logger(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        channel_id = self.bot.guild_data[str(message.guild.id)]['log'][0]
-        if not (channel := self.bot.get_channel(channel_id)):
+        if not self.cache[message.guild.id][1]:
             return
 
         l10n = get_l10n(message.guild.id, 'logger')
 
         embed = discord.Embed(
-            description = l10n.format_value(
+            description=l10n.format_value(
                 'message-delete',
                 {'channel': message.channel.mention}
             ),
-            color = discord.Color.red()
+            color=discord.Color.red()
         )
-        embed.set_author(name=message.author, icon_url=message.author.display_avatar.url)
+        embed.set_author(
+            name=message.author, icon_url=message.author.display_avatar.url
+        )
         embed.add_field(
-            name = l10n.format_value('content'),
-            value = message.content or l10n.format_value('content-notfound')
+            name=l10n.format_value('content'),
+            value=message.content or l10n.format_value('content-notfound')
         )
 
         if message.attachments:
             if 'image' in message.attachments[0].content_type:
                 embed.set_image(url=message.attachments[0].url)
         embed.timestamp = discord.utils.utcnow()
-        embed.set_footer(text=l10n.format_value('user-id', {'id': str(message.author.id)}))
+        embed.set_footer(
+            text=l10n.format_value('user-id', {'id': message.author.id})
+        )
 
-        await channel.send(embed=embed)
+        await self.cache[message.guild.id][1].send(embed=embed)
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent):
-        """Called when multiple messages are deleted"""
-        channel_id = self.bot.guild_data[str(payload.guild_id)]['log'][0]
-        if not (channel := self.bot.get_channel(channel_id)):
+        """Called when multiple messages are deleted at once"""
+        if not self.cache[payload.guild_id][1]:
             return
 
         l10n = get_l10n(payload.guild_id, 'logger')
 
         messages = {
-            'count': str(len(payload.message_ids)),
+            'count': len(payload.message_ids),
             'channel': self.bot.get_channel(payload.channel_id).mention
         }
 
         embed = discord.Embed(
-            description = l10n.format_value('messages-delete', messages),
-            color = discord.Color.red()
+            description=l10n.format_value('messages-delete', messages),
+            color=discord.Color.red()
         )
         embed.timestamp = discord.utils.utcnow()
 
-        await channel.send(embed=embed)
+        await self.cache[payload.guild_id][1].send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
@@ -70,8 +82,7 @@ class Logger(commands.Cog):
         if before.author.bot or not before.guild:
             return
 
-        channel_id = self.bot.guild_data[str(before.guild.id)]['log'][1]
-        if not (channel := self.bot.get_channel(channel_id)):
+        if not self.cache[before.guild.id][0]:
             return
 
         if before.content == after.content:
@@ -80,27 +91,33 @@ class Logger(commands.Cog):
         l10n = get_l10n(before.guild.id, 'logger')
 
         embed = discord.Embed(
-            description = l10n.format_value(
+            description=l10n.format_value(
                 'message-edit',
                 {'channel': before.channel.mention, 'url': before.jump_url}
             ),
-            color = discord.Color.orange()
+            color=discord.Color.orange()
         )
-        embed.set_author(name=before.author, icon_url=before.author.display_avatar.url)
+        embed.set_author(
+            name=before.author,
+            icon_url=before.author.display_avatar.url
+        )
 
         embed.add_field(
-            name = l10n.format_value('message-old'),
-            value = before.content or l10n.format_value('content-notfound')
+            name=l10n.format_value('message-old'),
+            value=before.content or l10n.format_value('content-notfound')
         )
         embed.add_field(
-            name = l10n.format_value('message-new'),
-            value = after.content or l10n.format_value('content-notfound'),
+            name=l10n.format_value('message-new'),
+            value=after.content or l10n.format_value('content-notfound'),
             inline=False
         )
         embed.timestamp = discord.utils.utcnow()
-        embed.set_footer(text=l10n.format_value('user-id', {'id': str(before.author.id)}))
+        embed.set_footer(
+            text=l10n.format_value('user-id', {'id': before.author.id})
+        )
 
-        await channel.send(embed=embed)
+        await self.cache[before.guild.id][0].send(embed=embed)
+
 
 def setup(bot):
     """Called when this file is attempted to be loaded as an extension"""
