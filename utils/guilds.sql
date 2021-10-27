@@ -2,6 +2,7 @@ create table if not exists guilds (
     ID              int  primary key,
     Name            text check(length(Name) <= 100) not null,
     Batch           int  check(Batch >= 2010),
+    Language        text default 'en-gb',
     Bot_Role        int,
     Mute_Role       int,
     Edit_Channel    int,
