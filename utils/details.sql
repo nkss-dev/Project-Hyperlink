@@ -1,5 +1,5 @@
 create table if not exists hostels (
-    Hostel_Number  text primary key check(Hostel_Number like '%H_'),
+    Hostel_Number  text primary key check(Hostel_Number like '%H_%'),
     Hostel_Name    text unique,
     Warden_Name    text unique
 );
@@ -22,22 +22,35 @@ create table if not exists main (
 
 create table if not exists groups (
     Name             text primary key,
+    Alias            text unique,
     Faculty_Advisor  text,
-    Contact_Number   text,
-    Kind             text check(Kind='Cultural Club' or Kind='Technical Society'),
-    Discord_Server   int,
-    Fresher_Role     int,
-    Sophomore_Role   int,
-    Junior_Role      int,
-    Final_Role       int,
-    Guest_Role       int
+    Contact_Number   text unique,
+    Branch           text unique,
+    Kind             text check(Kind='Cultural Club' or Kind='Technical Club' or Kind='Technical Society'),
+    Discord_Server   int  unique,
+    Server_Invite    text unique,
+    Fresher_Role     int  unique,
+    Sophomore_Role   int  unique,
+    Junior_Role      int  unique,
+    Final_Role       int  unique,
+    Guest_Role       int  unique
 );
 
 create table if not exists group_members (
     Roll_Number  int  references main(Roll_Number),
     Group_Name   text references groups(Name),
-    primary key(Roll_Number, Group_Name)
+    primary key (Roll_Number, Group_Name)
 );
+
+create view if not exists group_discord_users as
+    select main.Batch, main.Discord_UID,
+        c.Name, c.Alias, c.Discord_Server,
+        c.Fresher_Role, c.Sophomore_Role, c.Junior_Role, c.Final_Role,
+        c.Guest_Role
+        from group_members m
+        join groups c on c.Name = m.Group_Name
+        join main on main.Roll_Number = m.Roll_Number
+        where main.Discord_UID not null;
 
 create table if not exists ign (
     `Discord_UID`     int primary key,
