@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
@@ -89,6 +89,28 @@ class Events(commands.Cog):
                 )
         self.bot.db.commit()
 
+    async def join_club_or_society(self, member):
+        server_exists = self.bot.c.execute(
+            'select * from groups where Discord_Server = ?', (member.guild.id,)
+        ).fetchone()
+        if server_exists:
+            details = self.bot.c.execute(
+                '''select * from group_discord_users
+                where Discord_Server = ? and Discord_UID = ?''',
+                (member.guild.id, member.id,)
+            ).fetchone()
+            if not details:
+                role = member.guild.get_role(server_exists[-1])
+            else:
+                passing_date = datetime(year=details[0], month=6, day=1)
+                time = passing_date - datetime.utcnow()
+                remaining_years = int(time.days/365)
+                role = member.guild.get_role(details[-(remaining_years + 2)])
+            if role:
+                await member.add_roles(role)
+            return True
+        return False
+
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Called when a member joins a guild"""
@@ -103,6 +125,7 @@ class Events(commands.Cog):
                 await member.add_roles(bot_role)
             return
 
+        # Handle all generic events
         events = self.bot.c.execute(
             '''select Join_Channel, Join_Message, Welcome_Message
                 from events where Guild_ID = ?''',
@@ -110,6 +133,11 @@ class Events(commands.Cog):
         ).fetchone()
         await self.join_handler(events, member, guild)
 
+        # Handle special events for club and society servers
+        if await self.join_club_or_society(member):
+            return
+
+        # Handle special events for servers with verification
         details = self.bot.c.execute(
             'select * from verified_servers where ID = ?', (guild.id,)
         ).fetchone()
@@ -229,7 +257,8 @@ class Events(commands.Cog):
             'select * from verified_servers where ID = ?', (guild.id,)
         ).fetchone()
         if not details:
-            await self.send_leave_message(channel, member, events['leave'][1])
+            if events:
+                await self.send_leave_message(channel, member, events['leave'][1])
             return
 
         verified = self.bot.c.execute(
