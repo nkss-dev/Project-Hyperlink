@@ -25,7 +25,7 @@ class Logger(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        if not self.cache[message.guild.id][1]:
+        if message.guild.id not in self.cache:
             return
 
         l10n = get_l10n(message.guild.id, 'logger')
@@ -58,7 +58,7 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent):
         """Called when multiple messages are deleted at once"""
-        if not self.cache[payload.guild_id][1]:
+        if payload.guild_id not in self.cache:
             return
 
         l10n = get_l10n(payload.guild_id, 'logger')
@@ -82,7 +82,7 @@ class Logger(commands.Cog):
         if before.author.bot or not before.guild:
             return
 
-        if not self.cache[before.guild.id][0]:
+        if before.guild.id not in self.cache:
             return
 
         if before.content == after.content:
