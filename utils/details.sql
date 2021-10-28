@@ -17,7 +17,7 @@ create table if not exists main (
     Hostel_Number    text references hostels(Hostel_Number),
     Room_Number      text check(Room_Number like '%_-___') unique,
     Discord_UID      int  unique,
-    Verified         boolean default false
+    Verified         boolean
 );
 
 create table if not exists groups (
