@@ -7,6 +7,7 @@ RUN pip install -U google-api-python-client google-auth-httplib2 google-auth-oau
 RUN pip install -U Pillow
 RUN pip install -U python.dotenv
 RUN pip install -U pytz
+RUN pip install -U tabulate
 
 COPY . .
 CMD ["python", "./main.py"]

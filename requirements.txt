@@ -6,3 +6,4 @@ google-auth-oauthlib
 Pillow
 python.dotenv
 pytz
+tabulate
