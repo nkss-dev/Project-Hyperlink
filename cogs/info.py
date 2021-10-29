@@ -1,18 +1,21 @@
 import json
-
 from tabulate import tabulate
 from typing import Optional, Union
-from utils.l10n import get_l10n
-from utils.utils import deleteOnReaction
 
 import discord
 from discord.ext import commands
 
+from utils.l10n import get_l10n
+from utils.utils import deleteOnReaction
+
+
 def basicVerificationCheck(ctx) -> bool:
     return ctx.bot.basicVerificationCheck(ctx)
 
+
 def verificationCheck(ctx) -> bool:
     return ctx.bot.verificationCheck(ctx)
+
 
 class ProfileChoice(discord.ui.View):
     """UI class for profile"""
@@ -224,49 +227,40 @@ class Info(commands.Cog):
             The batch for which the stats are shown.
         """
         sections = self.bot.c.execute(
-            'select distinct Section from main').fetchall()
-        sections = [section[0] for section in sections]
-
-        count_all = self.bot.c.execute(
             '''select Section, count(Discord_UID),
                 count(*) - count(Discord_UID), count(Verified)
                 from main where Batch = ? group by Section;
             ''', (batch,)
         ).fetchall()
 
-        # Separates each section tuple into multiple lists
-        # each containing one entire branch row
-        count_separate = []
-        temp = []
-        previous = count_all[0][0]
-        for section in count_all:
-            if section[0][:2] != previous[:2]:
-                count_separate.append(temp.copy())
-                temp = []
-            temp.append(section)
+        # Get the indices of the rows to be deleted
+        indices = []
+        previous = sections[0][0]
+        for i, section in zip(range(2, len(sections)*2, 2), sections):
+            if section[0][:2] == previous[:2]:
+                indices.append(i + 2)
+            else:
+                indices[-1] += 2
             previous = section[0]
 
-        # Create one table each for all the sections
-        tables = []
-        for i, group in enumerate(count_separate):
-            table = tabulate(
-                group,
-                headers=('Section', 'Joined', 'Remaining', 'Verified'),
-                tablefmt='psql',
-                colalign=None
-            )
-            # Cut last dashed row
-            if group != count_separate[-1]:
-                table = table.rsplit('\n', 1)[0]
-            if not i:
-                tables.append(table)
-            else:
-                # Remove header row
-                tables.append(table.split('\n', 2)[2:][0])
+        # Get total values for each numerical column
+        counts = [row[1:] for row in sections]
+        total = [sum(count) for count in zip(*counts)]
 
-        table_string = '\n'.join(tables)
+        table = tabulate(
+            [*sections, ['Total', *total]],
+            headers=('Section', 'Joined', 'Remaining', 'Verified'),
+            tablefmt='grid'
+        ).split('\n')
+        table[2] = table[0]
+
+        # Delete the extra dashed lines
+        for i, index in enumerate(indices):
+            table.pop(index - i)
+        table = '\n'.join(table)
+
         embed = discord.Embed(
-            description=f'```\n{table_string}```',
+            description=f'```swift\n{table}```',
             color=discord.Color.blurple()
         )
         await ctx.send(embed=embed)
