@@ -15,7 +15,7 @@ create table if not exists main (
     Institute_Email  text check(Institute_Email like '%___@___%.__%'),
     Batch            int  check(Batch >= 2010),
     Hostel_Number    text references hostels(Hostel_Number),
-    Room_Number      text check(Room_Number like '%_-___') unique,
+    Room_Number      text check(Room_Number like '%_-___'),
     Discord_UID      int  unique,
     Verified         boolean
 );
