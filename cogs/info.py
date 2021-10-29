@@ -1,17 +1,21 @@
 import json
-
+from tabulate import tabulate
 from typing import Optional, Union
-from utils.l10n import get_l10n
-from utils.utils import deleteOnReaction
 
 import discord
 from discord.ext import commands
 
+from utils.l10n import get_l10n
+from utils.utils import deleteOnReaction
+
+
 def basicVerificationCheck(ctx) -> bool:
     return ctx.bot.basicVerificationCheck(ctx)
 
+
 def verificationCheck(ctx) -> bool:
     return ctx.bot.verificationCheck(ctx)
+
 
 class ProfileChoice(discord.ui.View):
     """UI class for profile"""
@@ -222,58 +226,42 @@ class Info(commands.Cog):
         `batch`: <class 'int'>
             The batch for which the stats are shown.
         """
+        sections = self.bot.c.execute(
+            '''select Section, count(Discord_UID),
+                count(*) - count(Discord_UID), count(Verified)
+                from main where Batch = ? group by Section;
+            ''', (batch,)
+        ).fetchall()
 
-        sections = (
-            'CE-A', 'CE-B', 'CE-C',
-            'CS-A', 'CS-B',
-            'EC-A', 'EC-B', 'EC-C',
-            'EE-A', 'EE-B', 'EE-C',
-            'IT-A', 'IT-B',
-            'ME-A', 'ME-B', 'ME-C',
-            'PI-A', 'PI-B'
-        )
-        total = []
-        joined = []
-        verified = []
+        # Get the indices of the rows to be deleted
+        indices = []
+        previous = sections[0][0]
+        for i, section in zip(range(2, len(sections)*2, 2), sections):
+            if section[0][:2] == previous[:2]:
+                indices.append(i + 2)
+            else:
+                indices[-1] += 2
+            previous = section[0]
 
-        for section in sections:
-            tuple = self.bot.c.execute(
-                'select count(*), count(Discord_UID) from main where Section = (:section) and Batch = (:batch)',
-                {'section': section, 'batch': batch}
-            ).fetchone()
-            total.append(tuple[0])
-            joined.append(tuple[1])
+        # Get total values for each numerical column
+        counts = [row[1:] for row in sections]
+        total = [sum(count) for count in zip(*counts)]
 
-        for section in sections:
-            countVerified = self.bot.c.execute(
-                'select count(*) from main where Section = (:section) and Verified = "True" and Batch = (:batch)',
-                {'section': section, 'batch': batch}
-            ).fetchone()[0]
-            verified.append(countVerified)
+        table = tabulate(
+            [*sections, ['Total', *total]],
+            headers=('Section', 'Joined', 'Remaining', 'Verified'),
+            tablefmt='grid'
+        ).split('\n')
+        table[2] = table[0]
 
-        tuple = self.bot.c.execute(
-            'select count(*), count(Discord_UID) from main where Batch = (:batch)',
-            {'batch': batch}
-        ).fetchone()
-        total.append(tuple[0])
-        joined.append(tuple[1])
-
-        table =  '╭─────────┬────────┬───────────┬──────────╮\n'
-        table += '│ Section │ Joined │ Remaining │ Verified │\n'
-        table += '├─────────┼────────┼───────────┼──────────┤\n'
-        previous = sections[0][:2]
-        for section, num1, num2, verify in zip(sections, joined, total, verified):
-            if section[:2] != previous[:2]:
-                table += '├─────────┼────────┼───────────┼──────────┤\n'
-            table += '│{:^9}│{:^8}│{:^11}│{:^10}│\n'.format(section, str(num1).zfill(2), str(num2-num1).zfill(2), str(verify).zfill(2))
-            previous = section[:2]
-        table += '├─────────┼────────┼───────────┼──────────┤\n'
-        table += '│  Total  │{:^8}│{:^11}│{:^10}│\n'.format(str(sum(joined[:-1])).zfill(2), str(sum(total[:-1])-sum(joined[:-1])).zfill(2), str(sum(verified)).zfill(2))
-        table += '╰─────────┴────────┴───────────┴──────────╯'
+        # Delete the extra dashed lines
+        for i, index in enumerate(indices):
+            table.pop(index - i)
+        table = '\n'.join(table)
 
         embed = discord.Embed(
-            description = f'```\n{table}```',
-            color = discord.Color.blurple()
+            description=f'```swift\n{table}```',
+            color=discord.Color.blurple()
         )
         await ctx.send(embed=embed)
 
