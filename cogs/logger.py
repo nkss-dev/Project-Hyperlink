@@ -17,7 +17,8 @@ class Logger(commands.Cog):
         for channels in guild_channels:
             edit = self.bot.get_channel(channels[1])
             delete = self.bot.get_channel(channels[2])
-            self.cache[channels[0]] = edit, delete
+            if edit and delete:
+                self.cache[channels[0]] = edit, delete
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
