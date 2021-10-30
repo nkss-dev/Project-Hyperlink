@@ -6,6 +6,26 @@ from typing import Optional, Tuple
 from math import floor
 from random import random
 
+
+async def assign_student_roles(member, details, cursor):
+    """Add multiple college related roles to the user.
+
+    These currently include:
+        Section, Sub-Section, Hostel, Clubs
+    """
+    groups = cursor.execute(
+        'select Name, Alias from group_discord_users where Discord_UID = ?',
+        (member.id,)
+    ).fetchall()
+
+    role_names = (*details, *[group[1] or group[0] for group in groups])
+    roles = []
+    for role_name in role_names:
+        if role := discord.utils.get(member.guild.roles, name=role_name):
+            roles.append(role)
+    await member.add_roles(*roles)
+
+
 async def deleteOnReaction(ctx, message: discord.Message, emoji: str='🗑️'):
     """Delete the given message when a certain reaction is used"""
     await message.add_reaction(emoji)

@@ -4,7 +4,7 @@ import re
 
 from asyncio import TimeoutError
 from utils.l10n import get_l10n
-from utils.utils import generateID
+from utils.utils import assign_student_roles, generateID
 
 import discord
 from discord.ext import commands
@@ -133,9 +133,10 @@ class Verify(commands.Cog):
             return
 
         tuple = self.bot.c.execute(
-            '''select
-            Section, Subsection, Name, Institute_Email, Batch, Discord_UID
-            from main where Roll_Number = ?''', (roll_no,)
+            '''select Section, Subsection, Name,
+                Institute_Email, Batch, Hostel_Number, Discord_UID
+                from main where Roll_Number = ?
+            ''', (roll_no,)
         ).fetchone()
 
         if not tuple:
@@ -176,8 +177,8 @@ class Verify(commands.Cog):
                 self.l10n.format_value('section-mismatch'))
             return
 
-        if tuple[5]:
-            user = guild.get_member(tuple[5]) or self.bot.get_user(tuple[5])
+        if tuple[6]:
+            user = guild.get_member(tuple[6]) or self.bot.get_user(tuple[6])
             values = {
                 'email': tuple[3],
                 'user': user.mention if user else 'another user'
@@ -213,9 +214,9 @@ class Verify(commands.Cog):
                         'select Discord_UID from main where Roll_Number = ?',
                         (roll_no,)
                     ).fetchone()
-                    user = guild.get_member(tuple[5])
+                    user = guild.get_member(tuple[6])
                     if not user:
-                        user = self.bot.get_user(tuple[5])
+                        user = self.bot.get_user(tuple[6])
 
                     # Kick the old account if any
                     if isinstance(user, discord.Member):
@@ -224,11 +225,9 @@ class Verify(commands.Cog):
                                 {'user': ctx.author.mention}))
                     break
 
-        # Assigning section/sub-section roles to the user
-        if role := discord.utils.get(guild.roles, name=tuple[0]):
-            await ctx.author.add_roles(role)
-        if role := discord.utils.get(guild.roles, name=tuple[1]):
-            await ctx.author.add_roles(role)
+        await assign_student_roles(
+            ctx.author, (tuple[0], tuple[1], tuple[5]), self.bot.c
+        )
 
         await ctx.reply(self.l10n.format_value('basic-success'))
 

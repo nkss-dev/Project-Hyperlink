@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 from utils.l10n import get_l10n
+from utils.utils import assign_student_roles
 
 
 class Events(commands.Cog):
@@ -145,18 +146,16 @@ class Events(commands.Cog):
             return
 
         record = self.bot.c.execute(
-            '''select Section, SubSection, Batch, Verified
+            '''select Section, SubSection, Batch, Hostel_Number, Verified
                 from main where Discord_UID = ?''',
             (member.id,)
         ).fetchone()
 
         if record:
-            if record[3] and record[2] == details[1]:
-                # Assigning Section and Sub-Section roles to the user
-                if role := discord.utils.get(guild.roles, name=record[0]):
-                    await member.add_roles(role)
-                if role := discord.utils.get(guild.roles, name=record[1]):
-                    await member.add_roles(role)
+            if record[4] and record[2] == details[1]:
+                await assign_student_roles(
+                    member, (record[0], record[1], record[3]), self.bot.c
+                )
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
