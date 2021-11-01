@@ -252,18 +252,12 @@ class Events(commands.Cog):
             }
             channel = await self.leave_handler(events, guild, member, l10n)
 
-        details = self.bot.c.execute(
-            'select * from verified_servers where ID = ?', (guild.id,)
-        ).fetchone()
-        if not details:
-            if events:
-                await self.send_leave_message(channel, member, events['leave'][1])
-            return
-
         verified = self.bot.c.execute(
             'select Verified from main where Discord_UID = ?', (member.id,)
         ).fetchone()
         if not verified:
+            if events:
+                await self.send_leave_message(channel, member, events['leave'][1])
             return
 
         if not verified[0]:
@@ -273,7 +267,8 @@ class Events(commands.Cog):
             )
             self.bot.db.commit()
 
-        await self.send_leave_message(channel, member, events['leave'][1])
+        if events:
+            await self.send_leave_message(channel, member, events['leave'][1])
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
