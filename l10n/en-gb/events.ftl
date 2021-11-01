@@ -25,9 +25,9 @@ CheckFailure-MissingAnyRole = You are missing at least one of the required roles
 CommandInvokeError-Forbidden = I am missing some permissions to execute this command.
 
 AccountNotLinked = You need to complete basic verification to use this command.
-AccountAlreadyLinked = You have already completed the basic level of verification.
+AccountAlreadyLinked = You have already completed the basic level of verification. For help verifying your email type `{$cmd} verify email`
 AngularBracketsNotAllowed = Please do not use angular brackets (`<>`) in your command.
 LinkProtection = To prevent class links from being available to everyone, this command can only be run in specified channels.
 MissingModeratorRoles = This command needs for a moderator role to be set for this guild.
-UserNotVerified = Only members with a verified email can use this command.
+UserNotVerified = Only members with a verified email can use this command. For help verifying your email type `{$cmd} verify email`
 UserAlreadyVerified = You are already verified.

@@ -103,7 +103,7 @@ class Verify(commands.Cog):
         ).fetchone()
 
         if verified:
-            if verified[0] == 'False':
+            if not verified[0]:
                 if ctx.invoked_subcommand.name == 'basic':
                     raise commands.CheckFailure('AccountAlreadyLinked')
             else:
@@ -148,7 +148,7 @@ class Verify(commands.Cog):
             'select Batch from verified_servers where ID = ?', (guild.id,)
         ).fetchone()
         if batch:
-            if tuple[4] != batch[0]:
+            if batch[0] and tuple[4] != batch[0]:
                 await ctx.reply(self.l10n.format_value(
                         'incorrect-server', {'batch': str(tuple[4])}))
                 return
@@ -226,7 +226,7 @@ class Verify(commands.Cog):
                     break
 
         await assign_student_roles(
-            ctx.author, (tuple[0], tuple[1], tuple[5]), self.bot.c
+            ctx.author, (tuple[0], tuple[1], tuple[4], tuple[5]), self.bot.c
         )
 
         await ctx.reply(self.l10n.format_value('basic-success'))

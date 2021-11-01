@@ -31,7 +31,7 @@ class Events(commands.Cog):
         )
 
         if message.guild:
-            prefixes = self.bot.command_prefix(self.bot, message)
+            prefixes = await self.bot.get_prefix(message)
             p_list = [f'{i+1}. {prefix}' for i, prefix in enumerate(prefixes)]
             embed.add_field(
                 name=l10n.format_value('prefix'),
@@ -147,15 +147,13 @@ class Events(commands.Cog):
 
         record = self.bot.c.execute(
             '''select Section, SubSection, Batch, Hostel_Number, Verified
-                from main where Discord_UID = ?''',
-            (member.id,)
+                from main where Discord_UID = ?
+            ''', (member.id,)
         ).fetchone()
 
         if record:
-            if record[4] and record[2] == details[1]:
-                await assign_student_roles(
-                    member, (record[0], record[1], record[3]), self.bot.c
-                )
+            if record[4] and (not details[1] or record[2] == details[1]):
+                await assign_student_roles(member, record[:-1], self.bot.c)
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
@@ -321,7 +319,9 @@ class Events(commands.Cog):
                 await ctx.reply(embed=embed)
 
             else:
-                await ctx.reply(l10n.format_value(str(error)))
+                prefix = ctx.clean_prefix
+                help = prefix + self.bot.help_command.command_attrs['name']
+                await ctx.reply(l10n.format_value(str(error), {'cmd': help}))
 
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, discord.errors.Forbidden):
