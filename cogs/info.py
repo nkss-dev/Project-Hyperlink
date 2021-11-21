@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 
 from utils.l10n import get_l10n
-from utils.utils import deleteOnReaction
+from utils.utils import deleteOnReaction, is_alone
 
 
 def basicVerificationCheck(ctx) -> bool:
@@ -140,7 +140,7 @@ class Info(commands.Cog):
         if not (embed := await self.getProfileEmbed(ctx, member)):
             return
 
-        if ctx.guild:
+        if not await is_alone(ctx.channel, ctx.author, self.bot.user):
             view = ProfileChoice(embed, self.l10n, ctx.author)
             await ctx.send(self.l10n.format_value('choice'), view=view)
             await view.wait()
