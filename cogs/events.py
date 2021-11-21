@@ -1,4 +1,5 @@
 import json
+import time
 import re
 from datetime import datetime, timedelta
 
@@ -30,17 +31,13 @@ class Events(commands.Cog):
             color=discord.Color.blurple()
         )
 
-        if message.guild:
-            prefixes = await self.bot.get_prefix(message)
-            p_list = [f'{i+1}. {prefix}' for i, prefix in enumerate(prefixes)]
-            embed.add_field(
-                name=l10n.format_value('prefix'),
-                value='\n'.join(p_list),
-                inline=False
-            )
-        else:
-            embed.add_field(
-                name=l10n.format_value('prefix'), value='%', inline=False)
+        prefixes = await self.bot.get_prefix(message)
+        p_list = [f'{i+1}. {prefix}' for i, prefix in enumerate(prefixes)]
+        embed.add_field(
+            name=l10n.format_value('prefix'),
+            value='\n'.join(p_list),
+            inline=False
+        )
 
         delta_uptime = discord.utils.utcnow() - self.bot.launch_time
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
@@ -53,13 +50,13 @@ class Events(commands.Cog):
         )
 
         ping = await message.channel.send(l10n.format_value('ping-initiate'))
-        start = discord.utils.utcnow()
+        start = time.perf_counter()
         await ping.edit(content=l10n.format_value('ping-calc'))
-        delta_uptime = (discord.utils.utcnow() - start)
+        response_latency = (time.perf_counter() - start)
 
         embed.add_field(
             name=l10n.format_value('ping-r-latency'),
-            value=f'```{int(delta_uptime.total_seconds()*1000)}ms```'
+            value=f'```{int(response_latency*1000)}ms```'
         )
         embed.add_field(
             name=l10n.format_value('ping-w-latency'),
