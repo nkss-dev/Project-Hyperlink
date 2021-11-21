@@ -4,19 +4,20 @@ incorrect-user = This interaction is not for you
 
 invite = Invites
 
-member-notfound = {$member} does not exist in the database
-
 nick-change-success = {$member}'s nick changed from `{$old}` to `{$new}` successfully.
-
-profile = **Roll Number:** {$roll}
-        {"**"}Section:{"**"} {$section}
-        {"**"}Roles:{"**"} {$roles}
-        {"**"}Email:{"**"} {$email}
 
 profile-name = {$member}'s Profile
 
-profile-join-date = Joined at: {$date}
+roll = Roll Number:
+sec = Section:
+hostel = Hostel:
+email = Email:
+groups = Clubs/Societies:
+no-group = No club/society joined
+mob = Mobile Number:
+bday = Birthday:
 
-record-notfound = Requested record not found!
+roles = Roles:
+join = Joined on:
 
-roles-none = No role taken
+footer = To delete this message, click on the emoji below ↓

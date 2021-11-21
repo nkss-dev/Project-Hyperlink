@@ -121,8 +121,8 @@ class Events(commands.Cog):
         if member.bot:
             bot_role_id = self.bot.c.execute(
                 'select Bot_Role from guilds where ID = ?', (guild.id,)
-            )
-            if bot_role := guild.get_role(bot_role_id):
+            ).fetchone()
+            if bot_role_id and (bot_role := guild.get_role(bot_role_id[0])):
                 await member.add_roles(bot_role)
             return
 
@@ -320,8 +320,12 @@ class Events(commands.Cog):
 
             else:
                 prefix = ctx.clean_prefix
-                help = prefix + self.bot.help_command.command_attrs['name']
-                await ctx.reply(l10n.format_value(str(error), {'cmd': help}))
+                help_str = prefix + self.bot.help_command.command_attrs['name']
+                variables = {
+                    'cmd': help_str,
+                    'member': f'`{ctx.author}`'
+                }
+                await ctx.reply(l10n.format_value(str(error), variables))
 
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, discord.errors.Forbidden):
@@ -343,4 +347,5 @@ class Events(commands.Cog):
 
 
 def setup(bot):
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Events(bot))

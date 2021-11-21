@@ -29,5 +29,6 @@ AccountAlreadyLinked = You have already completed the basic level of verificatio
 AngularBracketsNotAllowed = Please do not use angular brackets (`<>`) in your command.
 LinkProtection = To prevent class links from being available to everyone, this command can only be run in specified channels.
 MissingModeratorRoles = This command needs for a moderator role to be set for this guild.
+RecordNotFound = {$member} does not exist in the database.
 UserNotVerified = Only members with a verified email can use this command. For help verifying your email type `{$cmd} verify email`
 UserAlreadyVerified = You are already verified.
