@@ -1,10 +1,11 @@
-import discord
 import json
 import re
-from typing import Optional, Tuple
-
 from math import floor
+
 from random import random
+from typing import Optional
+
+import discord
 
 
 async def assign_student_roles(member, details, cursor):
@@ -21,12 +22,12 @@ async def assign_student_roles(member, details, cursor):
     role_names = (*details, *[group[1] or group[0] for group in groups])
     roles = []
     for role_name in role_names:
-        if role := discord.utils.get(member.guild.roles, name=role_name):
+        if role := discord.utils.get(member.guild.roles, name=str(role_name)):
             roles.append(role)
     await member.add_roles(*roles)
 
 
-async def deleteOnReaction(ctx, message: discord.Message, emoji: str='🗑️'):
+async def deleteOnReaction(ctx, message: discord.Message, emoji: str = '🗑️'):
     """Delete the given message when a certain reaction is used"""
     await message.add_reaction(emoji)
 
@@ -44,22 +45,28 @@ async def deleteOnReaction(ctx, message: discord.Message, emoji: str='🗑️'):
     if ctx.guild and ctx.guild.me.guild_permissions.manage_messages:
         await ctx.message.delete()
 
-def generateID(IDs: Tuple[str]=(), length: int=5, seed: str=None) -> str:
+
+def generateID(IDs: tuple = None, length: int = 5, seed: str = None) -> str:
     """Return an ID string.
 
     If `IDs` is provided, the returned ID will be unique.
     """
+    if IDs is None:
+        IDs = ()
+
     seed = seed or '01234567890123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     ID = ''
     for _ in range(length):
         ID += seed[floor(random() * len(seed))]
-    if ID in IDs and unique:
+    if ID in IDs:
         return generateID(IDs)
     return ID
+
 
 def getURLs(str: str) -> Optional[list]:
     regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
     return [url[0] for url in re.findall(regex, str)]
+
 
 async def getWebhook(channel: discord.TextChannel, member: discord.Member) -> Optional[discord.Webhook]:
     """Return a webhook"""
@@ -72,6 +79,30 @@ async def getWebhook(channel: discord.TextChannel, member: discord.Member) -> Op
             avatar=await member.display_avatar.read()
         )
         return webhook
+
+
+async def is_alone(channel, author, bot) -> bool:
+    alone = True
+    if isinstance(channel, discord.DMChannel):
+        return alone
+
+    guild = channel.guild
+    ids = author.id, bot.id
+    if isinstance(channel, (discord.TextChannel, discord.Thread)):
+        if isinstance(channel, discord.Thread):
+            for user in await channel.fetch_members():
+                member = guild.get_member(user.id)
+                if not member.public_flags.verified_bot and member.id not in ids:
+                    alone = False
+                    break
+        else:
+            for member in channel.members:
+                if not member.public_flags.verified_bot and member.id not in ids:
+                    alone = False
+                    break
+
+    return alone
+
 
 async def yesOrNo(ctx, message: discord.Message) -> bool:
     """Return true or false based on the user's reaction"""
