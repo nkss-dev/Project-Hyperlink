@@ -5,16 +5,9 @@ from typing import Optional, Union
 import discord
 from discord.ext import commands
 
+from utils import checks
 from utils.l10n import get_l10n
 from utils.utils import deleteOnReaction, is_alone
-
-
-def basicVerificationCheck(ctx) -> bool:
-    return ctx.bot.basicVerificationCheck(ctx)
-
-
-def verificationCheck(ctx) -> bool:
-    return ctx.bot.verificationCheck(ctx)
 
 
 class ProfileChoice(discord.ui.View):
@@ -112,12 +105,11 @@ class Info(commands.Cog):
 
         return embed
 
-    def cog_check(self, ctx) -> bool:
+    def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'info')
-        return self.bot.basicVerificationCheck(ctx)
+        return checks.is_exists()
 
     @commands.command(aliases=['p'])
-    @commands.check(basicVerificationCheck)
     async def profile(self, ctx, *, member: Union[discord.Member, discord.User]=None):
         """Show the user's profile in an embed.
 
@@ -135,7 +127,7 @@ class Info(commands.Cog):
         """
         member = member or ctx.author
         if member != ctx.author:
-            await self.bot.moderatorCheck(ctx)
+            checks.is_authorised()
 
         if not (embed := await self.getProfileEmbed(ctx, member)):
             return
@@ -156,7 +148,7 @@ class Info(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(manage_nicknames=True)
-    @commands.check(verificationCheck)
+    @checks.is_verified()
     @commands.guild_only()
     async def nick(self, ctx, *, member: discord.Member=None):
         """Change the nick of a user to their first name.
@@ -169,47 +161,45 @@ class Info(commands.Cog):
             authorised to change another user's nickname.
             If left blank, the member defaults to the author of the command.
         """
-
         member = member or ctx.author
         if await self.bot.is_owner(member):
             pass
         elif member != ctx.author:
             if not ctx.author.guild_permissions.manage_nicknames:
-                raise commands.MissingPermissions([discord.Permissions.manage_nicknames])
+                raise commands.MissingPermissions(['manage_nicknames'])
         else:
             if not member.guild_permissions.change_nickname:
-                raise commands.MissingPermissions([discord.Permissions.change_nickname])
+                raise commands.MissingPermissions(['change_nickname'])
 
         name = self.bot.c.execute(
-            'select Name from main where Discord_UID = (:uid)',
-            {'uid': member.id}
+            'select Name from main where Discord_UID = ?', (member.id,)
         ).fetchone()
 
         if not name:
             embed = discord.Embed(
-                description = self.l10n.format_value('member-notfound', {'member': member.mention}),
-                color = discord.Color.blurple()
+                description=self.l10n.format_value('member-notfound', {'member': member.mention}),
+                color=discord.Color.blurple()
             )
             await ctx.reply(embed=embed)
             return
 
         old_nick = member.nick
-        first_name = name[0].split(' ', 1)[0].capitalize()
+        first_name = name[0].split(' ', 1)[0]
         await member.edit(nick=first_name)
 
         nick = {
             'member': member.mention,
             'old': f'{old_nick}',
-            'new': member.nick
+            'new': first_name
         }
         embed = discord.Embed(
-            description = self.l10n.format_value('nick-change-success', nick),
-            color = discord.Color.blurple()
+            description=self.l10n.format_value('nick-change-success', nick),
+            color=discord.Color.blurple()
         )
         await ctx.reply(embed=embed)
 
     @commands.command()
-    @commands.check(verificationCheck)
+    @checks.is_verified()
     async def memlist(self, ctx, batch: int):
         """Show the stats of students of the specified batch.
 

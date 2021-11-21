@@ -1,8 +1,4 @@
-import json
 import re
-from utils.l10n import get_l10n
-from utils.utils import getURLs
-
 from datetime import datetime, timedelta
 from pytz import timezone
 
@@ -10,26 +6,37 @@ import discord
 from discord.ext import commands, tasks
 from discord.utils import get, sleep_until
 
+from utils import checks
+from utils.l10n import get_l10n
+from utils.utils import getURLs
+
+
 class Links(commands.Cog):
     """Dashboard setup for class links"""
 
     def __init__(self, bot):
         self.bot = bot
-        self.section = ''
-        self.batch = ''
 
         with open('db/links.json') as f:
             self.links = json.load(f)
+        self.section: str
+        self.batch: str
 
-        self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thrusday', 'Friday', 'Saturday', 'Sunday')
-        self.time = ('8:30', '9:25', '10:40', '11:35', '12:30', '1:45', '2:40', '3:35', '4:30', '5:00')
+        self.days = (
+            'Monday', 'Tuesday', 'Wednesday',
+            'Thrusday', 'Friday', 'Saturday', 'Sunday'
+        )
+        self.time = (
+            '8:30', '9:25', '10:40', '11:35', '12:30',
+            '1:45', '2:40', '3:35', '4:30', '5:00'
+        )
 
         self.linkUpdateLoop.start()
 
     async def cog_check(self, ctx) -> bool:
         if not ctx.guild:
             raise commands.NoPrivateMessage
-        if not self.bot.verificationCheck(ctx):
+        if not checks.is_verified():
             return False
 
         self.section, self.batch = self.bot.c.execute(

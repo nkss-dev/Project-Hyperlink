@@ -1,7 +1,7 @@
-import json
-from utils.l10n import get_l10n
-
 from discord.ext import commands
+
+from utils import checks
+from utils.l10n import get_l10n
 
 
 class Prefix(commands.Cog):
@@ -10,9 +10,9 @@ class Prefix(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_check(self, ctx) -> bool:
+    async def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'prefix')
-        return self.bot.verificationCheck(ctx)
+        return checks.is_verified()
 
     @commands.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_guild=True)

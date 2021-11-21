@@ -1,16 +1,17 @@
 import json
 import sqlite3
-
 from asyncio import TimeoutError
-from typing import List, Optional
-from utils.l10n import get_l10n
-from utils.utils import generateID
 
 import discord
 from discord.ext import commands
 
+from utils import checks
+from utils.l10n import get_l10n
+from utils.utils import generateID
+
+
 class RoleButton(discord.ui.Button['RoleView']):
-    def __init__(self, label: str, emoji: str, roles: List[discord.Role], id: str, l10n):
+    def __init__(self, label: str, emoji: str, roles: list[discord.Role], id: str, l10n):
         super().__init__(label=label, emoji=emoji, custom_id=id)
         self.l10n = l10n
         self.roles = roles
@@ -62,9 +63,9 @@ class ButtonRoles(commands.Cog):
 
         self.bot.loop.create_task(self.load_views())
 
-    async def cog_check(self, ctx) -> bool:
+    async def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles')
-        return await self.bot.moderatorCheck(ctx)
+        return checks.is_mod()
 
     @commands.group(name='button_role', aliases=['br'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -267,9 +268,9 @@ class ReactionRoles(commands.Cog):
             self.reactions[str(payload.guild_id)].remove(reaction_role)
             self.save()
 
-    async def cog_check(self, ctx) -> bool:
+    async def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles')
-        return await self.bot.moderatorCheck(ctx)
+        return checks.is_mod()
 
     @commands.group(name='reaction_role', aliases=['rr'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -316,7 +317,7 @@ class ReactionRoles(commands.Cog):
 
         if not self.reactions.get(str(ctx.guild.id)):
             self.reactions[str(ctx.guild.id)] = []
-        ID = generateID((item['ID'] for item in self.reactions[str(ctx.guild.id)]))
+        ID = generateID([item['ID'] for item in self.reactions[str(ctx.guild.id)]])
 
         if isinstance(reaction, str):
             if reaction[0] == '<':

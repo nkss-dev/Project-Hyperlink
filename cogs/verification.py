@@ -1,20 +1,16 @@
-import config
 import json
 import re
-
 from asyncio import TimeoutError
-from utils.l10n import get_l10n
-from utils.utils import assign_student_roles, generateID
 
+import config
 import discord
 from discord.ext import commands
-
 import smtplib
 from email.message import EmailMessage
 
-
-def basicVerificationCheck(ctx):
-    return ctx.bot.basicVerificationCheck(ctx)
+from utils import checks
+from utils.l10n import get_l10n
+from utils.utils import assign_student_roles, generateID
 
 
 class Verify(commands.Cog):
@@ -226,7 +222,7 @@ class Verify(commands.Cog):
                     break
 
         await assign_student_roles(
-            ctx.author, (tuple[0], tuple[1], tuple[4], tuple[5]), self.bot.c
+            ctx.author, (*tuple[:2], *tuple[4:6]), self.bot.c
         )
 
         await ctx.reply(self.l10n.format_value('basic-success'))
@@ -236,12 +232,12 @@ class Verify(commands.Cog):
             'select Guest_Role from verified_servers where ID = ?', (guild.id,)
         ).fetchone()
         if guest_role_id:
-            if guest_role := guild.get_role(guest_role_id):
+            if guest_role := guild.get_role(guest_role_id[0]):
                 await ctx.author.remove_roles(guest_role)
 
         self.bot.c.execute(
-            'update main set Discord_UID = (:uid) where Roll_Number = (:roll)',
-            {'uid': ctx.author.id, 'roll': roll_no}
+            'update main set Discord_UID = ? where Roll_Number = ?',
+            (ctx.author.id, roll_no,)
         )
         self.bot.db.commit()
 
@@ -249,7 +245,7 @@ class Verify(commands.Cog):
         await ctx.author.edit(nick=first_name)
 
     @verify.command()
-    @commands.check(basicVerificationCheck)
+    @checks.is_exists()
     async def email(self, ctx, email: str):
         """Verify the user's identity by verifying their institute email.
 
@@ -275,7 +271,7 @@ class Verify(commands.Cog):
             ))
 
     @verify.command()
-    @commands.check(basicVerificationCheck)
+    @checks.is_exists()
     async def code(self, ctx, code: str):
         """Check if the inputted code matches the sent OTP.
 

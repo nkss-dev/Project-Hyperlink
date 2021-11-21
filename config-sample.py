@@ -1,5 +1,6 @@
 bot_token = ''
-owner_ids: tuple[int] = ()  # allow users to have owner access to the bot
+owner_ids: tuple = ()       # allow users to have owner access to the bot
+authorised_ids: tuple = ()  # allow users to invoke commands display values from the bot's database
 
 # Email creds for verification.py
 email = ''

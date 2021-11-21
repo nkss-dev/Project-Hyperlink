@@ -1,15 +1,15 @@
 import asyncio
 import json
-
-from re import fullmatch
-from utils.l10n import get_l10n
+import re
+from datetime import datetime, timedelta
+from typing import Union
 
 import discord
 from discord.ext import commands
 from discord.utils import sleep_until
 
-from datetime import datetime, timedelta
-from typing import Union
+from utils import checks
+from utils.l10n import get_l10n
 
 
 class Mod(commands.Cog):
@@ -23,11 +23,12 @@ class Mod(commands.Cog):
 
         self.bot.loop.create_task(self.loadAllMuted())
 
-    def cog_check(self, ctx) -> bool:
+    def cog_check(self, ctx):
         if not ctx.guild:
             raise commands.NoPrivateMessage
         self.l10n = get_l10n(ctx.guild.id, 'mod')
-        return self.bot.moderatorCheck(ctx)
+        return checks.is_mod()
+
 
     @commands.command(aliases=['m'])
     async def mute(self, ctx, item: Union[discord.Member, discord.Role], duration: str, channel: discord.TextChannel = None):
@@ -47,7 +48,7 @@ class Mod(commands.Cog):
             blank, this defaults to the entire server. Note that muting in \
             the entire server works only for a member and only if a mute role exists.
         """
-        if not fullmatch('^(\d+:)?(([0-1]\d)|(2[0-4])):[0-6]\d$', duration):
+        if not re.fullmatch('^(\d+:)?(([0-1]\d)|(2[0-4])):[0-6]\d$', duration):
             await ctx.reply(self.l10n.format_value('duration-incorrect-format'))
             return
 
@@ -138,7 +139,7 @@ class Mod(commands.Cog):
             self.save()
 
     async def loadMuted(self, muted_item: list[int, int, str, Union[int, list[int, bool]]]):
-        """remove mute from item after mute time"""
+        """Remove mute from item after mute time"""
         unmute_time = datetime.strptime(muted_item[2], '%Y-%m-%d %H:%M:%S.%f')
         await sleep_until(unmute_time)
 
@@ -176,15 +177,15 @@ class Mod(commands.Cog):
             self.save()
 
     async def loadAllMuted(self):
-        """load all muted items to be unmuted at their respective times"""
+        """Load all muted items to be unmuted at their respective times"""
         asyncio.gather(*[self.loadMuted(muted_item) for muted_item in self.muted])
 
     def save(self):
-        """save the data to a json file"""
+        """Save the data to a json file"""
         with open('db/muted.json', 'w') as muted:
             json.dump(self.muted, muted)
 
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Mod(bot))

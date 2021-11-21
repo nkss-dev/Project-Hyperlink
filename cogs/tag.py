@@ -3,6 +3,7 @@ import re
 from discord import utils, AllowedMentions
 from discord.ext import commands
 
+from utils import checks
 from utils.utils import getWebhook
 
 
@@ -12,8 +13,8 @@ class Tag(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_check(self, ctx) -> bool:
-        return self.bot.verificationCheck(ctx)
+    async def cog_check(self, _):
+        return checks.is_verified()
 
     @commands.command()
     @commands.guild_only()
@@ -41,8 +42,7 @@ class Tag(commands.Cog):
         webhook = await getWebhook(ctx.channel, ctx.guild.me)
 
         section = self.bot.c.execute(
-            'select Section from main where Discord_UID = (:uid)',
-            {'uid': ctx.author.id}
+            'select Section from main where Discord_UID = ?', (ctx.author.id,)
         ).fetchone()[0]
 
         # Store roles that the user is allowed to tag
@@ -97,5 +97,5 @@ class Tag(commands.Cog):
 
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
+    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Tag(bot))

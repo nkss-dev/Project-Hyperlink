@@ -1,19 +1,21 @@
 import json
 import mimetypes
-
-from utils.l10n import get_l10n
-from utils.utils import yesOrNo
+import os
 
 import discord
 from discord.ext import commands
 
-import os
 from apiclient import errors
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+
+from utils import checks
+from utils.l10n import get_l10n
+from utils.utils import yesOrNo
+
 
 class GoogleDrive():
     """Drive API functions"""
@@ -25,7 +27,9 @@ class GoogleDrive():
         SCOPES = ['https://www.googleapis.com/auth/drive']
         creds = None
         if os.path.exists('db/token.json'):
-            creds = Credentials.from_authorized_user_file('db/token.json', SCOPES)
+            creds = Credentials.from_authorized_user_file(
+                'db/token.json', SCOPES
+            )
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
@@ -49,7 +53,7 @@ class GoogleDrive():
         ).execute()
         return payload
 
-    def uploadFile(self, name: str, parent_id: str=None) -> dict[str, str]:
+    def uploadFile(self, name: str, parent_id: str = None) -> dict[str, str]:
         """Upload specified file to the given folder"""
         meta_data = {'name': name.split('/')[-1]}
         if parent_id:
@@ -118,7 +122,7 @@ class Drive(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     @staticmethod
-    def getSearchQuery(query: str, type: str='default') -> tuple[str, str]:
+    def getSearchQuery(query: str, type: str = 'default') -> tuple[str, str]:
         """Return a compatible search query for the Drive API"""
         search_query = []
         ignored_args = []
@@ -133,9 +137,9 @@ class Drive(commands.Cog):
 
         return search_query, ignored_args
 
-    async def cog_check(self, ctx) -> bool:
+    async def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'drive')
-        return self.bot.verificationCheck(ctx)
+        return checks.is_verified()
 
     @commands.group(invoke_without_command=True)
     async def drive(self, ctx):
@@ -161,7 +165,10 @@ class Drive(commands.Cog):
         await ctx.message.add_reaction(self.emojis['loading'])
 
         search_query, ignored_args = self.getSearchQuery(query)
-        files = self.drive.listItems(search_query)
+        if search_query:
+            files = self.drive.listItems(search_query)
+        else:
+            files = []
 
         # Sorting the links based on their parents
         file_links = {}
@@ -188,13 +195,13 @@ class Drive(commands.Cog):
 
             if len(ignored_args) == len(query):
                 await ctx.reply(embed=ignored_embed)
-                await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
+                await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
                 return
 
         # Exit if no results were found for the given query
         if not files:
             await ctx.reply(self.l10n.format_value('result-notfound'))
-            await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
+            await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
             return
 
         # Add the links to the final embed(s)
@@ -212,7 +219,11 @@ class Drive(commands.Cog):
                     desc += f'{link}\n'
 
             if desc:
-                embed = discord.Embed(title=name, description=desc, color=discord.Color.blurple())
+                embed = discord.Embed(
+                    title=name,
+                    description=desc,
+                    color=discord.Color.blurple()
+                )
                 embeds.append(embed)
 
         if ignored_args:
@@ -223,7 +234,7 @@ class Drive(commands.Cog):
         except discord.errors.HTTPException:
             await ctx.reply(self.l10n.format_value('body-too-long'))
 
-        await ctx.message.remove_reaction(self.emojis['loading'], ctx.guild.me)
+        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
     @commands.group()
     async def driveAdmin(self, ctx):
@@ -388,6 +399,7 @@ class Drive(commands.Cog):
 
         # Cleanup
         os.remove(f'temp/{filename}')
+
 
 def setup(bot):
     """Called when this file is attempted to be loaded as an extension"""

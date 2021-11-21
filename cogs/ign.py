@@ -4,6 +4,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
+from utils import checks
 from utils.l10n import get_l10n
 
 
@@ -21,9 +22,9 @@ class IGN(commands.Cog):
         )
         return cursor
 
-    async def exists(self, ctx, game) -> Optional[str]:
+    async def exists(self, ctx, game) -> str:
         """Check if entered game exists in the database"""
-        result = None
+        result: str = ''
         for _game in self.games:
             if game.lower() == _game[0].lower():
                 result = _game[0]
@@ -37,9 +38,9 @@ class IGN(commands.Cog):
             await ctx.reply(content)
         return result
 
-    async def cog_check(self, ctx) -> bool:
+    async def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'ign')
-        return self.bot.verificationCheck(ctx)
+        return checks.is_verified()
 
     @commands.group()
     async def ign(self, ctx):
@@ -147,7 +148,7 @@ class IGN(commands.Cog):
         if game:
             try:
                 ign = self.bot.c.execute(
-                    f'select {game} from ign where Discord_UID = ?',
+                    f'select `{game}` from ign where Discord_UID = ?',
                     (member.id,)
                 ).fetchone()
             except sqlite3.OperationalError:
