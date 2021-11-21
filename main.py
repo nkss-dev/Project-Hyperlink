@@ -1,14 +1,13 @@
-import config
 import re
 import traceback
 
+import config
 import discord
 from discord.ext import commands
 
 from utils.constructor import Constructor
 
 initial_extensions = (
-    'cogs.check',
     'cogs.drive',
     'cogs.events',
     'cogs.help',
