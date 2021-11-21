@@ -285,6 +285,13 @@ class Verify(commands.Cog):
             return
 
         if self.checkCode(ctx.author.id, code):
+            details = self.bot.c.execute(
+                '''select Section, Subsection, Batch, Hostel_Number
+                    from main where Discord_UID = ?
+                ''', (ctx.author.id,)
+            ).fetchone()
+            await assign_student_roles(ctx.author, details, self.bot.c)
+
             await ctx.reply(self.l10n.format_value(
                     'email-success', {'emoji': self.emojis['verified']}))
         else:
