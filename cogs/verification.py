@@ -78,7 +78,7 @@ class Verify(commands.Cog):
 
         # Marks user as verified in the database
         self.bot.c.execute(
-            'update main set Verified = "True" where Discord_UID = ?',
+            'update main set Verified = 1 where Discord_UID = ?',
             (author_id,)
         )
         self.bot.db.commit()
@@ -104,6 +104,22 @@ class Verify(commands.Cog):
                     raise commands.CheckFailure('AccountAlreadyLinked')
             else:
                 raise commands.CheckFailure('UserAlreadyVerified')
+
+    async def cleanup(self, author, name):
+        """Execute finisher code after successful verification"""
+        guild = author.guild
+
+        # Remove restricting role
+        guest_role_id = self.bot.c.execute(
+            'select Guest_Role from verified_servers where ID = ?', (guild.id,)
+        ).fetchone()
+        if guest_role_id:
+            if guest_role := guild.get_role(guest_role_id[0]):
+                await author.remove_roles(guest_role)
+
+        # Add nickname
+        first_name = name.split(' ', 1)[0]
+        await author.edit(nick=first_name)
 
     @verify.command()
     async def basic(self, ctx, section: str, roll_no: int):
@@ -145,8 +161,11 @@ class Verify(commands.Cog):
         ).fetchone()
         if batch:
             if batch[0] and tuple[4] != batch[0]:
-                await ctx.reply(self.l10n.format_value(
-                        'incorrect-server', {'batch': str(tuple[4])}))
+                await ctx.reply(
+                    self.l10n.format_value(
+                        'incorrect-server', {'batch': tuple[4]}
+                        )
+                    )
                 return
         else:
             await ctx.reply(self.l10n.format_value('server-not-allowed'))
@@ -200,7 +219,7 @@ class Verify(commands.Cog):
                                 {'code': ctx.message.content}))
                         continue
                     self.bot.c.execute(
-                        'update main set Verified="True" where Roll_Number=?',
+                        'update main set Verified = 1 where Roll_Number = ?',
                         (roll_no,)
                     )
 
@@ -227,22 +246,13 @@ class Verify(commands.Cog):
 
         await ctx.reply(self.l10n.format_value('basic-success'))
 
-        # Removing restricting role
-        guest_role_id = self.bot.c.execute(
-            'select Guest_Role from verified_servers where ID = ?', (guild.id,)
-        ).fetchone()
-        if guest_role_id:
-            if guest_role := guild.get_role(guest_role_id[0]):
-                await ctx.author.remove_roles(guest_role)
-
         self.bot.c.execute(
             'update main set Discord_UID = ? where Roll_Number = ?',
             (ctx.author.id, roll_no,)
         )
         self.bot.db.commit()
 
-        first_name = tuple[2].split(' ', 1)[0]
-        await ctx.author.edit(nick=first_name)
+        await self.cleanup(ctx.author, tuple[2])
 
     @verify.command()
     @checks.is_exists()
@@ -286,11 +296,12 @@ class Verify(commands.Cog):
 
         if self.checkCode(ctx.author.id, code):
             details = self.bot.c.execute(
-                '''select Section, Subsection, Batch, Hostel_Number
+                '''select Section, Subsection, Batch, Hostel_Number, Name
                     from main where Discord_UID = ?
                 ''', (ctx.author.id,)
             ).fetchone()
-            await assign_student_roles(ctx.author, details, self.bot.c)
+            await assign_student_roles(ctx.author, details[:-1], self.bot.c)
+            await self.cleanup(ctx.author, details[-1])
 
             await ctx.reply(self.l10n.format_value(
                     'email-success', {'emoji': self.emojis['verified']}))

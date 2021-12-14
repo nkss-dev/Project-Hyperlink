@@ -7,7 +7,7 @@ check-email = Please check your institute email for the OTP and enter it here us
 code-incorrect = The code you entered is incorrect.
 code-retry = `{$code}` is incorrect. Please try again with the correct code.
 
-incorrect-server = Verification of the {$batch} batch is not allowed on this server.
+incorrect-server = Verification of the { NUMBER($batch, useGrouping: 0) } batch is not allowed on this server.
 server-not-allowed = This command is restricted to certain servers.
 
 member-kick-old = User has verified with a new ID, {$user}.
