@@ -31,18 +31,9 @@ def parse_verify_basic(params: str) -> BasicInfo:
         roll = int(roll_no.group(0))
 
     # try XY-A or XY-A2
-    if section_name := re.search(r'([A-Z]{2})[- ]?([ABC])', params, re.I):
+    if section_name := re.search(r'([A-Z]{2})[- ]?([ABC])?', params, re.I):
         branch = section_name.group(1)
         section = section_name.group(2)
-
-    # try XY-01 or XY-1
-    elif sect := re.search(r'([A-Z]{2})[- ]?(\d{1,2})', params, re.I):
-        branch = sect.group(1)
-        sec_num = int(sect.group(2))
-        if sec_num > 9 or sec_num < 1:
-            section = None
-        else:
-            section = ["A", "B", "C"][(sec_num - 1) // 3]
 
     return BasicInfo(branch, section, roll)
 
