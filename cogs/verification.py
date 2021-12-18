@@ -1,6 +1,8 @@
 import json
 import re
 from asyncio import TimeoutError
+from dataclasses import dataclass
+from typing import Optional
 
 import config
 import discord
@@ -11,6 +13,38 @@ from email.message import EmailMessage
 from utils import checks
 from utils.l10n import get_l10n
 from utils.utils import assign_student_roles, generateID
+
+
+@dataclass
+class BasicInfo:
+    branch: Optional[str]
+    section: Optional[str]
+    roll: Optional[int]
+
+
+def parse_verify_basic(params: str) -> BasicInfo:
+    roll = None
+    branch = None
+    section = None
+
+    if roll_no := re.search(r'\d{4,}', params):
+        roll = int(roll_no.group(0))
+
+    # try XY-A or XY-A2
+    if section_name := re.search(r'([A-Z]{2})[- ]?([ABC])', params, re.I):
+        branch = section_name.group(1)
+        section = section_name.group(2)
+
+    # try XY-01 or XY-1
+    elif sect := re.search(r'([A-Z]{2})[- ]?(\d{1,2})', params, re.I):
+        branch = sect.group(1)
+        sec_num = int(sect.group(2))
+        if sec_num > 9 or sec_num < 1:
+            section = None
+        else:
+            section = ["A", "B", "C"][(sec_num - 1) // 3]
+
+    return BasicInfo(branch, section, roll)
 
 
 class Verify(commands.Cog):
@@ -122,7 +156,7 @@ class Verify(commands.Cog):
         await author.edit(nick=first_name)
 
     @verify.command()
-    async def basic(self, ctx, section: str, roll_no: int):
+    async def basic(self, ctx, *, params: str):
         """Link a Discord account to a record in the database.
 
         Parameters
@@ -143,6 +177,23 @@ class Verify(commands.Cog):
         if str(ctx.author.id) in self.codes:
             await ctx.reply('pending-verification')
             return
+
+        info = parse_verify_basic(params)
+
+        if info.roll is None:
+            await ctx.reply(self.l10n.format_value('rollno-not-provided'))
+            return
+
+        if info.branch is None:
+            await ctx.reply(self.l10n.format_value('branch-not-provided'))
+            return
+
+        if info.section is None:
+            await ctx.reply(self.l10n.format_value('section-not-provided'))
+            return
+
+        roll_no = info.roll
+        section = f'{info.branch}-{info.section}'.upper()
 
         tuple = self.bot.c.execute(
             '''select Section, Subsection, Name,

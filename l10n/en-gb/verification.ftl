@@ -25,3 +25,7 @@ email-mismatch = The email that you entered does not match your institute email.
 
 section-notfound = '{$section}' is not an existing section. Please re-check the entered details and try again
 email-not-received = You did not receive any email yet.
+
+section-not-given = Section is required.
+rollno-not-given = Roll number is required.
+branch-not-given = Branch is required.
