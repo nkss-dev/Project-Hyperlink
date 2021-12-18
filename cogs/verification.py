@@ -203,7 +203,7 @@ class Verify(commands.Cog):
         ).fetchone()
 
         if not tuple:
-            await ctx.reply(self.l10n.format_value('record-notfound'))
+            await ctx.reply(self.l10n.format_value('roll-not-in-database'))
             return
 
         guild = ctx.guild

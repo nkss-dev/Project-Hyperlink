@@ -17,7 +17,7 @@ pending-verification = Please complete your pending verification before trying a
 record-claimed = The details you entered is of a record already claimed by {$user}.
             An email has been sent to your institute email ID, `{$email}`. Paste the code here to complete your verification.
 
-record-notfound = The requested record was not found. Please re-check the entered details and try again
+roll-not-in-database = Please re-check the entered roll number.
 
 section-mismatch = The section that you entered does not match that of the roll number that you entered. Please re-check the entered details and try again
 email-mismatch = The email that you entered does not match your institute email. Please try again with a valid email.
