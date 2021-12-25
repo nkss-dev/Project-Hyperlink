@@ -1,6 +1,7 @@
 import json
 import mimetypes
 import os
+import re
 
 import discord
 from discord.ext import commands
@@ -122,20 +123,23 @@ class Drive(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     @staticmethod
-    def getSearchQuery(query: str, type: str = 'default') -> tuple[str, str]:
+    def get_query_str(args: tuple, type: str = 'default') -> tuple[str, list]:
         """Return a compatible search query for the Drive API"""
-        search_query = []
+        query_args = []
         ignored_args = []
+        query = ''
 
         if type == 'default':
-            for keyword in query:
-                if len(keyword) < 3:
-                    ignored_args.append(keyword)
+            for arg in args:
+                if re.match(r'(.)\1{2}', arg):
+                    ignored_args.append(f'`{arg}`')
+                elif len(arg) not in range (3, 21):
+                    ignored_args.append(f'`{arg}`')
                 else:
-                    search_query.append(f"name contains '{keyword}'")
-            search_query = ' or '.join(search_query)
+                    query_args.append(f"name contains '{arg}'")
+            query = ' or '.join(query_args)
 
-        return search_query, ignored_args
+        return query, ignored_args
 
     async def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'drive')
@@ -148,7 +152,7 @@ class Drive(commands.Cog):
 
     @drive.command()
     @commands.cooldown(2, 10.0, commands.BucketType.user)
-    async def search(self, ctx, *query: str):
+    async def search(self, ctx, *query: tuple):
         """Search for the given query and send a corresponding embed.
 
         The input query is divided into separate keywords split by a space \
@@ -164,7 +168,7 @@ class Drive(commands.Cog):
         """
         await ctx.message.add_reaction(self.emojis['loading'])
 
-        search_query, ignored_args = self.getSearchQuery(query)
+        search_query, ignored_args = self.get_query_str(query)
         if search_query:
             files = self.drive.listItems(search_query)
         else:
