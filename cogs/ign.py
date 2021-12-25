@@ -38,9 +38,9 @@ class IGN(commands.Cog):
             await ctx.reply(content)
         return result
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'ign')
-        return checks.is_verified()
+        return await checks.is_verified().predicate(ctx)
 
     @commands.group()
     async def ign(self, ctx):

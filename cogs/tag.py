@@ -13,8 +13,8 @@ class Tag(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_check(self, _):
-        return checks.is_verified()
+    async def cog_check(self, ctx) -> bool:
+        return await checks.is_verified().predicate(ctx)
 
     @commands.command()
     @commands.guild_only()

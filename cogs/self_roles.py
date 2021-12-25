@@ -63,9 +63,9 @@ class ButtonRoles(commands.Cog):
 
         self.bot.loop.create_task(self.load_views())
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles')
-        return checks.is_mod()
+        return await checks.is_mod().predicate(ctx)
 
     @commands.group(name='button_role', aliases=['br'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -191,8 +191,9 @@ class ButtonRoles(commands.Cog):
             l10n = get_l10n(channel.guild.id if channel.guild else 0, 'self_roles')
 
             buttons = self.c.execute(
-                'select Button_ID, Label, Emoji, Role_IDs from buttons where Message_ID = (:id)',
-                {'id': view[1]}
+                '''select Button_ID, Label, Emoji, Role_IDs
+                    from buttons where Message_ID = ?
+                ''', (view[1],)
             ).fetchall()
             for button in buttons:
                 roles = []
@@ -268,9 +269,9 @@ class ReactionRoles(commands.Cog):
             self.reactions[str(payload.guild_id)].remove(reaction_role)
             self.save()
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles')
-        return checks.is_mod()
+        return await checks.is_mod().predicate(ctx)
 
     @commands.group(name='reaction_role', aliases=['rr'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)

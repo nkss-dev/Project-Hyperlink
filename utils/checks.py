@@ -9,7 +9,7 @@ def is_exists():
         verified = ctx.bot.c.execute(
             'select exists (select Verified from main where Discord_UID = ?)',
             (ctx.author.id,)
-        ).fetchone()[0]
+        ).fetchone()
 
         if not verified:
             raise commands.CheckFailure('AccountNotLinked')
@@ -22,7 +22,7 @@ def is_verified():
     async def pred(ctx):
         verified = ctx.bot.c.execute(
             'select Verified from main where Discord_UID = ?', (ctx.author.id,)
-        ).fetchone()
+        ).fetchall()
 
         if not verified:
             raise commands.CheckFailure('AccountNotLinked')
@@ -51,6 +51,7 @@ def is_mod():
             await commands.has_any_role(*roles).predicate(ctx)
         else:
             raise commands.CheckFailure('MissingModeratorRoles')
+        return True
     return commands.check(pred)
 
 

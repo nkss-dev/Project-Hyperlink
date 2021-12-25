@@ -55,7 +55,7 @@ class Info(commands.Cog):
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
-    async def get_profile_embed(self, guild, member) -> discord.Embed:
+    async def get_profile_embed(self, guild: bool, member) -> discord.Embed:
         """Return the details of the given user in an embed"""
         details = self.bot.c.execute(
             '''select Roll_Number, Section, SubSection, Name,
@@ -157,9 +157,9 @@ class Info(commands.Cog):
 
         return embed
 
-    def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'info')
-        return checks.is_exists()
+        return await checks.is_exists().predicate(ctx)
 
     @commands.command(aliases=['p'])
     async def profile(self, ctx, *, member: Union[discord.Member, discord.User] = None):
@@ -180,10 +180,10 @@ class Info(commands.Cog):
         if member is None:
             member = ctx.author
         else:
-            checks.is_authorised()
+            await checks.is_authorised().predicate(ctx)
 
-        guild = True if ctx.guild else False
-        if not (embed := await self.get_profile_embed(guild, member)):
+        embed = await self.get_profile_embed(bool(ctx.guild), member)
+        if not embed:
             ctx.author = member
             raise commands.CheckFailure('RecordNotFound')
 

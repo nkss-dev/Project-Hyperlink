@@ -141,9 +141,9 @@ class Drive(commands.Cog):
 
         return query, ignored_args
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'drive')
-        return checks.is_verified()
+        return await checks.is_verified().predicate(ctx)
 
     @commands.group(invoke_without_command=True)
     async def drive(self, ctx):

@@ -23,12 +23,11 @@ class Mod(commands.Cog):
 
         self.bot.loop.create_task(self.loadAllMuted())
 
-    def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         if not ctx.guild:
             raise commands.NoPrivateMessage
         self.l10n = get_l10n(ctx.guild.id, 'mod')
-        return checks.is_mod()
-
+        return await checks.is_mod().predicate(ctx)
 
     @commands.command(aliases=['m'])
     async def mute(self, ctx, item: Union[discord.Member, discord.Role], duration: str, channel: discord.TextChannel = None):

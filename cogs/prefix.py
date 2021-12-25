@@ -12,7 +12,7 @@ class Prefix(commands.Cog):
 
     async def cog_check(self, ctx):
         self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'prefix')
-        return checks.is_verified()
+        return await checks.is_verified().predicate(ctx)
 
     @commands.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_guild=True)
