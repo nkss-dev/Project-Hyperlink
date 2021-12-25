@@ -138,6 +138,14 @@ class Constructor():
         self.client.db = conn
         self.client.c = c
 
+        # links.db
+        conn = sqlite3.connect('db/links.db')
+        c = conn.cursor()
+
+        with open('utils/links.sql') as sql:
+            c.executescript(sql.read())
+            conn.commit()
+
         # self_roles.db
         conn = sqlite3.connect('db/self_roles.db')
         c = conn.cursor()
