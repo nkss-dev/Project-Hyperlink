@@ -155,6 +155,21 @@ class Verify(commands.Cog):
         first_name = name.split(' ', 1)[0]
         await author.edit(nick=first_name)
 
+    async def kick_from_all(self, user_id: int):
+        """Kick the user from all affiliated servers"""
+        server_ids = self.bot.c.execute(
+            'select ID from verified_servers'
+            + ' union '
+            + 'select Discord_Server from groups'
+        ).fetchall()
+        for id in server_ids:
+            guild = self.bot.get_guild(id)
+            if guild and (member := guild.get_member(user_id)):
+                try:
+                    await member.kick('User verified by another account')
+                except discord.Forbidden:
+                    pass
+
     @verify.command()
     async def basic(self, ctx, *, params: str):
         """Link a Discord account to a student record in the college.
@@ -277,19 +292,13 @@ class Verify(commands.Cog):
 
                     # Fetch the user ID again in case another
                     # account has verified in the meantime
-                    user = self.bot.c.execute(
+                    user_id = self.bot.c.execute(
                         'select Discord_UID from main where Roll_Number = ?',
                         (roll_no,)
                     ).fetchone()
-                    user = guild.get_member(tuple[6])
-                    if not user:
-                        user = self.bot.get_user(tuple[6])
 
                     # Kick the old account if any
-                    if isinstance(user, discord.Member):
-                        await user.kick(reason=self.l10n.format_value(
-                                'member-kick-old',
-                                {'user': ctx.author.mention}))
+                    await self.kick_from_all(user_id)
                     break
 
         await assign_student_roles(
