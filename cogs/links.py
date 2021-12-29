@@ -20,7 +20,8 @@ if sys.platform.startswith('win'):
 else:
     FORMAT = '%-I:%M%p'
 
-def mention_roles(roles: list[discord.Role], text: str) -> str:
+
+def mention_roles(roles: list[discord.Role], text: str, l10n) -> str:
     mentions: list[str] = []
     if role_names := ROLE_NAME.findall(text):
         for role_name in role_names:
@@ -28,10 +29,13 @@ def mention_roles(roles: list[discord.Role], text: str) -> str:
             if role:
                 mentions.append(role.mention)
 
-    if mentions:
-        return f"{' and '.join(mentions)} only: {getURLs(text)[0]}"
+    if link := getURLs(text):
+        text = link[0]
     else:
-        return getURLs(text)[0]
+        text = l10n.format_value('link-notfound')
+    if mentions:
+        return f"{' and '.join(mentions)} only: {text}"
+    return text
 
 
 def get_subsecs(text: str, roles: list[discord.Role]) -> Iterable[str]:
@@ -81,7 +85,7 @@ class Links(commands.Cog):
         )
         if commit:
             self.db.commit()
- 
+
     def create(self) -> discord.Embed:
         """Return links for the given section"""
         guild_id = self.c.execute(
@@ -235,7 +239,7 @@ class Links(commands.Cog):
 
         schedule = {
             'name': f'{subject} ({time}):',
-            'value': mention_roles(ctx.guild.roles, link),
+            'value': mention_roles(ctx.guild.roles, link, self.l10n),
             'inline': False
         }
 
@@ -267,7 +271,6 @@ class Links(commands.Cog):
                 for i, field in enumerate(embed.fields):
                     match = TIME.search(str(field.name))
                     class_time = datetime.strptime(match.group(0), FORMAT)
-                    print(class_time, time_obj)
                     if time_obj < class_time:
                         inserted = True
                         embed.insert_field_at(i, **schedule)
@@ -369,7 +372,7 @@ class Links(commands.Cog):
             )
         self.db.commit()
 
-        link = mention_roles(ctx.guild.roles, link)
+        link = mention_roles(ctx.guild.roles, link, self.l10n)
         await self.add(ctx, time, subject, link=link)
 
     @link.command(name='perm_remove', aliases=['pr'])
