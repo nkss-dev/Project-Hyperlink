@@ -48,8 +48,9 @@ class ProjectHyperlink(commands.Bot):
         self.loop.create_task(self.construct())
 
     @staticmethod
-    def _prefix_callable(bot, msg) -> list:
+    async def _prefix_callable(bot, msg) -> list:
         """Return the bot's prefix for a guild or a DM"""
+        await bot.wait_until_ready()
         base = []
         if not msg.guild:
             base.append('%')
