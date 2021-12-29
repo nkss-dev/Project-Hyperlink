@@ -1,6 +1,5 @@
 import re
 import sqlite3
-import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Iterable, Optional
@@ -15,10 +14,7 @@ from utils.utils import getURLs
 
 ROLE_NAME = re.compile('@[CEIMP][CEIST]-[01][0-9]', flags=re.I)
 TIME = re.compile(r'\d{1,2}:\d{2}[AP]M', flags=re.I)
-if sys.platform.startswith('win'):
-    FORMAT = '%I:%M%p'
-else:
-    FORMAT = '%-I:%M%p'
+FORMAT = '%I:%M%p'
 
 
 def mention_roles(roles: list[discord.Role], text: str, l10n) -> str:
