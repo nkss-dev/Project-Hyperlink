@@ -47,8 +47,8 @@ def is_mod():
         mod_roles = ctx.bot.c.execute(
             'select role from mod_roles where ID = ?', (ctx.guild.id,)
         ).fetchall()
-        if roles := [role[0] for role in mod_roles]:
-            await commands.has_any_role(*roles).predicate(ctx)
+        if mod_roles:
+            await commands.has_any_role(*mod_roles).predicate(ctx)
         else:
             raise commands.CheckFailure('MissingModeratorRoles')
         return True

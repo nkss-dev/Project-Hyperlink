@@ -119,7 +119,7 @@ class Events(commands.Cog):
             bot_role_id = self.bot.c.execute(
                 'select Bot_Role from guilds where ID = ?', (guild.id,)
             ).fetchone()
-            if bot_role_id and (bot_role := guild.get_role(bot_role_id[0])):
+            if bot_role := guild.get_role(bot_role_id):
                 await member.add_roles(bot_role)
             return
 
@@ -249,7 +249,7 @@ class Events(commands.Cog):
 
         verified = self.bot.c.execute(
             'select Verified from main where Discord_UID = ?', (member.id,)
-        ).fetchone()
+        ).fetchall()
         if not verified:
             if events:
                 await self.send_leave_message(channel, member, events['leave'][1])
@@ -344,5 +344,4 @@ class Events(commands.Cog):
 
 
 def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Events(bot))

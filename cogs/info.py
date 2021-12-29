@@ -78,7 +78,7 @@ class Info(commands.Cog):
 
         # Fetch member's groups
         _groups = self.bot.c.execute(
-            '''select Name, ALias, Server_Invite, Guest_Role
+            '''select Name, Alias, Server_Invite, Guest_Role
                 from group_discord_users where Discord_UID = ?
             ''', (member.id,)
         ).fetchall()
@@ -110,7 +110,7 @@ class Info(commands.Cog):
             hostel_name = self.bot.c.execute(
                 'select Hostel_Name from hostels where Hostel_Number = ?',
                 (details[7],)
-            ).fetchone()[0]
+            ).fetchone()
             hostel = f'{details[7]} - {hostel_name}'
 
         fields = {
@@ -236,7 +236,7 @@ class Info(commands.Cog):
             raise commands.CheckFailure('RecordNotFound')
 
         old_nick = member.nick
-        first_name = name[0].split(' ', 1)[0]
+        first_name = name.split(' ', 1)[0]
         await member.edit(nick=first_name)
 
         nick = {
@@ -322,6 +322,6 @@ class Info(commands.Cog):
         )
         await ctx.send(embed=embed)
 
+
 def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Info(bot))

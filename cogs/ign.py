@@ -126,7 +126,7 @@ class IGN(commands.Cog):
         member = user or ctx.author
         oneself = ctx.author == member
         if ctx.guild:
-            color = member.top_role.color
+            color = member.color
         else:
             color = discord.Color.blurple()
 
@@ -158,8 +158,8 @@ class IGN(commands.Cog):
                 )
                 await ctx.reply(content)
                 return
-            if ign and ign[0]:
-                embed = discord.Embed(description=ign[0], color=color)
+            if ign:
+                embed = discord.Embed(description=ign, color=color)
                 await ctx.reply(embed=embed)
             elif oneself:
                 await ctx.reply(self.l10n.format_value(
@@ -229,13 +229,13 @@ class IGN(commands.Cog):
             return
 
         ign = self.bot.c.execute(
-            f'select {game} from ign where Discord_UID = ?', (ctx.author.id,)
+            f'select `{game}` from ign where Discord_UID = ?', (ctx.author.id,)
         ).fetchone()
-        if ign and ign[0]:
+        if ign:
             igns = [ign for ign in igns[1:] if ign]
             if len(igns) > 1:
                 self.bot.c.execute(
-                    f'update ign set {game} = null where Discord_UID = ?',
+                    f'update ign set `{game}` = null where Discord_UID = ?',
                     (ctx.author.id,)
                 )
             else:
@@ -278,5 +278,4 @@ class IGN(commands.Cog):
 
 
 def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(IGN(bot))

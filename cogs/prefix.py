@@ -59,7 +59,7 @@ class Prefix(commands.Cog):
             'select prefix from prefixes where ID = ?', (ctx.guild.id,)
         ).fetchall()
 
-        if (prefix,) not in prefixes:
+        if prefix not in prefixes:
             await ctx.reply(self.l10n.format_value('exists-false', {'prefix': prefix}))
             return
 

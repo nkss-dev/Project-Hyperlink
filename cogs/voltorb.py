@@ -379,5 +379,4 @@ class VoltorbFlip(commands.Cog):
             json.dump(self.data, f)
 
 def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
     bot.add_cog(VoltorbFlip(bot))

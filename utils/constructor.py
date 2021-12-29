@@ -15,7 +15,7 @@ class Constructor():
         self.client = client
         self.funcs = (
             self.sql_databases, self.boards, self.codes, self.emojis,
-            self.links, self.muted, self.VCs, self.self_roles
+            self.muted, self.VCs, self.self_roles
         )
         for func in self.funcs:
             func()
@@ -62,48 +62,6 @@ class Constructor():
                 json.dump(emojis, f)
 
     @staticmethod
-    def links():
-        """Create links.json"""
-        try:
-            with open('db/links.json') as f:
-                json.load(f)
-        except FileNotFoundError:
-            sections = (
-                'CE-A', 'CE-B', 'CE-C',
-                'CS-A', 'CS-B',
-                'EC-A', 'EC-B', 'EC-C',
-                'EE-A', 'EE-B', 'EE-C',
-                'IT-A', 'IT-B',
-                'ME-A', 'ME-B', 'ME-C',
-                'PI-A', 'PI-B'
-            )
-
-            conn = sqlite3.connect('db/details.db')
-            c = conn.cursor()
-            batches = c.execute('select distinct Batch from main').fetchall()
-            batches = [batch[0] for batch in batches]
-
-            links = {
-                batch: {
-                    'server_ID': [],
-                    'manager_roles': [],
-                    **{section: {
-                        'channel': 0,
-                        'message': 0,
-                        'Monday': [],
-                        'Tuesday': [],
-                        'Wednesday': [],
-                        'Thursday': [],
-                        'Friday': [],
-                        'Saturday': [],
-                        'Sunday': []
-                    } for section in sections}
-                } for batch in batches
-            }
-            with open('db/links.json', 'w') as f:
-                json.dump(links, f)
-
-    @staticmethod
     def muted():
         """Create muted.json"""
         try:
@@ -127,7 +85,9 @@ class Constructor():
         """Create the sql database files"""
         # details.db
         conn = sqlite3.connect('db/details.db')
+        conn.row_factory = lambda _, row: row[0] if len(row) == 1 else row
         c = conn.cursor()
+        c.execute('PRAGMA foreign_keys = ON')
 
         with open('utils/details.sql') as sql:
             c.executescript(sql.read())

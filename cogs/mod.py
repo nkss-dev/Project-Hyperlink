@@ -186,5 +186,4 @@ class Mod(commands.Cog):
 
 
 def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Mod(bot))

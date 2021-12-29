@@ -133,7 +133,7 @@ class Drive(commands.Cog):
             for arg in args:
                 if re.match(r'(.)\1{2}', arg):
                     ignored_args.append(f'`{arg}`')
-                elif len(arg) not in range (3, 21):
+                elif len(arg) not in range(3, 21):
                     ignored_args.append(f'`{arg}`')
                 else:
                     query_args.append(f"name contains '{arg}'")
@@ -406,5 +406,4 @@ class Drive(commands.Cog):
 
 
 def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Drive(bot))

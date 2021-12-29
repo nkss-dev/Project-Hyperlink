@@ -49,9 +49,9 @@ class Verify(commands.Cog):
         with open('db/emojis.json') as emojis:
             self.emojis = json.load(emojis)['utility']
 
-        sections = self.bot.c.execute(
-            'select distinct Section from main').fetchall()
-        self.sections = [section[0] for section in sections]
+        self.sections = self.bot.c.execute(
+            'select distinct Section from main'
+        ).fetchall()
 
     async def sendEmail(self, ctx, name: str, email: str, manual=True):
         """Send a verification email to the given email"""
@@ -121,7 +121,7 @@ class Verify(commands.Cog):
 
         verified = self.bot.c.execute(
             'select Verified from main where Discord_UID = ?', (ctx.author.id,)
-        ).fetchone()
+        ).fetchall()
 
         if verified:
             if not verified[0]:
@@ -135,12 +135,11 @@ class Verify(commands.Cog):
         guild = author.guild
 
         # Remove restricting role
-        guest_role_id = self.bot.c.execute(
+        id = self.bot.c.execute(
             'select Guest_Role from verified_servers where ID = ?', (guild.id,)
         ).fetchone()
-        if guest_role_id:
-            if guest_role := guild.get_role(guest_role_id[0]):
-                await author.remove_roles(guest_role)
+        if guest_role := guild.get_role(id):
+            await author.remove_roles(guest_role)
 
         # Add nickname
         first_name = name.split(' ', 1)[0]
@@ -148,7 +147,7 @@ class Verify(commands.Cog):
 
     @verify.command()
     async def basic(self, ctx, *, params: str):
-        """Link a Discord account to a record in the database.
+        """Link a Discord account to a student record in the college.
 
         Parameters
         ------------
@@ -186,14 +185,14 @@ class Verify(commands.Cog):
         roll_no = info.roll
         section = f'{info.branch}-{info.section}'.upper()
 
-        tuple = self.bot.c.execute(
-            '''select Section, Subsection, Name,
+        record = self.bot.c.execute(
+            '''select Section, SubSection, Name,
                 Institute_Email, Batch, Hostel_Number, Discord_UID
                 from main where Roll_Number = ?
             ''', (roll_no,)
         ).fetchone()
 
-        if not tuple:
+        if not record:
             await ctx.reply(self.l10n.format_value('roll-not-in-database'))
             return
 
@@ -202,12 +201,12 @@ class Verify(commands.Cog):
             'select Batch from verified_servers where ID = ?', (guild.id,)
         ).fetchone()
         if batch:
-            if batch[0] and tuple[4] != batch[0]:
+            if record[4] != batch:
                 await ctx.reply(
                     self.l10n.format_value(
-                        'incorrect-server', {'batch': tuple[4]}
-                        )
+                        'incorrect-server', {'batch': record[4]}
                     )
+                )
                 return
         else:
             await ctx.reply(self.l10n.format_value('server-not-allowed'))
@@ -229,19 +228,19 @@ class Verify(commands.Cog):
                     'section-notfound', {'section': section}))
             return
 
-        if section != tuple[0]:
+        if section != record[0]:
             await ctx.reply(
                 self.l10n.format_value('section-mismatch'))
             return
 
-        if tuple[6]:
-            user = guild.get_member(tuple[6]) or self.bot.get_user(tuple[6])
+        if record[6]:
+            user = guild.get_member(record[6]) or self.bot.get_user(record[6])
             values = {
-                'email': tuple[3],
+                'email': record[3],
                 'user': user.mention if user else 'another user'
             }
 
-            await self.sendEmail(ctx, tuple[2], tuple[3], False)
+            await self.sendEmail(ctx, *record[2:4], False)
             await ctx.reply(self.l10n.format_value('record-claimed', values))
 
             def check(msg):
@@ -250,7 +249,8 @@ class Verify(commands.Cog):
             while True:
                 try:
                     ctx.message = await self.bot.wait_for(
-                        'message', timeout=120.0, check=check)
+                        'message', timeout=120.0, check=check
+                    )
                 except TimeoutError:
                     await ctx.send(self.l10n.format_value('react-timeout'))
                     return
@@ -283,7 +283,7 @@ class Verify(commands.Cog):
                     break
 
         await assign_student_roles(
-            ctx.author, (*tuple[:2], *tuple[4:6]), self.bot.c
+            ctx.author, (*record[:2], *record[4:6]), self.bot.c
         )
 
         await ctx.reply(self.l10n.format_value('basic-success'))
@@ -294,7 +294,7 @@ class Verify(commands.Cog):
         )
         self.bot.db.commit()
 
-        await self.cleanup(ctx.author, tuple[2])
+        await self.cleanup(ctx.author, record[2])
 
     @verify.command()
     @checks.is_exists()
@@ -357,5 +357,4 @@ class Verify(commands.Cog):
 
 
 def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
     bot.add_cog(Verify(bot))

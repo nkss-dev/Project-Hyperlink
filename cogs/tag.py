@@ -43,7 +43,7 @@ class Tag(commands.Cog):
 
         section = self.bot.c.execute(
             'select Section from main where Discord_UID = ?', (ctx.author.id,)
-        ).fetchone()[0]
+        ).fetchone()
 
         # Store roles that the user is allowed to tag
         sections = {
