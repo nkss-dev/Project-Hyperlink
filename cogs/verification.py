@@ -123,7 +123,8 @@ class Verify(commands.Cog):
     @commands.guild_only()
     async def verify(self, ctx):
         """Command group for verification functionality"""
-        self.l10n = get_l10n(ctx.guild.id, 'verification')
+        l10n = get_l10n(ctx.guild.id, 'verification')
+        self.fmv = l10n.format_value
 
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
@@ -196,15 +197,15 @@ class Verify(commands.Cog):
         info = parse_verify_basic(params)
 
         if info.roll is None:
-            await ctx.reply(self.l10n.format_value('rollno-not-provided'))
+            await ctx.reply(self.fmv('rollno-not-provided'))
             return
 
         if info.branch is None:
-            await ctx.reply(self.l10n.format_value('branch-not-provided'))
+            await ctx.reply(self.fmv('branch-not-provided'))
             return
 
         if info.section is None:
-            await ctx.reply(self.l10n.format_value('section-not-provided'))
+            await ctx.reply(self.fmv('section-not-provided'))
             return
 
         roll_no = info.roll
@@ -218,7 +219,7 @@ class Verify(commands.Cog):
         ).fetchone()
 
         if not record:
-            await ctx.reply(self.l10n.format_value('roll-not-in-database'))
+            await ctx.reply(self.fmv('roll-not-in-database'))
             return
 
         guild = ctx.guild
@@ -228,13 +229,11 @@ class Verify(commands.Cog):
         if batch:
             if record[4] != batch:
                 await ctx.reply(
-                    self.l10n.format_value(
-                        'incorrect-server', {'batch': record[4]}
-                    )
+                    self.fmv('incorrect-server', {'batch': record[4]})
                 )
                 return
         else:
-            await ctx.reply(self.l10n.format_value('server-not-allowed'))
+            await ctx.reply(self.fmv('server-not-allowed'))
 
             def check_owner(msg):
                 return msg.author.id in self.bot.owner_ids \
@@ -242,20 +241,20 @@ class Verify(commands.Cog):
 
             try:
                 message = await self.bot.wait_for(
-                    'message', timeout=60.0, check=check_owner)
+                    'message', timeout=60.0, check=check_owner
+                )
                 if message.content.lower() != 'override':
                     return
             except TimeoutError:
                 return
 
         if section not in self.sections[batch]:
-            await ctx.reply(self.l10n.format_value(
-                    'section-notfound', {'section': section}))
+            await ctx.reply(self.fmv('section-notfound', {'section': section}))
             return
 
         if section != record[0]:
             await ctx.reply(
-                self.l10n.format_value('section-mismatch'))
+                self.fmv('section-mismatch'))
             return
 
         if record[6]:
@@ -266,7 +265,7 @@ class Verify(commands.Cog):
             }
 
             await self.sendEmail(ctx, *record[2:4], False)
-            await ctx.reply(self.l10n.format_value('record-claimed', values))
+            await ctx.reply(self.fmv('record-claimed', values))
 
             def check(msg):
                 return msg.author == ctx.author and msg.channel == ctx.channel
@@ -277,13 +276,14 @@ class Verify(commands.Cog):
                         'message', timeout=120.0, check=check
                     )
                 except TimeoutError:
-                    await ctx.send(self.l10n.format_value('react-timeout'))
+                    await ctx.send(self.fmv('react-timeout'))
                     return
                 else:
-                    if not self.checkCode(ctx.author.id, ctx.message.content):
-                        await ctx.reply(self.l10n.format_value(
-                                'code-retry',
-                                {'code': ctx.message.content}))
+                    content = ctx.message.content
+                    if not self.checkCode(ctx.author.id, content):
+                        await ctx.reply(
+                            self.fmv('code-retry', {'code': content})
+                        )
                         continue
                     self.bot.c.execute(
                         'update main set Verified = 1 where Roll_Number = ?',
@@ -305,7 +305,7 @@ class Verify(commands.Cog):
             ctx.author, (*record[:2], *record[4:6]), self.bot.c
         )
 
-        await ctx.reply(self.l10n.format_value('basic-success'))
+        await ctx.reply(self.fmv('basic-success'))
 
         self.bot.c.execute(
             'update main set Discord_UID = ? where Roll_Number = ?',
@@ -331,15 +331,13 @@ class Verify(commands.Cog):
         ).fetchone()
 
         if email.lower() != institute_email:
-            await ctx.reply(self.l10n.format_value('email-mismatch'))
+            await ctx.reply(self.fmv('email-mismatch'))
             return
 
         await self.sendEmail(ctx, name, institute_email)
 
-        await ctx.reply(self.l10n.format_value(
-                'check-email',
-                {'cmd': ctx.clean_prefix + ctx.command.parent.name}
-            ))
+        command = ctx.clean_prefix + ctx.command.parent.name
+        await ctx.reply(self.fmv('check-email', {'cmd': command}))
 
     @verify.command()
     @checks.is_exists()
@@ -352,7 +350,7 @@ class Verify(commands.Cog):
             The code to be checked
         """
         if str(ctx.author.id) not in self.codes:
-            await ctx.reply(self.l10n.format_value('email-not-received'))
+            await ctx.reply(self.fmv('email-not-received'))
             return
 
         if self.checkCode(ctx.author.id, code):
@@ -364,10 +362,10 @@ class Verify(commands.Cog):
             await assign_student_roles(ctx.author, details[:-1], self.bot.c)
             await self.cleanup(ctx.author, details[-1])
 
-            await ctx.reply(self.l10n.format_value(
+            await ctx.reply(self.fmv(
                     'email-success', {'emoji': self.emojis['verified']}))
         else:
-            await ctx.reply(self.l10n.format_value('code-incorrect'))
+            await ctx.reply(self.fmv('code-incorrect'))
 
     def save(self):
         """Save the data to a json file"""
