@@ -268,41 +268,44 @@ class Info(commands.Cog):
         `batch`: <class 'int'>
             The batch for which the stats are shown.
         """
-        sections = self.bot.c.execute(
+        data = self.bot.c.execute(
             '''select Section, count(Discord_UID),
                 count(*) - count(Discord_UID), count(Verified)
                 from main where Batch = ? group by Section;
             ''', (batch,)
         ).fetchall()
+        sections = [row[0] for row in data]
+        counts = [row[1:] for row in data]
 
         # Get the indices of the rows to be deleted
         indices = []
-        previous = sections[0][0]
-        for i, section in zip(range(2, len(sections)*2, 2), sections):
-            if section[0][:2] == previous[:2]:
+        previous = sections[0]
+        for i, section in zip(range(2, len(sections)*2, 2), sections[1:]):
+            if section[:2] == previous[:2]:
                 indices.append(i + 2)
-            else:
-                indices[-1] += 2
-            previous = section[0]
+            previous = section
 
         # Get total values for each numerical column
-        counts = [row[1:] for row in sections]
         total = [sum(count) for count in zip(*counts)]
 
         table = tabulate(
-            [*sections, ['Total', *total]],
+            [*data, ['Total', *total]],
             headers=('Section', 'Joined', 'Remaining', 'Verified'),
             tablefmt='grid'
         ).split('\n')
         table[2] = table[0]
 
         # Delete the extra dashed lines
-        for i, index in enumerate(indices):
-            table.pop(index - i)
-        table = '\n'.join(table)
+        cropped_table = []
+        for i, row in enumerate(table):
+            try:
+                indices.remove(i)
+            except ValueError:
+                cropped_table.append(row)
+        cropped_table = '\n'.join(cropped_table)
 
         embed = discord.Embed(
-            description=f'```swift\n{table}```',
+            description=f'```swift\n{cropped_table}```',
             color=discord.Color.blurple()
         )
         await ctx.send(embed=embed)
