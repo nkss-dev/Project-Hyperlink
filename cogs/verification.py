@@ -53,6 +53,16 @@ class Verify(commands.Cog):
             'select distinct Section from main'
         ).fetchall()
 
+        self.sections = {}
+        batches = self.bot.c.execute(
+            'select distinct Batch from main'
+        ).fetchall()
+        for batch in batches:
+            self.sections[batch] = self.bot.c.execute(
+                'select distinct Section from main where Batch = ?',
+                (batch,)
+            ).fetchall()
+
     async def sendEmail(self, ctx, name: str, email: str, manual=True):
         """Send a verification email to the given email"""
         await ctx.message.add_reaction(self.emojis['loading'])
@@ -70,9 +80,9 @@ class Verify(commands.Cog):
         else:
             command = otp
         variables = {
-            '{$user}': name,
-            '{$otp}': otp,
-            '{$guild}': ctx.guild.name,
+            '{$user}'   : name,
+            '{$otp}'    : otp,
+            '{$guild}'  : ctx.guild.name,
             '{$channel}': 'https://discord.com/channels/'
             + f'{ctx.guild.id}/{ctx.channel.id}',
             '{$command}': command
@@ -223,7 +233,7 @@ class Verify(commands.Cog):
             except TimeoutError:
                 return
 
-        if section not in self.sections:
+        if section not in self.sections[batch]:
             await ctx.reply(self.l10n.format_value(
                     'section-notfound', {'section': section}))
             return
