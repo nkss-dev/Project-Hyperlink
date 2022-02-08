@@ -94,7 +94,7 @@ if __name__ == '__main__':
     @bot.before_invoke
     async def bracketCheck(ctx):
         """Raise an error if any argument is enclosed in angular brackets"""
-        if re.search(r'<[^#@].+>', ctx.message.content):
+        if re.search(r'<[^#@a:].+>', ctx.message.content):
             raise commands.CheckFailure('AngularBracketsNotAllowed')
 
     bot.run()
