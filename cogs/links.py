@@ -92,6 +92,7 @@ class Links(commands.Cog):
             'select Guild_ID from link_managers where Batch = ?',
             (self.info.batch,)
         ).fetchone()
+        guild = self.bot.get_guild(guild_id)
         self.l10n = get_l10n(guild_id, 'links')
 
         time = discord.utils.utcnow() + timedelta(hours=12.5)
@@ -114,9 +115,10 @@ class Links(commands.Cog):
             roles = []
             if link is None:
                 link = ''
-            for subsec in str(subsecs).split(','):
+            if subsecs:
+                for subsec in subsecs.split(','):
                 name = f'{self.info.section[:-1]}0{subsec}'
-                if role := discord.utils.get(roles, name=name):
+                    if role := discord.utils.get(guild.roles, name=name):
                     roles.append(role.mention)
             if not getURLs(link):
                 link += self.l10n.format_value('link-notfound')
