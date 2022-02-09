@@ -47,7 +47,8 @@ def get_subsecs(text: str, roles: list[discord.Role]) -> Iterable[str]:
 
 
 def convert_from_24hr(time: str) -> str:
-    return datetime.strptime(time, '%H:%M').strftime(FORMAT)
+    time = datetime.strptime(time, '%H:%M').strftime(FORMAT)
+    return time[1:] if time[0] == '0' else time
 
 
 def convert_to_24hr(time: str) -> str:
