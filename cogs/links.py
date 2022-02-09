@@ -17,13 +17,16 @@ TIME = re.compile(r'\d{1,2}:\d{2}[AP]M', flags=re.I)
 FORMAT = '%I:%M%p'
 
 
-def mention_roles(roles: list[discord.Role], text: str, l10n) -> str:
-    mentions: list[str] = []
-    if role_names := ROLE_NAME.findall(text):
+def mention_roles(roles: list[discord.Role], text, pre_mentions, l10n) -> str:
+    role_set: set[discord.Role] = set(pre_mentions)
+    if text and (role_names := ROLE_NAME.findall(text)):
         for role_name in role_names:
             role = discord.utils.get(roles, name=role_name[1:].upper())
             if role:
-                mentions.append(role.mention)
+                role_set.add(role)
+
+    sorted_roles = sorted(role_set, key=lambda x: x.name)
+    mentions = map(lambda x: x.mention, sorted_roles)
 
     if link := getURLs(text):
         text = link[0]
@@ -35,7 +38,7 @@ def mention_roles(roles: list[discord.Role], text: str, l10n) -> str:
 
 
 def get_subsecs(text: str, roles: list[discord.Role]) -> Iterable[str]:
-    if role_names := ROLE_NAME.findall(text):
+    if text and (role_names := ROLE_NAME.findall(text)):
         for role_name in role_names:
             yield role_name[-1]
 
