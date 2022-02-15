@@ -1,5 +1,7 @@
+import config
 import json
 import os
+import psycopg2
 import sqlite3
 
 
@@ -83,16 +85,20 @@ class Constructor():
 
     def sql_databases(self):
         """Create the sql database files"""
-        # details.db
-        conn = sqlite3.connect('db/details.db')
-        conn.row_factory = lambda _, row: row[0] if len(row) == 1 else row
+        conn = psycopg2.connect(
+            host=config.postgres.host,
+            database=config.postgres.database,
+            user=config.postgres.user,
+            password=config.postgres.password
+        )
         c = conn.cursor()
-        c.execute('PRAGMA foreign_keys = ON')
 
-        with open('utils/details.sql') as sql:
-            c.executescript(sql.read())
+        with open('utils/records.sql') as sql:
+            c.execute(sql.read())
+        with open('utils/groups.sql') as sql:
+            c.execute(sql.read())
         with open('utils/guilds.sql') as sql:
-            c.executescript(sql.read())
+            c.execute(sql.read())
         conn.commit()
 
         self.client.db = conn
