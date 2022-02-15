@@ -1,4 +1,4 @@
-create table if not exists groups (
+CREATE TABLE IF NOT EXISTS groups (
     name             text        primary key,
     alias            text        unique,
     faculty_advisor  text,
@@ -8,7 +8,7 @@ create table if not exists groups (
     description      text
 );
 
-create table if not exists group_discord (
+CREATE TABLE IF NOT EXISTS group_discord (
     name            text        references groups(name),
     id              bigint      unique,
     invite          varchar(10) unique,
@@ -19,31 +19,31 @@ create table if not exists group_discord (
     guest_role      bigint      unique
 );
 
-create table if not exists group_socials (
+CREATE TABLE IF NOT EXISTS group_social (
     name  text references groups(name),
     type  varchar(15),
     link  text
 );
 
-create table if not exists group_admins (
+CREATE TABLE IF NOT EXISTS group_admin (
     group_name   text references groups(name),
     position     varchar(20),
-    roll_number  int  references students(roll_number)
+    roll_number  int  references student(roll_number)
 );
 
-create table if not exists group_members (
-    roll_number  int  not null references students(roll_number),
+CREATE TABLE IF NOT EXISTS group_member (
+    roll_number  int  not null references student(roll_number),
     group_name   text not null references groups(name),
-    primary key (roll_number, group_name)
+    primary key(roll_number, group_name)
 );
 
-create view if not exists group_discord_users as
-    select students.batch, students.discord_uid,
+CREATE OR REPLACE VIEW group_discord_user AS
+    SELECT student.batch, student.discord_uid,
         c.name, c.alias, d.id, d.invite,
         d.fresher_role, d.sophomore_role, d.junior_role, d.senior_role,
         d.guest_role
-        from group_members m
-        join groups c on c.name = m.group_name
-        join group_discord d on d.name = m.group_name
-        join students on students.roll_number = m.roll_number
-        where students.discord_uid not null;
+        FROM group_members m
+        JOIN groups c ON c.name = m.group_name
+        JOIN group_discord d ON d.name = m.group_name
+        JOIN student ON student.roll_number = m.roll_number
+        WHERE student.discord_uid IS NOT NULL;
