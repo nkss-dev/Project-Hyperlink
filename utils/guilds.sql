@@ -1,47 +1,47 @@
-create table if not exists guilds (
-    ID              int  primary key,
-    Name            text check(length(Name) <= 100) not null,
-    Batch           int  check(Batch >= 0),
-    Language        text default 'en-gb',
-    Bot_Role        int,
-    Mute_Role       int,
-    Edit_Channel    int,
-    Delete_Channel  int
+CREATE TABLE IF NOT EXISTS guild (
+    id              bigint primary key,
+    name            text   check(length(name) <= 100) not null,
+    batch           int    unique check(batch >= 0),
+    language        text   default 'en-GB',
+    bot_role        bigint,
+    mute_role       bigint,
+    edit_channel    bigint,
+    delete_channel  bigint
 );
 
-create table if not exists prefixes (
-    ID      int  references guilds(ID),
-    prefix  text not null,
-    primary key (ID, prefix)
+CREATE TABLE IF NOT EXISTS prefix (
+    id      bigint references guild(id),
+    prefix  text   not null,
+    primary key(id, prefix)
 );
 
-create table if not exists join_roles (
-    ID    int references guilds(ID),
-    role  int primary key
+CREATE TABLE IF NOT EXISTS join_role (
+    id    bigint references guild(id),
+    role  bigint primary key
 );
 
-create table if not exists mod_roles (
-    ID    int references guilds(ID),
-    role  int primary key
+CREATE TABLE IF NOT EXISTS mod_role (
+    id    bigint references guild(id),
+    role  bigint primary key
 );
 
-create table if not exists verified_servers (
-    ID                   int primary key references guilds(ID),
-    Batch                int references guilds(Batch),
-    Instruction_Channel  int,
-    Command_Channel      int,
-    Guest_Role           int
+CREATE TABLE IF NOT EXISTS verified_server (
+    id                   bigint primary key references guild(id),
+    batch                int    references guild(batch),
+    instruction_channel  bigint,
+    command_channel      bigint,
+    guest_role           bigint
 );
 
-create table if not exists events (
-    Guild_ID         int references guilds(ID),
-    Join_Channel     int,
-    Join_Message     text default '{$user} has joined the server!',
-    Leave_Channel    int,
-    Leave_Message    text default '{$user} has left the server.',
-    Kick_Channel     int,
-    Kick_Message     text default '{$user} has been kicked from the server by {$member}.',
-    Ban_Channel      int,
-    Ban_Message      text default '{$user} has been banned from the server by {$member}.',
-    Welcome_Message  text
+CREATE TABLE IF NOT EXISTS event (
+    guild_id         bigint references guild(id),
+    join_channel     bigint,
+    join_message     text   default '{$user} has joined the server!',
+    leave_channel    bigint,
+    leave_message    text   default '{$user} has left the server.',
+    kick_channel     bigint,
+    kick_message     text   default '{$user} has been kicked from the server by {$member}.',
+    ban_channel      bigint,
+    ban_message      text   default '{$user} has been banned from the server by {$member}.',
+    welcome_message  text
 );
