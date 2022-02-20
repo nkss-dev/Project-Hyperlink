@@ -42,7 +42,7 @@ CREATE OR REPLACE VIEW group_discord_user AS
         c.name, c.alias, d.id, d.invite,
         d.fresher_role, d.sophomore_role, d.junior_role, d.senior_role,
         d.guest_role
-        FROM group_members m
+        FROM group_member m
         JOIN groups c ON c.name = m.group_name
         JOIN group_discord d ON d.name = m.group_name
         JOIN student ON student.roll_number = m.roll_number
