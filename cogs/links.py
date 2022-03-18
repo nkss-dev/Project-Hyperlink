@@ -117,9 +117,9 @@ class Links(commands.Cog):
                 link = ''
             if subsecs:
                 for subsec in subsecs.split(','):
-                name = f'{self.info.section[:-1]}0{subsec}'
+                    name = f'{self.info.section[:-1]}0{subsec}'
                     if role := discord.utils.get(guild.roles, name=name):
-                    roles.append(role.mention)
+                        roles.append(role.mention)
             if not getURLs(link):
                 link += self.l10n.format_value('link-notfound')
 
@@ -241,7 +241,9 @@ class Links(commands.Cog):
 
         schedule = {
             'name': f'{subject} ({time}):',
-            'value': mention_roles(ctx.guild.roles, link, self.l10n),
+            'value': mention_roles(
+                ctx.guild.roles, link, ctx.message.role_mentions, self.l10n
+            ),
             'inline': False
         }
 
@@ -259,13 +261,16 @@ class Links(commands.Cog):
             for i, field in enumerate(embed.fields):
                 if field.name == schedule['name']:
                     found = True
-                    if re.search(r'<@&\d{18}>', str(field.value)):
-                        value = f"{field.value.split(':')[0]}: {link}"
-                    else:
-                        value = link
-                    embed.set_field_at(
-                        i, name=field.name, value=value, inline=False
-                    )
+                    if ctx.message.role_mentions:
+                        pass
+                    elif mentions := re.findall(r'<@&\d{18}>', str(field.value)):
+                        roles = []
+                        for mention in mentions:
+                            roles.append(ctx.guild.get_role(int(mention[3:-1])))
+                        schedule['value'] = mention_roles(
+                            ctx.guild.roles, link, roles, self.l10n
+                        )
+                    embed.set_field_at(i, **schedule)
                     break
 
             if not found:
@@ -338,7 +343,7 @@ class Links(commands.Cog):
             await ctx.message.delete()
 
     @link.command(name='perm_add', aliases=['pa'])
-    async def padd(self, ctx, time: str, subject: str, *, link: str='Link unavailable'):
+    async def padd(self, ctx, time: str, subject: str, *, link: str=None):
         """Add a permanent schedule to a timetable.
 
         Creates a new class at the given time. If no link is provided, it is \
@@ -350,15 +355,20 @@ class Links(commands.Cog):
             return
         t24 = convert_to_24hr(time)
 
+        if link is not None:
+            url = getURLs(link)
+            link = url[0] if url else None
+
         subsecs = ','.join(get_subsecs(link, ctx.message.role_mentions))
         now = discord.utils.utcnow() + timedelta(hours=12.5)
         day = now.strftime('%A')
+
         try:
             self.c.execute(
                 'insert into links values (?,?,?,?,?,?,?)',
                 (
                     self.info.batch, self.info.section,
-                    day, subject, t24, getURLs(link)[0], subsecs
+                    day, subject, t24, link, subsecs
                 )
             )
         except sqlite3.IntegrityError:
@@ -368,13 +378,12 @@ class Links(commands.Cog):
                     and Subject = ? and Time = ?
                 ''',
                 (
-                    getURLs(link)[0], subsecs, self.info.batch,
+                    link, subsecs, self.info.batch,
                     self.info.section, day, subject, t24
                 )
             )
         self.db.commit()
 
-        link = mention_roles(ctx.guild.roles, link, self.l10n)
         await self.add(ctx, time, subject, link=link)
 
     @link.command(name='perm_remove', aliases=['pr'])
