@@ -174,19 +174,20 @@ class Verify(commands.Cog):
 
     @verify.command()
     async def basic(self, ctx, *, params: str):
-        """Link a Discord account to a student record in the college.
+        """Type this command to gain access to servers and much more.
 
+        Type `verify basic` followed by your branch and section, like \
+        `CS-A`, followed by your roll number.
+
+        Example: `%verify basic CS-B 12022005`
+        """
+        """
         Parameters
         ------------
         `section`: <class 'str'>
-            The section the student is in. Must be either of the following:
-                CE-A, CE-B, CE-C,
-                CS-A, CS-B,
-                EC-A, EC-B, EC-C,
-                EE-A, EE-B, EE-C,
-                IT-A, IT-B,
-                ME-A, ME-B, ME-C,
-                PI-A, PI-B
+            The section the student is in. Must match the following format:
+                XY-Z
+            where `XY` is the acronym for the branch and `Z` is the section.
 
         `roll_no`: <class 'int'>
             The roll number of the student.
@@ -319,8 +320,14 @@ class Verify(commands.Cog):
     @verify.command()
     @checks.is_exists()
     async def email(self, ctx, email: str):
-        """Verify the user's identity by verifying their institute email.
+        """Type this command to prove your identity for more accessibility.
 
+        Type `verify email` followed by your institute email, like \
+        `email@nitkkr.ac.in`
+
+        Example: `%verify email priyanshu_12022005@nitkkr.ac.in`
+        """
+        """
         Parameters
         ------------
         `email`: <class 'str'>
@@ -343,8 +350,8 @@ class Verify(commands.Cog):
     @verify.command()
     @checks.is_exists()
     async def code(self, ctx, code: str):
-        """Check if the inputted code matches the sent OTP.
-
+        """Check if the inputted code matches the sent OTP."""
+        """
         Parameters
         ------------
         `code`: <class 'str'>
