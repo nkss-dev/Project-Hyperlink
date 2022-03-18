@@ -1,13 +1,13 @@
 import json
 import time
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import discord
 from discord.ext import commands
 
 from utils.l10n import get_l10n
-from utils.utils import assign_student_roles
+from utils.utils import assign_student_roles, get_group_roles
 
 
 class Events(commands.Cog):
@@ -87,27 +87,30 @@ class Events(commands.Cog):
                 )
         self.bot.db.commit()
 
-    async def join_club_or_society(self, member):
-        server_exists = self.bot.c.execute(
-            'select * from groups where Discord_Server = ?', (member.guild.id,)
+    async def join_club_or_society(self, member) -> bool:
+        batch = self.bot.c.execute(
+            'select Batch from main where Discord_UID = ?',
+            (member.id,)
         ).fetchone()
-        if server_exists:
-            details = self.bot.c.execute(
-                '''select * from group_discord_users
-                where Discord_Server = ? and Discord_UID = ?''',
-                (member.guild.id, member.id,)
-            ).fetchone()
-            if not details:
-                role = member.guild.get_role(server_exists[-1])
-            else:
-                passing_date = datetime(year=details[0], month=6, day=1)
-                time = passing_date - datetime.utcnow()
-                remaining_years = int(time.days/365)
-                role = member.guild.get_role(details[-(remaining_years + 2)])
-            if role:
-                await member.add_roles(role)
-            return True
-        return False
+
+        roles = get_group_roles(self.bot.c, batch, member.guild)
+        # Exit if server isn't of a club/society
+        if roles is None:
+            return False
+
+        is_member = self.bot.c.execute(
+            '''select exists(
+                select * from group_discord_users
+                where Discord_Server = ? and Discord_UID = ?
+            )
+            ''', (member.guild.id, member.id,)
+        ).fetchone()
+
+        # Assign year role if the user is a member, else assign guest role
+        role_id = roles[0] if is_member else roles[1]
+        if role := member.guild.get_role(role_id):
+            await member.add_roles(role)
+        return True
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
