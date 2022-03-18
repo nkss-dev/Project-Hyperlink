@@ -153,8 +153,9 @@ class Verify(commands.Cog):
             await author.remove_roles(guest_role)
 
         # Add nickname
-        first_name = name.split(' ', 1)[0]
-        await author.edit(nick=first_name)
+        if author.display_name != name:
+            first_name = name.split(' ', 1)[0]
+            await author.edit(nick=first_name)
 
     async def kick_from_all(self, user_id: int):
         """Kick the user from all affiliated servers"""
@@ -167,25 +168,26 @@ class Verify(commands.Cog):
             guild = self.bot.get_guild(id)
             if guild and (member := guild.get_member(user_id)):
                 try:
-                    await member.kick('User verified by another account')
+                    await member.kick(reason='User verified by another account')
                 except discord.Forbidden:
                     pass
 
     @verify.command()
     async def basic(self, ctx, *, params: str):
-        """Link a Discord account to a student record in the college.
+        """Type this command to gain access to servers and much more.
 
+        Type `verify basic` followed by your branch and section, like \
+        `CS-A`, followed by your roll number.
+
+        Example: `%verify basic CS-B 12022005`
+        """
+        """
         Parameters
         ------------
         `section`: <class 'str'>
-            The section the student is in. Must be either of the following:
-                CE-A, CE-B, CE-C,
-                CS-A, CS-B,
-                EC-A, EC-B, EC-C,
-                EE-A, EE-B, EE-C,
-                IT-A, IT-B,
-                ME-A, ME-B, ME-C,
-                PI-A, PI-B
+            The section the student is in. Must match the following format:
+                XY-Z
+            where `XY` is the acronym for the branch and `Z` is the section.
 
         `roll_no`: <class 'int'>
             The roll number of the student.
@@ -226,8 +228,8 @@ class Verify(commands.Cog):
         batch = self.bot.c.execute(
             'select Batch from verified_servers where ID = ?', (guild.id,)
         ).fetchone()
-        if batch:
-            if record[4] != batch:
+        if batch is not None:
+            if batch and record[4] != batch:
                 await ctx.reply(
                     self.fmv('incorrect-server', {'batch': record[4]})
                 )
@@ -248,7 +250,7 @@ class Verify(commands.Cog):
             except TimeoutError:
                 return
 
-        if section not in self.sections[batch]:
+        if section not in self.sections[record[4]]:
             await ctx.reply(self.fmv('section-notfound', {'section': section}))
             return
 
@@ -264,7 +266,7 @@ class Verify(commands.Cog):
                 'user': user.mention if user else 'another user'
             }
 
-            await self.sendEmail(ctx, *record[2:4], False)
+            await self.sendEmail(ctx, *record[2:4], manual=False)
             await ctx.reply(self.fmv('record-claimed', values))
 
             def check(msg):
@@ -302,7 +304,7 @@ class Verify(commands.Cog):
                     break
 
         await assign_student_roles(
-            ctx.author, (*record[:2], *record[4:6]), self.bot.c
+            ctx.author, (record[0][:2], *record[:2], *record[4:6]), self.bot.c
         )
 
         await ctx.reply(self.fmv('basic-success'))
@@ -318,8 +320,14 @@ class Verify(commands.Cog):
     @verify.command()
     @checks.is_exists()
     async def email(self, ctx, email: str):
-        """Verify the user's identity by verifying their institute email.
+        """Type this command to prove your identity for more accessibility.
 
+        Type `verify email` followed by your institute email, like \
+        `email@nitkkr.ac.in`
+
+        Example: `%verify email priyanshu_12022005@nitkkr.ac.in`
+        """
+        """
         Parameters
         ------------
         `email`: <class 'str'>
@@ -342,8 +350,8 @@ class Verify(commands.Cog):
     @verify.command()
     @checks.is_exists()
     async def code(self, ctx, code: str):
-        """Check if the inputted code matches the sent OTP.
-
+        """Check if the inputted code matches the sent OTP."""
+        """
         Parameters
         ------------
         `code`: <class 'str'>
@@ -359,7 +367,7 @@ class Verify(commands.Cog):
                     from main where Discord_UID = ?
                 ''', (ctx.author.id,)
             ).fetchone()
-            await assign_student_roles(ctx.author, details[:-1], self.bot.c)
+            await assign_student_roles(ctx.author, (details[0][:2], *details[:-1]), self.bot.c)
             await self.cleanup(ctx.author, details[-1])
 
             await ctx.reply(self.fmv(
