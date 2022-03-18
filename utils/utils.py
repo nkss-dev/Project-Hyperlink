@@ -1,9 +1,8 @@
 import json
 import re
+from datetime import datetime
 from math import floor
-
 from random import random
-from typing import Optional
 
 import discord
 
@@ -63,12 +62,14 @@ def generateID(IDs: tuple = None, length: int = 5, seed: str = None) -> str:
     return ID
 
 
-def getURLs(str: str) -> Optional[list]:
+def getURLs(text: str) -> list:
+    if text is None:
+        return []
     regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-    return [url[0] for url in re.findall(regex, str)]
+    return [url[0] for url in re.findall(regex, text)]
 
 
-async def getWebhook(channel: discord.TextChannel, member: discord.Member) -> Optional[discord.Webhook]:
+async def getWebhook(channel, member) -> discord.Webhook | None:
     """Return a webhook"""
     for webhook in await channel.webhooks():
         if webhook.user == member:
@@ -79,6 +80,35 @@ async def getWebhook(channel: discord.TextChannel, member: discord.Member) -> Op
             avatar=await member.display_avatar.read()
         )
         return webhook
+
+
+def get_group_roles(cursor, batch, guild) -> tuple[discord.Role, discord.Role] | None:
+    names = {
+        1: 'fresher',
+        2: 'sophomore',
+        3: 'junior',
+        4: 'senior'
+    }
+
+    # Calculate which year the student is in
+    passing_date = datetime(year=batch, month=6, day=1)
+    time = passing_date - datetime.utcnow()
+    remaining_years = time.days // 365
+    year = names[4 - remaining_years]
+
+    # Fetch roles to be assigned
+    roles = cursor.execute(
+        f'''select {year}_role, guest_role
+            from groups where discord_server = ?
+        ''', (guild.id,)
+    ).fetchone()
+    if not roles:
+        return None
+
+    return (
+        guild.get_role(roles[0]),
+        guild.get_role(roles[1])
+    )
 
 
 async def is_alone(channel, author, bot) -> bool:
