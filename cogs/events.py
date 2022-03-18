@@ -150,7 +150,7 @@ class Events(commands.Cog):
 
         if record:
             if record[4] and (not details[1] or record[2] == details[1]):
-                await assign_student_roles(member, record[:-1], self.bot.c)
+                await assign_student_roles(member, (record[0][:2], *record[:-1]), self.bot.c)
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
