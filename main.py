@@ -1,11 +1,10 @@
 import re
 import traceback
 
+import asyncpg
 import config
 import discord
 from discord.ext import commands
-
-from utils.constructor import Constructor
 
 initial_extensions = (
     'cogs.drive',
@@ -45,8 +44,6 @@ class ProjectHyperlink(commands.Bot):
             owner_ids=config.owner_ids
         )
 
-        self.loop.create_task(self.construct())
-
     @staticmethod
     async def _prefix_callable(bot, msg) -> list:
         """Return the bot's prefix for a guild or a DM"""
@@ -71,15 +68,27 @@ class ProjectHyperlink(commands.Bot):
 
         print(f'Logged in as {self.user} (ID: {self.user.id})')
 
-    async def construct(self):
+    async def setup_hook(self):
         """Setup all initial requirements"""
-        await self.wait_until_ready()
-        Constructor(self)
+        # Setting up the database
+        self.conn = await asyncpg.create_pool(
+            host=config.postgres.host,
+            database=config.postgres.database,
+            user=config.postgres.user,
+            password=config.postgres.password
+        )
+
+        with open('utils/records.sql') as sql:
+            await self.conn.execute(sql.read())
+        with open('utils/groups.sql') as sql:
+            await self.conn.execute(sql.read())
+        with open('utils/guilds.sql') as sql:
+            await self.conn.execute(sql.read())
 
         # Load all the extensions
         for extension in initial_extensions:
             try:
-                self.load_extension(extension)
+                await self.load_extension(extension)
             except Exception:
                 print(f'\nFailed to load extension {extension}.\n')
                 traceback.print_exc()
