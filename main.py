@@ -30,13 +30,14 @@ class ProjectHyperlink(commands.Bot):
 
     def __init__(self):
         intents = discord.Intents(
-            guilds=True,
-            members=True,
             bans=True,
             emojis=True,
-            voice_states=True,
+            guilds=True,
+            members=True,
             messages=True,
-            reactions=True
+            message_content=True,
+            reactions=True,
+            voice_states=True
         )
         super().__init__(
             command_prefix=self._prefix_callable,
