@@ -122,39 +122,39 @@ class Verify(commands.Cog):
         self.codes[str(ctx.author.id)] = otp
         self.save()
 
-    def checkCode(self, author_id: int, code: str) -> bool:
+    async def validate_otp(self, user_id: int, code: str) -> bool:
         """Check if the entered code matches the OTP"""
-        if self.codes[str(author_id)] != code:
+        if self.codes[str(user_id)] != code:
             return False
 
-        del self.codes[str(author_id)]
+        del self.codes[str(user_id)]
         self.save()
 
         # Marks user as verified in the database
-        self.bot.c.execute(
-            'update main set Verified = 1 where Discord_UID = ?',
-            (author_id,)
+        await self.bot.conn.execute(
+            'UPDATE student SET verified = true WHERE discord_uid = $1',
+            user_id
         )
-        self.bot.db.commit()
         return True
 
     @commands.group()
     @commands.guild_only()
     async def verify(self, ctx):
         """Command group for verification functionality"""
-        l10n = get_l10n(ctx.guild.id, 'verification')
-        self.fmv = l10n.format_value
-
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
             return
 
-        verified = self.bot.c.execute(
-            'select Verified from main where Discord_UID = ?', (ctx.author.id,)
-        ).fetchall()
+        l10n = get_l10n(ctx.guild.id, 'verification')
+        self.fmv = l10n.format_value
+
+        verified = await self.bot.conn.fetch(
+            'SELECT verified FROM student WHERE discord_uid = $1',
+            ctx.author.id
+        )
 
         if verified:
-            if not verified[0]:
+            if verified[0]['verified'] is False:
                 if ctx.invoked_subcommand.name == 'basic':
                     raise commands.CheckFailure('AccountAlreadyLinked')
             else:
@@ -165,9 +165,9 @@ class Verify(commands.Cog):
         guild = author.guild
 
         # Remove restricting role
-        id = self.bot.c.execute(
-            'select Guest_Role from verified_servers where ID = ?', (guild.id,)
-        ).fetchone()
+        id = await self.bot.conn.fetchval(
+            'SELECT guest_role FROM verified_server WHERE id = $1', guild.id
+        )
         if guest_role := guild.get_role(id):
             await author.remove_roles(guest_role)
 
@@ -228,25 +228,37 @@ class Verify(commands.Cog):
         roll_no = info.roll
         section = f'{info.branch}-{info.section}'.upper()
 
-        record = self.bot.c.execute(
-            '''select Section, SubSection, Name,
-                Institute_Email, Batch, Hostel_Number, Discord_UID
-                from main where Roll_Number = ?
-            ''', (roll_no,)
-        ).fetchone()
+        record = await self.bot.conn.fetchrow(
+            '''
+            SELECT
+                section,
+                sub_section,
+                name,
+                email,
+                batch,
+                hostel_number,
+                discord_uid
+            FROM
+                student
+            WHERE
+                roll_number = $1
+            ''', roll_no
+        )
 
         if not record:
             await ctx.reply(self.fmv('roll-not-in-database'))
             return
 
         guild = ctx.guild
-        batch = self.bot.c.execute(
-            'select Batch from verified_servers where ID = ?', (guild.id,)
-        ).fetchone()
+        batch = await self.bot.conn.fetchval(
+            'SELECT batch FROM verified_server WHERE id = $1', guild.id
+        )
+        # Check if server exists
         if batch is not None:
-            if batch and record[4] != batch:
+            # Check if the server is year-specific and it matches the student's batch
+            if batch != 0 and record['batch'] != batch:
                 await ctx.reply(
-                    self.fmv('incorrect-server', {'batch': record[4]})
+                    self.fmv('incorrect-server', {'batch': record['batch']})
                 )
                 return
         else:
@@ -265,23 +277,28 @@ class Verify(commands.Cog):
             except TimeoutError:
                 return
 
-        if section not in self.sections[record[4]]:
+        if section not in self.sections[record['batch']]:
             await ctx.reply(self.fmv('section-notfound', {'section': section}))
             return
 
-        if section != record[0]:
+        if section != record['section']:
             await ctx.reply(
                 self.fmv('section-mismatch'))
             return
 
-        if record[6]:
-            user = guild.get_member(record[6]) or self.bot.get_user(record[6])
-            values = {
-                'email': record[3],
-                'user': user.mention if user else 'another user'
-            }
+        if record['discord_uid']:
+            if not (user := guild.get_member(record['discord_uid'])):
+                user = self.bot.get_user(record['discord_uid'])
+            values = {'email': record['email']}
+            if user:
+                values['another user'] = user.mention
 
-            await self.sendEmail(ctx, *record[2:4], manual=False)
+            await self.sendEmail(
+                ctx,
+                record['name'],
+                record['email'],
+                manual=False
+            )
             await ctx.reply(self.fmv('record-claimed', values))
 
             def check(msg):
@@ -297,40 +314,52 @@ class Verify(commands.Cog):
                     return
                 else:
                     content = ctx.message.content
-                    if not self.checkCode(ctx.author.id, content):
+                    if not await self.validate_otp(ctx.author.id, content):
                         await ctx.reply(
                             self.fmv('code-retry', {'code': content})
                         )
                         continue
-                    self.bot.c.execute(
-                        'update main set Verified = 1 where Roll_Number = ?',
-                        (roll_no,)
+                    self.bot.conn.execute(
+                        '''
+                        UPDATE
+                            student
+                        SET
+                            verified = true
+                        WHERE
+                            roll_number = $1
+                        ''', roll_no
                     )
 
                     # Fetch the user ID again in case another
                     # account has verified in the meantime
-                    user_id = self.bot.c.execute(
-                        'select Discord_UID from main where Roll_Number = ?',
-                        (roll_no,)
-                    ).fetchone()
-
+                    user_id = await self.bot.conn.fetchval(
+                        'SELECT discord_uid FROM student WHERE roll_number = $1',
+                        roll_no
+                    )
                     # Kick the old account if any
-                    await self.kick_from_all(user_id)
+                    await self.kick_from_all(user_id, ctx.author.mention)
                     break
 
         await assign_student_roles(
-            ctx.author, (record[0][:2], *record[:2], *record[4:6]), self.bot.c
+            ctx.author,
+            (
+                record['section'][:2],
+                record['section'],
+                record['sub_section'],
+                record['batch'],
+                record['hostel_number']
+            ),
+            self.bot.conn
         )
 
         await ctx.reply(self.fmv('basic-success'))
 
-        self.bot.c.execute(
-            'update main set Discord_UID = ? where Roll_Number = ?',
-            (ctx.author.id, roll_no,)
+        await self.bot.conn.execute(
+            'UPDATE student SET discord_uid = $1 WHERE roll_number = $2',
+            ctx.author.id, roll_no
         )
-        self.bot.db.commit()
 
-        await self.cleanup(ctx.author, record[2])
+        await self.cleanup(ctx.author, record['name'])
 
     @verify.command()
     @checks.is_exists()
@@ -348,10 +377,10 @@ class Verify(commands.Cog):
         `email`: <class 'str'>
             The institute email of the user.
         """
-        name, institute_email = self.bot.c.execute(
-            'select Name, Institute_Email from main where Discord_UID = ?',
-            (ctx.author.id,)
-        ).fetchone()
+        name, institute_email = await self.bot.conn.fetchrow(
+            'SELECT name, email FROM student WHERE discord_uid = $1',
+            ctx.author.id
+        )
 
         if email.lower() != institute_email:
             await ctx.reply(self.fmv('email-mismatch'))
@@ -376,14 +405,33 @@ class Verify(commands.Cog):
             await ctx.reply(self.fmv('email-not-received'))
             return
 
-        if self.checkCode(ctx.author.id, code):
-            details = self.bot.c.execute(
-                '''select Section, Subsection, Batch, Hostel_Number, Name
-                    from main where Discord_UID = ?
-                ''', (ctx.author.id,)
-            ).fetchone()
-            await assign_student_roles(ctx.author, (details[0][:2], *details[:-1]), self.bot.c)
-            await self.cleanup(ctx.author, details[-1])
+        if await self.validate_otp(ctx.author.id, code):
+            details = await self.bot.conn.fetchval(
+                '''
+                SELECT
+                    section,
+                    sub_section,
+                    name,
+                    batch,
+                    hostel_number
+                FROM
+                    student
+                WHERE
+                    discord_uid = $1
+                ''', ctx.author.id
+            )
+            await assign_student_roles(
+                ctx.author,
+                (
+                    details['section'][:2],
+                    details['section'],
+                    details['sub_section'],
+                    details['batch'],
+                    details['hostel_number'],
+                ),
+                self.bot.conn
+            )
+            await self.cleanup(ctx.author, details['name'])
 
             await ctx.reply(self.fmv(
                     'email-success', {'emoji': self.emojis['verified']}))
@@ -396,5 +444,5 @@ class Verify(commands.Cog):
             json.dump(self.codes, f)
 
 
-def setup(bot):
-    bot.add_cog(Verify(bot))
+async def setup(bot):
+    await bot.add_cog(Verify(bot))
