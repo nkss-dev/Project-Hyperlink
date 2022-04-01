@@ -50,19 +50,17 @@ class Verify(commands.Cog):
         with open('db/emojis.json') as emojis:
             self.emojis = json.load(emojis)['utility']
 
-        self.sections = self.bot.c.execute(
-            'select distinct Section from main'
-        ).fetchall()
-
-        self.sections = {}
-        batches = self.bot.c.execute(
-            'select distinct Batch from main'
-        ).fetchall()
-        for batch in batches:
-            self.sections[batch] = self.bot.c.execute(
-                'select distinct Section from main where Batch = ?',
-                (batch,)
-            ).fetchall()
+    async def cog_load(self):
+        sections = await self.bot.conn.fetch('''
+            SELECT
+                batch,
+                ARRAY_AGG(DISTINCT section)
+            FROM
+                student
+            GROUP BY
+                batch
+        ''')
+        self.sections = dict(sections)
 
     async def sendEmail(self, ctx, name: str, email: str, manual=True):
         """Send a verification email to the given email"""
