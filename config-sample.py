@@ -7,3 +7,9 @@ email = ''
 password_token = ''
 # For help on getting your password token, refer this article:
 # https://support.google.com/mail/answer/185833
+
+class postgres:
+    host = '<host_name>'
+    database = '<databse_name>'
+    user = '>username>'
+    password = '<password>'
