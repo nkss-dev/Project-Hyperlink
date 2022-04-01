@@ -62,6 +62,26 @@ class Verify(commands.Cog):
         ''')
         self.sections = dict(sections)
 
+        ids = await self.bot.conn.fetch('''
+            SELECT
+                id
+            FROM
+                verified_server
+            UNION
+            SELECT
+                id AS group_id
+            FROM
+                group_discord
+            WHERE
+                group_discord IS NOT NULL
+        ''')
+        self.server_ids = {'verified': [], 'groups': []}
+        for id in ids:
+            if id := id.get('id'):
+                self.server_ids['verified'].append(id)
+            elif id := id.get('group_id'):
+                self.server_ids['groups'].append(id)
+
     async def sendEmail(self, ctx, name: str, email: str, manual=True):
         """Send a verification email to the given email"""
         await ctx.message.add_reaction(self.emojis['loading'])
@@ -156,14 +176,10 @@ class Verify(commands.Cog):
             first_name = name.split(' ', 1)[0]
             await author.edit(nick=first_name)
 
-    async def kick_from_all(self, user_id: int):
+    async def kick_from_all(self, user_id: int, new_user: str):
         """Kick the user from all affiliated servers"""
-        server_ids = self.bot.c.execute(
-            'select ID from verified_servers'
-            + ' union '
-            + 'select Discord_Server from groups'
-        ).fetchall()
-        for id in server_ids:
+        ids = *self.server_ids['verified'], *self.server_ids['groups']
+        for id in ids:
             guild = self.bot.get_guild(id)
             if guild and (member := guild.get_member(user_id)):
                 with contextlib.suppress(discord.Forbidden):
