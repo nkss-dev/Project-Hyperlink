@@ -1,5 +1,8 @@
 # Run this script for first time setups
 
+import asyncio
+import asyncpg
+import config
 import json
 import os
 import sqlite3
@@ -58,3 +61,23 @@ c = conn.cursor()
 with open('utils/self_roles.sql') as sql:
     c.executescript(sql.read())
     conn.commit()
+
+# PostgreSQL db
+async def postgres():
+    conn = await asyncpg.create_pool(
+        host=config.postgres.host,
+        database=config.postgres.database,
+        user=config.postgres.user,
+        password=config.postgres.password
+    )
+
+    with open('utils/records.sql') as sql:
+        await conn.execute(sql.read())
+    with open('utils/groups.sql') as sql:
+        await conn.execute(sql.read())
+    with open('utils/guilds.sql') as sql:
+        await conn.execute(sql.read())
+
+    await conn.close()
+
+asyncio.run(postgres())

@@ -78,13 +78,6 @@ class ProjectHyperlink(commands.Bot):
             password=config.postgres.password
         )
 
-        with open('utils/records.sql') as sql:
-            await self.conn.execute(sql.read())
-        with open('utils/groups.sql') as sql:
-            await self.conn.execute(sql.read())
-        with open('utils/guilds.sql') as sql:
-            await self.conn.execute(sql.read())
-
         # Load all the extensions
         for extension in initial_extensions:
             try:
