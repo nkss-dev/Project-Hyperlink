@@ -10,11 +10,13 @@ code-retry = `{$code}` is incorrect. Please try again with the correct code.
 incorrect-server = Verification of the { NUMBER($batch, useGrouping: 0) } batch is not allowed on this server.
 server-not-allowed = This command is restricted to certain servers.
 
-member-kick-old = User has verified with a new ID, {$user}.
+member-kick = User has verified with a new account, {$user}.
 
 pending-verification = Please complete your pending verification before trying again
 
-record-claimed = The details you entered is of a record already claimed by {$user}.
+react-timeout = Verification has been cancelled. You took too long to enter your OTP.
+
+record-claimed = The details you entered is of a record already claimed by {$another user}.
             An email has been sent to your institute email ID, `{$email}`. Paste the code here to complete your verification.
 
 roll-not-in-database = Please re-check the entered roll number.
@@ -23,9 +25,8 @@ section-mismatch = The section that you entered does not match that of the roll 
 email-mismatch = The email that you entered does not match your institute email. Please try again with a valid email.
             If you think this was a mistake, contact a moderator.
 
-section-notfound = '{$section}' is not an existing section. Please re-check the entered details and try again
 email-not-received = You did not receive any email yet.
 
-section-not-given = Section is required.
-rollno-not-given = Roll number is required.
-branch-not-given = Branch is required.
+section-not-provided = Section is required.
+rollno-not-provided = Roll number is required.
+branch-not-provided = Branch is required.
