@@ -44,9 +44,8 @@ class Verify(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.codes = []
 
-        with open('db/codes.json') as codes:
-            self.codes = json.load(codes)
         with open('db/emojis.json') as emojis:
             self.emojis = json.load(emojis)['utility']
 
@@ -119,15 +118,14 @@ class Verify(commands.Cog):
         await ctx.message.remove_reaction(
             self.emojis['loading'], self.bot.user)
 
-        self.codes[str(ctx.author.id)] = otp
-        self.save()
+        self.codes[ctx.author.id] = otp
 
     async def validate_otp(self, user_id: int, code: str) -> bool:
         """Check if the entered code matches the OTP"""
-        if self.codes[str(user_id)] != code:
+        if self.codes[user_id] != code:
             return False
 
-        del self.codes[str(user_id)]
+        del self.codes[user_id]
         self.save()
 
         # Marks user as verified in the database
@@ -207,7 +205,7 @@ class Verify(commands.Cog):
         `roll_no`: <class 'int'>
             The roll number of the student.
         """
-        if str(ctx.author.id) in self.codes:
+        if ctx.author.id in self.codes:
             await ctx.reply('pending-verification')
             return
 
@@ -401,7 +399,7 @@ class Verify(commands.Cog):
         `code`: <class 'str'>
             The code to be checked
         """
-        if str(ctx.author.id) not in self.codes:
+        if ctx.author.id not in self.codes:
             await ctx.reply(self.fmv('email-not-received'))
             return
 
@@ -437,11 +435,6 @@ class Verify(commands.Cog):
                     'email-success', {'emoji': self.emojis['verified']}))
         else:
             await ctx.reply(self.fmv('code-incorrect'))
-
-    def save(self):
-        """Save the data to a json file"""
-        with open('db/codes.json', 'w') as f:
-            json.dump(self.codes, f)
 
 
 async def setup(bot):

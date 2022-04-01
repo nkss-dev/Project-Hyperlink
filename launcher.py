@@ -15,7 +15,6 @@ except FileExistsError:
 # jsons
 jsons = {
     'boards': {},
-    'codes': {},
     'emojis': {
         'utility': {
             'loading': '',
