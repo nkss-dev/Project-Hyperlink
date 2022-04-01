@@ -10,4 +10,5 @@ RUN pip install -U pytz
 RUN pip install -U tabulate
 
 COPY . .
+CMD ["python", "./launcher.py"]
 CMD ["python", "./main.py"]
