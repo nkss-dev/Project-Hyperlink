@@ -93,10 +93,11 @@ class ProjectHyperlink(commands.Bot):
 if __name__ == '__main__':
     bot = ProjectHyperlink()
 
-    @bot.before_invoke
+    @bot.check_once
     async def bracketCheck(ctx):
         """Raise an error if any argument is enclosed in angular brackets"""
         if re.search(r'<[^#@a:].+>', ctx.message.content):
             raise commands.CheckFailure('AngularBracketsNotAllowed')
+        return True
 
     bot.run()
