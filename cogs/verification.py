@@ -1,3 +1,4 @@
+import contextlib
 import json
 import re
 from asyncio import TimeoutError
@@ -167,10 +168,10 @@ class Verify(commands.Cog):
         for id in server_ids:
             guild = self.bot.get_guild(id)
             if guild and (member := guild.get_member(user_id)):
-                try:
-                    await member.kick(reason='User verified by another account')
-                except discord.Forbidden:
-                    pass
+                with contextlib.suppress(discord.Forbidden):
+                    await member.kick(
+                        reason=self.fmv('member-kick', {'user': new_user})
+                    )
 
     @verify.command()
     async def basic(self, ctx, *, params: str):
