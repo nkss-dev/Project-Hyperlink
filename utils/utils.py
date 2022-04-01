@@ -7,18 +7,28 @@ from random import random
 import discord
 
 
-async def assign_student_roles(member, details, cursor):
+async def assign_student_roles(member, details, conn):
     """Add multiple college related roles to the user.
 
     These currently include:
-        Section, Sub-Section, Hostel, Clubs
+        Branch, Section, Sub-Section, Hostel, Clubs
     """
-    groups = cursor.execute(
-        'select Name, Alias from group_discord_users where Discord_UID = ?',
-        (member.id,)
-    ).fetchall()
+    groups = conn.fetch(
+        '''
+        SELECT
+            name,
+            alias
+        FROM
+            group_discord_user
+        WHERE
+            discord_uid = $1
+        ''', member.id
+    )
 
-    role_names = (*details, *[group[1] or group[0] for group in groups])
+    role_names = (
+        *details,
+        *[group['alias'] or group['name'] for group in groups]
+    )
     roles = []
     for role_name in role_names:
         if role := discord.utils.get(member.guild.roles, name=str(role_name)):
@@ -82,7 +92,7 @@ async def getWebhook(channel, member) -> discord.Webhook | None:
         return webhook
 
 
-def get_group_roles(cursor, batch, guild) -> tuple[discord.Role, discord.Role] | None:
+def get_group_roles(conn, batch, guild) -> tuple[discord.Role, discord.Role] | None:
     names = {
         1: 'fresher',
         2: 'sophomore',
@@ -97,17 +107,23 @@ def get_group_roles(cursor, batch, guild) -> tuple[discord.Role, discord.Role] |
     year = names[4 - remaining_years]
 
     # Fetch roles to be assigned
-    roles = cursor.execute(
-        f'''select {year}_role, guest_role
-            from groups where discord_server = ?
-        ''', (guild.id,)
-    ).fetchone()
+    roles = conn.fetchrow(
+        f'''
+        SELECT
+            {year}_role,
+            guest_role
+        FROM
+            group_discord
+        WHERE
+            id = $1
+        ''', guild.id
+    )
     if not roles:
         return None
 
     return (
-        guild.get_role(roles[0]),
-        guild.get_role(roles[1])
+        guild.get_role(roles[f'{year}_role']),
+        guild.get_role(roles['guest_role'])
     )
 
 
