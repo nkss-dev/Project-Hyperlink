@@ -52,11 +52,11 @@ class ProjectHyperlink(commands.Bot):
         if not msg.guild:
             base.append('%')
         else:
-            prefixes = bot.c.execute(
-                'select prefix from prefixes where ID = ?', (msg.guild.id,)
-            ).fetchall()
+            prefixes = await bot.conn.fetch(
+                'select prefix from prefix where id = $1', msg.guild.id
+            )
             if prefixes:
-                prefixes = [prefix[0] for prefix in prefixes]
+                prefixes = [prefix['prefix'] for prefix in prefixes]
             else:
                 prefixes = ['%']
             base.extend(prefixes)
