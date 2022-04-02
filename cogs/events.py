@@ -65,46 +65,51 @@ class Events(commands.Cog):
 
         await ping.edit(content=None, embed=embed)
 
-    async def join_handler(self, events, member, guild):
-        if events:
-            # Sends welcome message on the server's channel
-            if channel := guild.get_channel(events[0]):
-                await channel.send(events[1].replace('{$user}', member.mention))
+    async def join_handler(self, on_join, welcome, member, guild):
+        # Sends welcome message on the server's channel
+        if channel := guild.get_channel(on_join[0]):
+            await channel.send(on_join[1].replace('{$user}', member.mention))
 
-            # Sends welcome message to the user's DM
-            if events[2]:
-                await member.send(events[2].replace('{$server}', guild.name))
+        # Sends welcome message to the user's DM
+        if welcome:
+            await member.send(welcome.replace('{$server}', guild.name))
 
-        role_ids = self.bot.c.execute(
-            'select role from join_roles where ID = ?', (guild.id,)
-        ).fetchall()
+        role_ids = self.bot.conn.fetch(
+            'SELECT role FROM join_role WHERE id = $1', guild.id
+        )
         for role_id in role_ids:
-            if role := guild.get_role(role_id):
+            if role := guild.get_role(role_id['role']):
                 await member.add_roles(role)
             else:
-                self.c.execute(
-                    'delete from join_roles where role = ?', (role_id,)
+                self.bot.conn.execute(
+                    'DELETE FROM join_role WHERE role = $1', role_id
                 )
-        self.bot.db.commit()
 
     async def join_club_or_society(self, member) -> bool:
-        batch = self.bot.c.execute(
-            'select Batch from main where Discord_UID = ?',
-            (member.id,)
-        ).fetchone()
+        batch = self.bot.conn.fetchval(
+            'SELECT batch FROM student WHERE discord_uid = $1',
+            member.id
+        )
 
-        roles = get_group_roles(self.bot.c, batch, member.guild)
+        roles = get_group_roles(self.bot.conn, batch, member.guild)
         # Exit if server isn't of a club/society
         if roles is None:
             return False
 
-        is_member = self.bot.c.execute(
-            '''select exists(
-                select * from group_discord_users
-                where Discord_Server = ? and Discord_UID = ?
-            )
-            ''', (member.guild.id, member.id,)
-        ).fetchone()
+        is_member = self.bot.conn.fetchval(
+            '''
+            SELECT
+                EXISTS (
+                    SELECT
+                        *
+                    FROM
+                        group_discord_user
+                    WHERE
+                        id = $1
+                        AND discord_uid = $2
+                )
+            ''', member.guild.id, member.id
+        )
 
         # Assign year role if the user is a member, else assign guest role
         role_id = roles[0] if is_member else roles[1]
@@ -119,51 +124,77 @@ class Events(commands.Cog):
 
         # Assign the bot role if any
         if member.bot:
-            bot_role_id = self.bot.c.execute(
-                'select Bot_Role from guilds where ID = ?', (guild.id,)
-            ).fetchone()
+            bot_role_id = self.bot.conn.fetchval(
+                'SELECT bot_role FROM guild WHERE id = $1', guild.id
+            )
             if bot_role := guild.get_role(bot_role_id):
                 await member.add_roles(bot_role)
             return
 
         # Handle all generic events
-        events = self.bot.c.execute(
-            '''select Join_Channel, Join_Message, Welcome_Message
-                from events where Guild_ID = ?''',
-            (guild.id,)
-        ).fetchone()
-        await self.join_handler(events, member, guild)
+        *on_join, welcome = self.bot.conn.fetchrow(
+            '''
+            SELECT
+                join_channel,
+                join_message,
+                welcome_message
+            FROM
+                event
+            WHERE
+                guild_id = $1
+            ''',
+            guild.id
+        )
+        await self.join_handler(on_join, welcome, member, guild)
 
         # Handle special events for club and society servers
         if await self.join_club_or_society(member):
             return
 
         # Handle special events for servers with verification
-        details = self.bot.c.execute(
-            'select * from verified_servers where ID = ?', (guild.id,)
-        ).fetchone()
-        if not details:
+        server = self.bot.conn.fetchrow(
+            'SELECT * FROM verified_server WHERE id = $1', guild.id
+        )
+        if not server:
             return
 
-        record = self.bot.c.execute(
-            '''select Section, SubSection, Batch, Hostel_Number, Verified
-                from main where Discord_UID = ?
-            ''', (member.id,)
-        ).fetchone()
+        student = self.bot.conn.fetchrow(
+            '''
+            SELECT
+                section,
+                sub_section,
+                batch,
+                hostel_number,
+                verified
+            FROM
+                student
+            WHERE
+                discord_uid = $1
+            ''', member.id
+        )
 
-        if record:
-            if record[4] and (not details[1] or record[2] == details[1]):
-                await assign_student_roles(member, (record[0][:2], *record[:-1]), self.bot.c)
+        if student:
+            if student['verified'] and server['batch'] in (0, student['batch']):
+                await assign_student_roles(
+                    member,
+                    (
+                        student['section'][:2],
+                        student['sub_section'],
+                        student['batch'],
+                        student['hostel_number'],
+                    ),
+                    self.bot.conn
+                )
                 return
         else:
             # Sends a dm to the new user explaining that they have to verify
-            instruction_channel = self.bot.get_channel(details[2])
-            command_channel = self.bot.get_channel(details[3])
+            instruct = self.bot.get_channel(server['instruction_channel'])
+            command = self.bot.get_channel(server['command_channel'])
 
             l10n = get_l10n(guild.id, 'events')
             mentions = {
-                'instruction-channel': instruction_channel.mention,
-                'command-channel': command_channel.mention,
+                'instruction-channel': instruct.mention,
+                'command-channel': command.mention,
                 'owner': guild.owner.mention
             }
             embed = discord.Embed(
@@ -179,7 +210,7 @@ class Events(commands.Cog):
                 pass
 
         # Add a restricting guest role to the user
-        role = guild.get_role(details[4])
+        role = guild.get_role(server['guest_role'])
         await member.add_roles(role)
 
     @staticmethod
@@ -237,33 +268,41 @@ class Events(commands.Cog):
         guild = member.guild
         l10n = get_l10n(guild.id, 'events')
 
-        events = self.bot.c.execute(
-            '''select Leave_Channel, Leave_Message, Kick_Channel, Kick_Message,
-                Ban_Channel, Ban_Message from events where Guild_ID = ?''',
-            (guild.id,)
-        ).fetchone()
+        events = self.bot.conn.fetchrow(
+            '''
+            SELECT
+                leave_channel,
+                leave_message,
+                kick_channel,
+                kick_message,
+                ban_channel,
+                ban_message
+            FROM
+                event
+            WHERE guild_id = $1
+            ''', guild.id
+        )
         if events:
             events = {
-                'leave': (events[0], events[1]),
-                'kick': (events[2], events[3]),
-                'ban': (events[4], events[5]),
+                'leave': (events['leave_channel'], events['leave_message']),
+                'kick': (events['kick_channel'], events['kick_message']),
+                'ban': (events['ban_channel'], events['ban_message']),
             }
             channel = await self.leave_handler(events, guild, member, l10n)
 
-        verified = self.bot.c.execute(
-            'select Verified from main where Discord_UID = ?', (member.id,)
-        ).fetchall()
+        verified = self.bot.conn.fetch(
+            'SELECT verified FROM student WHERE discord_uid = $1', member.id
+        )
         if not verified:
             if events:
                 await self.send_leave_message(channel, member, events['leave'][1])
             return
 
-        if not verified[0]:
-            self.bot.c.execute(
-                'update main set Discord_UID = null where Discord_UID = ?',
-                (member.id,)
+        if not verified[0]['verified']:
+            self.bot.conn.execute(
+                'UPDATE student SET discord_uid = NULL WHERE discord_uid = $1',
+                member.id
             )
-            self.bot.db.commit()
 
         if events:
             await self.send_leave_message(channel, member, events['leave'][1])
@@ -346,5 +385,5 @@ class Events(commands.Cog):
             raise error
 
 
-def setup(bot):
-    bot.add_cog(Events(bot))
+async def setup(bot):
+    await bot.add_cog(Events(bot))
