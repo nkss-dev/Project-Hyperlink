@@ -10,15 +10,16 @@ class Logger(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cache = {}
-
-        guild_channels = bot.c.execute(
-            'select ID, Edit_Channel, Delete_Channel from guilds'
-        ).fetchall()
+        
+    async def cog_load(self):
+        guild_channels = await self.bot.conn.fetch(
+            'SELECT id, edit_channel, delete_channel FROM guild'
+        )
         for channels in guild_channels:
-            edit = self.bot.get_channel(channels[1])
-            delete = self.bot.get_channel(channels[2])
+            edit = self.bot.get_channel(channels['edit_channel'])
+            delete = self.bot.get_channel(channels['delete_channel'])
             if edit and delete:
-                self.cache[channels[0]] = edit, delete
+                self.cache[channels['id']] = edit, delete
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
@@ -120,6 +121,5 @@ class Logger(commands.Cog):
         await self.cache[before.guild.id][0].send(embed=embed)
 
 
-def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
-    bot.add_cog(Logger(bot))
+async def setup(bot):
+    await bot.add_cog(Logger(bot))
