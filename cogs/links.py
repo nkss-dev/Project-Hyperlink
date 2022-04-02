@@ -434,5 +434,5 @@ class Links(commands.Cog):
         await discord.utils.sleep_until(next_run)
 
 
-def setup(bot):
-    bot.add_cog(Links(bot))
+async def setup(bot):
+    await bot.add_cog(Links(bot))
