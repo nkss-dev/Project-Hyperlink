@@ -11,5 +11,5 @@ password_token = ''
 class postgres:
     host = '<host_name>'
     database = '<databse_name>'
-    user = '>username>'
+    user = '<username>'
     password = '<password>'
