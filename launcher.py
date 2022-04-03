@@ -45,21 +45,14 @@ for json_name, content in jsons.items():
         with open(f'db/{json_name}.json', 'w') as file:
             json.dump(content, file)
 
-# links.db
-conn = sqlite3.connect('db/links.db')
-c = conn.cursor()
+# SQLite db
+for name in ('links', 'self_roles'):
+    conn = sqlite3.connect(f'db/{name}.db')
+    c = conn.cursor()
 
-with open('utils/links.sql') as sql:
-    c.executescript(sql.read())
-    conn.commit()
-
-# self_roles.db
-conn = sqlite3.connect('db/self_roles.db')
-c = conn.cursor()
-
-with open('utils/self_roles.sql') as sql:
-    c.executescript(sql.read())
-    conn.commit()
+    with open(f'utils/schemas/{name}.sql') as sql:
+        c.executescript(sql.read())
+        conn.commit()
 
 # PostgreSQL db
 async def postgres():
