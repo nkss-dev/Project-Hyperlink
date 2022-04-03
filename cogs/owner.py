@@ -159,6 +159,5 @@ class OwnerOnly(commands.Cog):
         await ctx.send(self.l10n.format_value('remove-success'))
 
 
-def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
-    bot.add_cog(OwnerOnly(bot))
+async def setup(bot):
+    await bot.add_cog(OwnerOnly(bot))
