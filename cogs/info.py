@@ -1,3 +1,5 @@
+import re
+import requests
 import json
 from datetime import datetime
 from typing import Union
@@ -55,33 +57,59 @@ class Info(commands.Cog):
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
+    async def cog_load(self):
+        hostels = await self.bot.conn.fetch(
+            'SELECT number, name FROM HOSTEL'
+        )
+        self.hostels = dict(hostels)
+
     async def get_profile_embed(self, guild: bool, member) -> discord.Embed:
         """Return the details of the given user in an embed"""
-        details = self.bot.c.execute(
-            '''select Roll_Number, Section, SubSection, Name,
-                Mobile, Birthday, Institute_Email, Hostel_Number, Verified
-                from main where Discord_UID = ?
-            ''', (member.id,)
-        ).fetchone()
+        student = await self.bot.conn.fetchrow(
+            '''
+            SELECT
+                roll_number,
+                section,
+                sub_section,
+                name,
+                mobile,
+                birthday,
+                email,
+                hostel_number,
+                verified
+            FROM
+                student
+            WHERE
+                discord_uid = $1
+            ''', member.id
+        )
 
-        if not details:
+        if not student:
             return discord.Embed()
 
-        # Set variables based on context
+        # Set color based on context
         if guild and isinstance(member, discord.Member):
             color = member.color
         else:
             color = discord.Color.blurple()
 
         # Set emoji based on verification status
-        status = 'verified' if details[8] else 'not-verified'
+        status = 'verified' if student['verified'] else 'not-verified'
 
-        # Fetch member's groups
-        _groups = self.bot.c.execute(
-            '''select Name, Alias, Server_Invite, Guest_Role
-                from group_discord_users where Discord_UID = ?
-            ''', (member.id,)
-        ).fetchall()
+        # Fetch the student's groups
+        _groups = await self.bot.conn.fetch(
+            '''
+            SELECT
+                name,
+                alias,
+                invite,
+                guest_role
+            FROM
+                group_discord_user
+            WHERE
+                discord_uid = $1
+            ''', member.id
+        )
         groups = []
         group_names = []
         for full_name, alias, invite, role in _groups:
@@ -96,7 +124,7 @@ class Info(commands.Cog):
 
         # Generating the embed
         embed = discord.Embed(
-            title=f'{details[3]} {self.emojis[status]}',
+            title=f"{student['name']} {self.emojis[status]}",
             color=color
         )
         embed.set_author(
@@ -106,25 +134,21 @@ class Info(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
 
         # Add generic student details
-        if hostel := details[7]:
-            hostel_name = self.bot.c.execute(
-                'select Hostel_Name from hostels where Hostel_Number = ?',
-                (details[7],)
-            ).fetchone()
-            hostel = f'{details[7]} - {hostel_name}'
+        if hostel := student['hostel_number']:
+            hostel = f'{hostel} - {self.hostels[hostel]}'
 
         fields = {
-            'roll': details[0],
-            'sec': details[1] + details[2][4],
-            'email': details[6],
+            'roll': student['roll_number'],
+            'sec': student['section'] + student['sub_section'][4],
+            'email': student['email'],
             'hostel': hostel,
             'groups': ', '.join(groups) or self.l10n.format_value('no-group'),
         }
-        if details[4]:
-            fields['mob'] = details[4]
-        if details[5]:
-            dt = datetime.strptime(details[5], '%Y-%m-%d')
-            fields['bday'] = discord.utils.format_dt(dt, style='D')
+        if student['mobile']:
+            fields['mob'] = student['mobile']
+        if bday := student['birthday']:
+            bday = datetime(bday.year, bday.month, bday.day)
+            fields['bday'] = discord.utils.format_dt(bday, style='D')
 
         for name, value in fields.items():
             embed.add_field(name=self.l10n.format_value(name), value=value)
@@ -132,7 +156,13 @@ class Info(commands.Cog):
         # Fetch member roles
         user_roles = []
         if guild:
-            ignored_roles = [*details[1:3], details[7], *group_names, '@everyone']
+            ignored_roles = [
+                student['section'],
+                student['sub_section'],
+                student['hostel_number'],
+                *group_names,
+                '@everyone'
+            ]
             for role in member.roles:
                 try:
                     ignored_roles.remove(role.name)
@@ -168,10 +198,11 @@ class Info(commands.Cog):
         The embed contains details related to both, the server and the college.
         The user is given a choice between keeping the profile hidden or visible. \
         If the command is invoked in a DM channel, the choice defaults to visible.
-
+        """
+        """
         Parameters
         ------------
-        `member`: Optional[discord.Member]
+        `member`: Optional[Union[discord.Member, discord.User]]
             The member whose profile is displayed. If this is specified, \
             a check is performed to see if the author of the command is \
             authorised to view another user's profile. If left blank, the \
@@ -207,8 +238,8 @@ class Info(commands.Cog):
     @checks.is_verified()
     @commands.guild_only()
     async def nick(self, ctx, *, member: discord.Member=None):
-        """Change the nick of a user to their first name.
-
+        """Change the nick of a user to their first name."""
+        """
         Parameters
         ------------
         `member`: Optional[discord.Member]
@@ -227,9 +258,9 @@ class Info(commands.Cog):
             if not member.guild_permissions.change_nickname:
                 raise commands.MissingPermissions(['change_nickname'])
 
-        name = self.bot.c.execute(
-            'select Name from main where Discord_UID = ?', (member.id,)
-        ).fetchone()
+        name = await self.bot.conn.fetchval(
+            'SELECT name FROM student WHERE discord_uid = $1', member.id
+        )
 
         if not name:
             ctx.author = member
@@ -262,20 +293,34 @@ class Info(commands.Cog):
             `Remaining`: Represents users that have not linked their Discord \
                 account with a student's details in the database.
             `Verified`: Represents users whose identities have been confirmed.
-
+        """
+        """
         Parameters
         ------------
         `batch`: <class 'int'>
             The batch for which the stats are shown.
         """
-        data = self.bot.c.execute(
-            '''select Section, count(Discord_UID),
-                count(*) - count(Discord_UID), count(Verified)
-                from main where Batch = ? group by Section;
-            ''', (batch,)
-        ).fetchall()
-        sections = [row[0] for row in data]
-        counts = [row[1:] for row in data]
+        data = await self.bot.conn.fetch(
+            '''
+            SELECT
+                section,
+                COUNT(discord_uid) AS joined,
+                COUNT(*) - COUNT(discord_uid) AS remaining,
+                COUNT(*) FILTER (WHERE verified) AS verified
+            FROM
+                student
+            WHERE
+                batch = $1
+            GROUP BY
+                section
+            ORDER BY
+                section
+            ''', batch
+        )
+        sections, counts = [], []
+        for row in data:
+            sections.append(row['section'])
+            counts.append([row['joined'], row['remaining'], row['verified']])
 
         # Get the indices of the rows to be deleted
         indices = []
@@ -289,7 +334,7 @@ class Info(commands.Cog):
         total = [sum(count) for count in zip(*counts)]
 
         table = tabulate(
-            [*data, ['Total', *total]],
+            [*[list(row) for row in data], ['Total', *total]],
             headers=('Section', 'Joined', 'Remaining', 'Verified'),
             tablefmt='grid'
         ).split('\n')
@@ -326,5 +371,5 @@ class Info(commands.Cog):
         await ctx.send(embed=embed)
 
 
-def setup(bot):
-    bot.add_cog(Info(bot))
+async def setup(bot):
+    await bot.add_cog(Info(bot))
