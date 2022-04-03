@@ -74,19 +74,19 @@ class Events(commands.Cog):
         if welcome:
             await member.send(welcome.replace('{$server}', guild.name))
 
-        role_ids = self.bot.conn.fetch(
+        role_ids = await self.bot.conn.fetch(
             'SELECT role FROM join_role WHERE id = $1', guild.id
         )
         for role_id in role_ids:
             if role := guild.get_role(role_id['role']):
                 await member.add_roles(role)
             else:
-                self.bot.conn.execute(
+                await self.bot.conn.execute(
                     'DELETE FROM join_role WHERE role = $1', role_id
                 )
 
     async def join_club_or_society(self, member) -> bool:
-        batch = self.bot.conn.fetchval(
+        batch = await self.bot.conn.fetchval(
             'SELECT batch FROM student WHERE discord_uid = $1',
             member.id
         )
@@ -96,7 +96,7 @@ class Events(commands.Cog):
         if roles is None:
             return False
 
-        is_member = self.bot.conn.fetchval(
+        is_member = await self.bot.conn.fetchval(
             '''
             SELECT
                 EXISTS (
@@ -124,7 +124,7 @@ class Events(commands.Cog):
 
         # Assign the bot role if any
         if member.bot:
-            bot_role_id = self.bot.conn.fetchval(
+            bot_role_id = await self.bot.conn.fetchval(
                 'SELECT bot_role FROM guild WHERE id = $1', guild.id
             )
             if bot_role := guild.get_role(bot_role_id):
@@ -132,7 +132,7 @@ class Events(commands.Cog):
             return
 
         # Handle all generic events
-        *on_join, welcome = self.bot.conn.fetchrow(
+        *on_join, welcome = await self.bot.conn.fetchrow(
             '''
             SELECT
                 join_channel,
@@ -152,13 +152,13 @@ class Events(commands.Cog):
             return
 
         # Handle special events for servers with verification
-        server = self.bot.conn.fetchrow(
+        server = await self.bot.conn.fetchrow(
             'SELECT * FROM verified_server WHERE id = $1', guild.id
         )
         if not server:
             return
 
-        student = self.bot.conn.fetchrow(
+        student = await self.bot.conn.fetchrow(
             '''
             SELECT
                 section,
@@ -268,7 +268,7 @@ class Events(commands.Cog):
         guild = member.guild
         l10n = get_l10n(guild.id, 'events')
 
-        events = self.bot.conn.fetchrow(
+        events = await self.bot.conn.fetchrow(
             '''
             SELECT
                 leave_channel,
@@ -290,7 +290,7 @@ class Events(commands.Cog):
             }
             channel = await self.leave_handler(events, guild, member, l10n)
 
-        verified = self.bot.conn.fetch(
+        verified = await self.bot.conn.fetch(
             'SELECT verified FROM student WHERE discord_uid = $1', member.id
         )
         if not verified:
@@ -299,7 +299,7 @@ class Events(commands.Cog):
             return
 
         if not verified[0]['verified']:
-            self.bot.conn.execute(
+            await self.bot.conn.execute(
                 'UPDATE student SET discord_uid = NULL WHERE discord_uid = $1',
                 member.id
             )
