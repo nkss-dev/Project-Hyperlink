@@ -11,8 +11,17 @@ class Prefix(commands.Cog):
         self.bot = bot
 
     async def cog_check(self, ctx):
-        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'prefix')
+        l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'prefix')
+        self.fmv = l10n.format_value
         return await checks.is_verified().predicate(ctx)
+
+    async def fetch_prefix(self, id: int) -> map:
+        return map(
+            lambda prefix: prefix['prefix'],
+            await self.bot.conn.fetch(
+                'SELECT prefix FROM prefix WHERE id = $1', id
+            )
+        )
 
     @commands.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -24,52 +33,46 @@ class Prefix(commands.Cog):
 
     @prefix.command()
     async def add(self, ctx, prefix: str):
-        """Add a prefix for the server.
-
+        """Add a prefix for the server."""
+        """
         Paramters
         -----------
         `prefix`: <class 'str'>
             The prefix to add.
         """
-        prefixes = self.bot.c.execute(
-            'select prefix from prefixes where ID = ?', (ctx.guild.id,)
-        ).fetchall()
+        prefixes = await self.fetch_prefix(ctx.guild.id)
 
         if prefix in prefixes:
-            await ctx.reply(self.l10n.format_value('exists-true', {'prefix': prefix}))
+            await ctx.reply(self.fmv('exists-true', {'prefix': prefix}))
             return
 
-        self.bot.c.execute(
-            'insert into prefixes values(?,?)', (ctx.guild.id, prefix,)
+        await self.bot.conn.execute(
+            'INSERT INTO prefix VALUES ($1, $2)', ctx.guild.id, prefix
         )
-        self.bot.db.commit()
 
-        await ctx.reply(self.l10n.format_value('add-success', {'prefix': prefix}))
+        await ctx.reply(self.fmv('add-success', {'prefix': prefix}))
 
     @prefix.command()
     async def remove(self, ctx, prefix: str):
-        """Remove a prefix for the server.
-
+        """Remove a prefix for the server."""
+        """
         Paramters
         -----------
         `prefix`: <class 'str'>
             The prefix to remove.
         """
-        prefixes = self.bot.c.execute(
-            'select prefix from prefixes where ID = ?', (ctx.guild.id,)
-        ).fetchall()
+        prefixes = await self.fetch_prefix(ctx.guild.id)
 
         if prefix not in prefixes:
-            await ctx.reply(self.l10n.format_value('exists-false', {'prefix': prefix}))
+            await ctx.reply(self.fmv('exists-false', {'prefix': prefix}))
             return
 
-        self.bot.c.execute(
-            'delete from prefixes where ID = ? and prefix = ?',
-            (ctx.guild.id, prefix,)
+        await self.bot.conn.execute(
+            'DELETE FROM prefix WHERE id = $1 AND prefix = $2',
+            ctx.guild.id, prefix
         )
-        self.bot.db.commit()
 
-        await ctx.reply(self.l10n.format_value('remove-success', {'prefix': prefix}))
+        await ctx.reply(self.fmv('remove-success', {'prefix': prefix}))
 
     @prefix.command()
     async def set(self, ctx, prefix: str):
@@ -80,17 +83,15 @@ class Prefix(commands.Cog):
         `prefix`: <class 'str'>
             The prefix to set.
         """
-        self.bot.c.execute(
-            'delete from prefixes where ID = ?', (ctx.guild.id,)
+        await self.bot.conn.execute(
+            'DELETE FROM prefix WHERE id = $1', ctx.guild.id
         )
-        self.bot.c.execute(
-            'insert into prefixes values(?,?)', (ctx.guild.id, prefix,)
+        await self.bot.conn.execute(
+            'INSERT INTO prefix VALUES ($1, $2)', ctx.guild.id, prefix
         )
-        self.bot.db.commit()
 
-        await ctx.reply(self.l10n.format_value('guild-prefix', {'prefix': prefix}))
+        await ctx.reply(self.fmv('guild-prefix', {'prefix': prefix}))
 
 
-def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
-    bot.add_cog(Prefix(bot))
+async def setup(bot):
+    await bot.add_cog(Prefix(bot))
