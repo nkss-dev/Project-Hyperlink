@@ -104,9 +104,9 @@ class Mod(commands.Cog):
                 await ctx.reply(self.l10n.format_value('mute-role-not-allowed'))
                 return
 
-            mute_role_id = self.bot.c.execute(
-                'select Mute_Role from guilds where ID = ?', (ctx.guild.id,)
-            ).fetchone()
+            mute_role_id = await self.bot.conn.fetchval(
+                'SELECT mute_role FROM guild WHERE id = $1', ctx.guild.id
+            )
             if not mute_role_id:
                 await ctx.reply(self.l10n.format_value('mute-role-notfound'))
                 return
@@ -185,5 +185,5 @@ class Mod(commands.Cog):
             json.dump(self.muted, muted)
 
 
-def setup(bot):
-    bot.add_cog(Mod(bot))
+async def setup(bot):
+    await bot.add_cog(Mod(bot))
