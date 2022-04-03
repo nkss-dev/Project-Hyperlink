@@ -63,7 +63,7 @@ with open('utils/self_roles.sql') as sql:
 
 # PostgreSQL db
 async def postgres():
-    conn = await asyncpg.create_pool(
+    conn = await asyncpg.connect(
         host=config.postgres.host,
         database=config.postgres.database,
         user=config.postgres.user,
