@@ -9,7 +9,7 @@ from utils.l10n import get_l10n
 
 
 class IGN(commands.Cog):
-    """Store IGNs for games"""
+    """[depreciated] Store IGNs for games"""
 
     def __init__(self, bot):
         self.bot = bot
