@@ -1,10 +1,13 @@
 import re
 import traceback
+from aiohttp import web
 
 import asyncpg
 import config
 import discord
 from discord.ext import commands
+
+from api.main import app
 
 initial_extensions = (
     'cogs.drive',
@@ -71,13 +74,20 @@ class ProjectHyperlink(commands.Bot):
 
     async def setup_hook(self):
         """Setup all initial requirements"""
-        # Setting up the database
+        # Connect to the database
         self.conn = await asyncpg.create_pool(
             host=config.postgres.host,
             database=config.postgres.database,
             user=config.postgres.user,
             password=config.postgres.password
         )
+
+        # Launch the API
+        app['bot'] = self
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, 'localhost', 8080)
+        await site.start()
 
         # Load all the extensions
         for extension in initial_extensions:
