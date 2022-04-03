@@ -84,8 +84,13 @@ class ProjectHyperlink(commands.Bot):
             try:
                 await self.load_extension(extension)
             except Exception:
-                print(f'\nFailed to load extension {extension}.\n')
-                traceback.print_exc()
+                print(
+                    '\33[91m'
+                    + f'\nFailed to load extension {extension}.\n'
+                    + '\33[93m'
+                    + traceback.format_exc()
+                    + '\33[0m'
+                )
 
     def run(self):
         super().run(config.bot_token, reconnect=True)
