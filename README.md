@@ -8,7 +8,7 @@ Ideally, you'd invite [my instance](https://discord.com/api/oauth2/authorize?cli
 
 Nevertheless, here are the installation steps:
 
-1. **Ensure that you have Python 3.9 or higher.**
+1. **Ensure that you have Python 3.10 or higher.**
 
 2. **Clone the repository:** `git clone https://www.github.com/GetPsyched/Project-Hyperlink`
 
