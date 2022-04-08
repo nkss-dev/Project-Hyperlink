@@ -1,18 +1,16 @@
-import sqlite3
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
 loader = FluentResourceLoader("l10n/{locale}")
 loaded = {}
 
-conn = sqlite3.connect('db/details.db')
-c = conn.cursor()
+languages: dict[int, str] = {}
 
 
-def get_l10n(id, filename) -> FluentLocalization:
-    language = c.execute(
-        'select Language from guilds where ID = ?', (id,)
-    ).fetchone()
-    language = language[0] if language else 'en-gb'
+async def get_l10n(id: int, filename: str, conn) -> FluentLocalization:
+    if not (language := languages.get(id)):
+        languages[id] = await conn.fetchval(
+            'SELECT language FROM guild WHERE id = $1', id
+        ) or 'en-GB'
 
     if (lang := loaded.get(language)) and (l10n := lang.get(filename)):
         return l10n
