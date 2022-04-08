@@ -1,11 +1,16 @@
 CREATE TABLE IF NOT EXISTS groups (
-    name             text        primary key,
-    alias            text        unique,
-    faculty_advisor  text,
-    mobile           varchar(14) unique,
-    branch           varchar(5)  unique,
-    kind             text        check(kind in ('cultural club', 'technical club', 'technical society')),
-    description      text
+    name         text       primary key,
+    alias        text       unique,
+    branch       varchar(5) unique,
+    kind         text       check(kind in ('cultural club', 'technical club', 'technical society')),
+    description  text
+);
+
+CREATE TABLE IF NOT EXISTS group_faculty (
+    group_name  text   references groups(name),
+    name        text,
+    mobile      bigint unique,
+    primary key (group_name, name)
 );
 
 CREATE TABLE IF NOT EXISTS group_discord (
