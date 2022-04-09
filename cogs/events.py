@@ -24,7 +24,11 @@ class Events(commands.Cog):
         if not re.fullmatch(f'<@!?{self.bot.user.id}>', message.content):
             return
 
-        l10n = get_l10n(message.guild.id if message.guild else 0, 'events')
+        l10n = await get_l10n(
+            message.guild.id if message.guild else 0,
+            'events',
+            self.bot.conn
+        )
 
         embed = discord.Embed(
             title=l10n.format_value('details-title'),
@@ -191,7 +195,7 @@ class Events(commands.Cog):
             instruct = self.bot.get_channel(server['instruction_channel'])
             command = self.bot.get_channel(server['command_channel'])
 
-            l10n = get_l10n(guild.id, 'events')
+            l10n = await get_l10n(guild.id, 'events', self.bot.conn)
             mentions = {
                 'instruction-channel': instruct.mention,
                 'command-channel': command.mention,
@@ -266,7 +270,7 @@ class Events(commands.Cog):
     async def on_member_remove(self, member: discord.Member):
         """Called when a member leaves a guild"""
         guild = member.guild
-        l10n = get_l10n(guild.id, 'events')
+        l10n = await get_l10n(guild.id, 'events', self.bot.conn)
 
         events = await self.bot.conn.fetchrow(
             '''
@@ -310,7 +314,11 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         """Called when any error is thrown"""
-        l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'events')
+        l10n = await get_l10n(
+            ctx.guild.id if ctx.guild else 0,
+            'events',
+            self.bot.conn
+        )
 
         if isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):

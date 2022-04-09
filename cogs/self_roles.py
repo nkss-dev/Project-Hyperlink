@@ -64,7 +64,12 @@ class ButtonRoles(commands.Cog):
         self.bot.loop.create_task(self.load_views())
 
     async def cog_check(self, ctx) -> bool:
-        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles')
+        l10n = await get_l10n(
+            ctx.guild.id if ctx.guild else 0,
+            'self_roles',
+            self.bot.conn
+        )
+        self.fmv = l10n.format_value
         return await checks.is_mod().predicate(ctx)
 
     @commands.group(name='button_role', aliases=['br'], invoke_without_command=True)
@@ -93,11 +98,11 @@ class ButtonRoles(commands.Cog):
             The list of roles given when a user reacts.
         """
         if message.author != self.bot.user:
-            await ctx.reply(self.l10n.format_value('message-author-not-self'))
+            await ctx.reply(self.fmv('message-author-not-self'))
             return
 
         if not (reaction := self.emojis.get(name, None)):
-            msg = await ctx.reply(self.l10n.format_value('react-message'))
+            msg = await ctx.reply(self.fmv('react-message'))
 
             def check(reaction, user):
                 return user == ctx.author and reaction.message.id == msg.id
@@ -106,7 +111,7 @@ class ButtonRoles(commands.Cog):
                 reaction, _ = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
                 reaction = reaction.emoji
             except TimeoutError:
-                await ctx.send(self.l10n.format_value('react-timeout'))
+                await ctx.send(self.fmv('react-timeout'))
                 return
 
         IDs = self.c.execute('select Button_ID from buttons').fetchall()

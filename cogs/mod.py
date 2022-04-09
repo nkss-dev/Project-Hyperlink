@@ -26,7 +26,7 @@ class Mod(commands.Cog):
     async def cog_check(self, ctx) -> bool:
         if not ctx.guild:
             raise commands.NoPrivateMessage
-        self.l10n = get_l10n(ctx.guild.id, 'mod')
+        self.l10n = await get_l10n(ctx.guild.id, 'mod', self.bot.conn)
         return await checks.is_mod().predicate(ctx)
 
     @commands.command(aliases=['m'])

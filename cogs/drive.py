@@ -142,7 +142,11 @@ class Drive(commands.Cog):
         return query, ignored_args
 
     async def cog_check(self, ctx) -> bool:
-        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'drive')
+        self.l10n = await get_l10n(
+            ctx.guild.id if ctx.guild else 0,
+            'drive',
+            self.bot.conn
+        )
         return await checks.is_verified().predicate(ctx)
 
     @commands.group(invoke_without_command=True)
@@ -405,5 +409,5 @@ class Drive(commands.Cog):
         os.remove(f'temp/{filename}')
 
 
-def setup(bot):
-    bot.add_cog(Drive(bot))
+async def setup(bot):
+    await bot.add_cog(Drive(bot))

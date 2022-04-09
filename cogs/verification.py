@@ -143,7 +143,7 @@ class Verify(commands.Cog):
             await ctx.send_help(ctx.command)
             return
 
-        l10n = get_l10n(ctx.guild.id, 'verification')
+        l10n = await get_l10n(ctx.guild.id, 'verification', self.bot.conn)
         self.fmv = l10n.format_value
 
         verified = await self.bot.conn.fetch(

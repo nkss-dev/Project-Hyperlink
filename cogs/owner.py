@@ -18,7 +18,12 @@ class OwnerOnly(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     async def cog_check(self, ctx) -> bool:
-        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'owner')
+        l10n = await get_l10n(
+            ctx.guild.id if ctx.guild else 0,
+            'owner',
+            self.bot.conn
+        )
+        self.fmv = l10n.format_value
         return await commands.is_owner().predicate(ctx)
 
     @commands.command()
@@ -34,9 +39,9 @@ class OwnerOnly(commands.Cog):
         """
         await ctx.message.add_reaction(self.emojis['loading'])
 
-        self.bot.load_extension(f'cogs.{extension}')
+        await self.bot.load_extension(f'cogs.{extension}')
 
-        await ctx.send(self.l10n.format_value('load-successful', {'ext': extension}))
+        await ctx.send(self.fmv('load-successful', {'ext': extension}))
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
@@ -51,9 +56,9 @@ class OwnerOnly(commands.Cog):
         """
         await ctx.message.add_reaction(self.emojis['loading'])
 
-        self.bot.unload_extension(f'cogs.{extension}')
+        await self.bot.unload_extension(f'cogs.{extension}')
 
-        await ctx.send(self.l10n.format_value('unload-successful', {'ext': extension}))
+        await ctx.send(self.fmv('unload-successful', {'ext': extension}))
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
@@ -68,10 +73,10 @@ class OwnerOnly(commands.Cog):
         """
         await ctx.message.add_reaction(self.emojis['loading'])
 
-        self.bot.unload_extension(f'cogs.{extension}')
-        self.bot.load_extension(f'cogs.{extension}')
+        await self.bot.unload_extension(f'cogs.{extension}')
+        await self.bot.load_extension(f'cogs.{extension}')
 
-        await ctx.send(self.l10n.format_value('reload-successful', {'ext': extension}))
+        await ctx.send(self.fmv('reload-successful', {'ext': extension}))
 
         await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
@@ -91,9 +96,9 @@ class OwnerOnly(commands.Cog):
             all files in the database folder will be archived.
         """
         if not await is_alone(ctx.channel, ctx.author, self.bot.user):
-            message = await ctx.reply(self.l10n.format_value('reveal-check'))
+            message = await ctx.reply(self.fmv('reveal-check'))
             if not await yesOrNo(ctx, message):
-                await ctx.send(self.l10n.format_value('archive-cancel'))
+                await ctx.send(self.fmv('archive-cancel'))
                 return
 
         files = []
@@ -112,7 +117,7 @@ class OwnerOnly(commands.Cog):
         files = [files[i:i+10] for i in range(0, len(files), 10)]
 
         if not files:
-            await ctx.send(self.l10n.format_value('file-notfound'))
+            await ctx.send(self.fmv('file-notfound'))
         for ten_files in files:
             await ctx.send(files=ten_files)
 
@@ -130,7 +135,7 @@ class OwnerOnly(commands.Cog):
             or more consecutive commas; hence, leaving those files' name blank.
         """
         if not ctx.message.attachments:
-            await ctx.reply(self.l10n.format_value('attachment-notfound'))
+            await ctx.reply(self.fmv('attachment-notfound'))
             return
 
         if filenames:
@@ -142,7 +147,7 @@ class OwnerOnly(commands.Cog):
         for filename, attachment in zip(filenames, ctx.message.attachments):
             await attachment.save(f'db/{filename or attachment.filename}')
 
-        await ctx.send(self.l10n.format_value('upload-success'))
+        await ctx.send(self.fmv('upload-success'))
 
     @database.command(aliases=['rm'])
     async def remove(self, ctx, *filenames):
@@ -156,7 +161,7 @@ class OwnerOnly(commands.Cog):
         for filename in filenames:
             os.remove(f'db/{filename}')
 
-        await ctx.send(self.l10n.format_value('remove-success'))
+        await ctx.send(self.fmv('remove-success'))
 
 
 async def setup(bot):

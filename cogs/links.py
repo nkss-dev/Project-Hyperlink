@@ -86,14 +86,14 @@ class Links(commands.Cog):
         if commit:
             self.db.commit()
 
-    def create(self) -> discord.Embed:
+    async def create(self) -> discord.Embed:
         """Return links for the given section"""
         guild_id = self.c.execute(
             'select Guild_ID from link_managers where Batch = ?',
             (self.info.batch,)
         ).fetchone()
         guild = self.bot.get_guild(guild_id)
-        self.l10n = get_l10n(guild_id, 'links')
+        self.l10n = await get_l10n(guild_id, 'links', self.bot.conn)
 
         time = discord.utils.utcnow() + timedelta(hours=12.5)
         date = time.strftime('%d-%m-%Y')
@@ -178,7 +178,7 @@ class Links(commands.Cog):
         if ids and ids[0] != ctx.channel.id and ctx.author != ctx.guild.owner:
             raise commands.CheckFailure('LinkProtection')
 
-        self.l10n = get_l10n(ctx.guild.id, 'links')
+        self.l10n = await get_l10n(ctx.guild.id, 'links', self.bot.conn)
         self.info = DashboardInfo(
             batch, section, ctx.guild.id, ids[0], ids[1], manager_roles
         )
@@ -197,9 +197,9 @@ class Links(commands.Cog):
         """
         try:
             message = await ctx.channel.fetch_message(self.info.message_id)
-            await message.edit(embed=self.create())
+            await message.edit(embed=await self.create())
         except discord.HTTPException:
-            message = await ctx.channel.send(embed=self.create())
+            message = await ctx.channel.send(embed=await self.create())
             self.store_message(message.id, ctx.channel.id)
 
         if ctx.guild.me.guild_permissions.manage_messages:
@@ -251,7 +251,7 @@ class Links(commands.Cog):
             message = await ctx.fetch_message(self.info.message_id)
             embed = message.embeds[0]
         except discord.NotFound:
-            embed = self.create()
+            embed = await self.create()
 
         if not embed.fields:
             embed.add_field(**schedule)
@@ -311,7 +311,7 @@ class Links(commands.Cog):
             message = await ctx.fetch_message(self.info.message_id)
             embed = message.embeds[0]
         except discord.NotFound:
-            embed = self.create()
+            embed = await self.create()
 
         if not embed.fields:
             await ctx.send(
@@ -414,7 +414,7 @@ class Links(commands.Cog):
                 self.info = DashboardInfo(
                     batch, section, channel.guild.id, channel_id, message_id, None
                 )
-                embed = self.create()
+                embed = await self.create()
                 try:
                     message = await channel.fetch_message(message_id)
                     await message.edit(embed=embed)
