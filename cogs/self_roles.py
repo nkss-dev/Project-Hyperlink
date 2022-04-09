@@ -196,15 +196,23 @@ class ButtonRoles(commands.Cog):
             l10n = get_l10n(channel.guild.id if channel.guild else 0, 'self_roles')
 
             buttons = self.c.execute(
-                '''select Button_ID, Label, Emoji, Role_IDs
-                    from buttons where Message_ID = ?
+                '''
+                SELECT
+                    button_id,
+                    label,
+                    emoji,
+                    role_id
+                FROM
+                    buttons
+                WHERE
+                    message_id = ?
+                ORDER BY
+                    label
                 ''', (view[1],)
             ).fetchall()
-            for button in buttons:
-                roles = []
-                for role_ID in json.loads(button[3]):
-                    roles.append(channel.guild.get_role(role_ID))
-                ui_button = RoleButton(button[1], button[2], roles, button[0], l10n)
+            for id, label, emoji, role_id in buttons:
+                role = channel.guild.get_role(role_id)
+                ui_button = RoleButton(label, emoji, role, id, l10n)
                 self.views[view[1]].add_item(ui_button)
 
             message = await channel.fetch_message(view[1])
