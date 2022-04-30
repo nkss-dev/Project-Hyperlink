@@ -201,7 +201,7 @@ class Events(commands.Cog):
             mentions = {
                 'instruction-channel': instruct.mention,
                 'command-channel': command.mention,
-                'owner': guild.owner.mention
+                'owner': guild.owner.mention if guild.owner else None
             }
             embed = discord.Embed(
                 title=l10n.format_value('dm-title', {'guild': guild.name}),
@@ -217,7 +217,11 @@ class Events(commands.Cog):
 
         # Add a restricting guest role to the user
         role = guild.get_role(server['guest_role'])
-        await member.add_roles(role)
+        if role:
+            await member.add_roles(role)
+        else:
+            # Placeholder for error logging system
+            pass
 
     @staticmethod
     async def leave_handler(events, guild, member, l10n):
