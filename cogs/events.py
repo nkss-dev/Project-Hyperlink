@@ -136,7 +136,7 @@ class Events(commands.Cog):
             return
 
         # Handle all generic events
-        *on_join, welcome = await self.bot.conn.fetchrow(
+        guild_details = await self.bot.conn.fetchrow(
             '''
             SELECT
                 join_channel,
@@ -149,7 +149,9 @@ class Events(commands.Cog):
             ''',
             guild.id
         )
-        await self.join_handler(on_join, welcome, member, guild)
+        if guild_details:
+            *on_join, welcome = guild_details
+            await self.join_handler(on_join, welcome, member, guild)
 
         # Handle special events for club and society servers
         if await self.join_club_or_society(member):
