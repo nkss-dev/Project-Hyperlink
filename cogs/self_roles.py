@@ -11,38 +11,30 @@ from utils.utils import generateID
 
 
 class RoleButton(discord.ui.Button['RoleView']):
-    def __init__(self, label: str, emoji: str, roles: list[discord.Role], id: str, l10n):
-        super().__init__(label=label, emoji=emoji, custom_id=id)
+    def __init__(self, label: str, emoji: str, role: discord.Role, id: str, l10n):
+        super().__init__(
+            label=f'{label} │ {len(role.members)}', emoji=emoji, custom_id=id
+        )
         self.l10n = l10n
-        self.roles = roles
+        self.role = role
 
     async def callback(self, interaction: discord.Interaction):
-        roles = []
-        for role in self.roles:
-            if role in interaction.user.roles:
-                await interaction.user.remove_roles(role)
-                roles.append((role.mention, 'Removed'))
-            else:
-                await interaction.user.add_roles(role)
-                roles.append((role.mention, 'Added'))
-
-        if len(roles) == 1:
-            await interaction.response.send_message(
-                content=self.l10n.format_value(
-                    'role-action-success',
-                    {'role': roles[0][0], 'action': roles[0][1].lower()}
-                ),
-                ephemeral=True
-            )
+        if self.role in interaction.user.roles:
+            await interaction.user.remove_roles(self.role)
+            action = 'Removed'
         else:
-            embed = discord.Embed(
-                description=self.l10n.format_value(
-                    'roles-action-success',
-                    {'roles': '\n'.join((f'- {action} {role}' for role, action in roles))}
-                ),
-                color=discord.Color.blurple()
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.user.add_roles(self.role)
+            action = 'Added'
+
+        await interaction.response.send_message(
+            content=self.l10n.format_value(
+                'role-action-success',
+                {'role': self.role.mention, 'action': action.lower()}
+            ),
+            ephemeral=True
+        )
+        self.label = f"{self.label.split(' │ ')[0]} │ {len(self.role.members)}"
+        await interaction.message.edit(view=self.view)
 
 class RoleView(discord.ui.View):
     def __init__(self):
@@ -81,7 +73,7 @@ class ButtonRoles(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @roles.command()
-    async def add(self, ctx, name: str, message: discord.Message, roles: commands.Greedy[discord.Role]):
+    async def add(self, ctx, name: str, message: discord.Message, role: discord.Role):
         """Add a button role.
 
         Parameters
@@ -94,8 +86,8 @@ class ButtonRoles(commands.Cog):
         `message`: discord.Message
             The message on which the self role button is to be added.
 
-        `roles`: List[discord.Role]
-            The list of roles given when a user reacts.
+        `role`: discord.Role
+            The role added/removed when a user clicks the button.
         """
         if message.author != self.bot.user:
             await ctx.reply(self.fmv('message-author-not-self'))
@@ -114,27 +106,27 @@ class ButtonRoles(commands.Cog):
                 await ctx.send(self.fmv('react-timeout'))
                 return
 
-        IDs = self.c.execute('select Button_ID from buttons').fetchall()
+        IDs = self.c.execute('SELECT id FROM button').fetchall()
         ID = generateID(IDs)
 
-        button = RoleButton(name, str(reaction), roles, ID, self.l10n)
+        button = RoleButton(name, str(reaction), role, ID, self.l10n)
 
         if message.id in self.views:
             try:
                 self.views[message.id].add_item(button)
             except ValueError:
-                await ctx.reply(self.l10n.format_value('max-limit-exceeded'))
+                await ctx.reply(self.fmv('max-limit-exceeded'))
                 return
         else:
             self.views[message.id] = RoleView()
             self.views[message.id].add_item(button)
             self.c.execute(
-                'insert into views values (?,?,0)',
+                'INSERT INTO view VALUES (?,?,0)',
                 (message.channel.id, message.id)
             )
         self.c.execute(
-            'insert into buttons values (?,?,?,?,?)',
-            (ID, name, str(reaction), json.dumps([role.id for role in roles]), message.id)
+            'INSERT INTO button VALUES (?,?,?,?,?)',
+            (ID, name, str(reaction), role.id, message.id)
         )
         self.conn.commit()
 
@@ -142,8 +134,8 @@ class ButtonRoles(commands.Cog):
 
         embed = discord.Embed(color=discord.Color.blurple())
         embed.add_field(
-            name=self.l10n.format_value('react-success'),
-            value=self.l10n.format_value('id', {'id': ID})
+            name=self.fmv('react-success'),
+            value=self.fmv('id', {'id': ID})
         )
         try:
             await msg.edit(content=None, embed=embed)
@@ -160,11 +152,19 @@ class ButtonRoles(commands.Cog):
             The ID of the reaction to be removed.
         """
         IDs = self.c.execute(
-            '''select v.Channel_ID, v.Message_ID from views v join buttons b
-            on v.Message_ID = b.Message_ID where b.Button_ID = ?''', (ID,)
+            '''
+            SELECT
+                channel_id,
+                message_id
+            FROM
+                view v
+                NATURAL JOIN button
+            WHERE
+                button.id = ?
+            ''', (ID,)
         ).fetchone()
         if not IDs:
-            await ctx.reply(self.l10n.format_value('react-notfound', {'id': ID}))
+            await ctx.reply(self.fmv('react-notfound', {'id': ID}))
             return
         channel = ctx.guild.get_channel(IDs[0])
         message = await channel.fetch_message(IDs[1])
@@ -177,33 +177,35 @@ class ButtonRoles(commands.Cog):
         if not self.views[message.id].children:
             await message.edit(view=None)
             del self.views[message.id]
-            self.c.execute('delete from views where Message_ID = ?', (message.id,))
+            self.c.execute('DELETE FROM view WHERE message_id = ?', (message.id,))
         else:
             await message.edit(view=self.views[message.id])
-            self.c.execute('delete from buttons where Button_ID = ?', (ID,))
+            self.c.execute('DELETE FROM button WHERE id = ?', (ID,))
         self.conn.commit()
 
-        await ctx.reply(self.l10n.format_value('remove-success', {'id': ID}))
+        await ctx.reply(self.fmv('remove-success', {'id': ID}))
 
     async def load_views(self):
+        await self.bot.wait_until_ready()
+
         views = self.c.execute(
-            'select Channel_ID, Message_ID from views'
+            'SELECT channel_id, message_id FROM view'
         ).fetchall()
 
         for view in views:
             self.views[view[1]] = RoleView()
             channel = self.bot.get_channel(view[0])
-            l10n = get_l10n(channel.guild.id if channel.guild else 0, 'self_roles')
+            l10n = await get_l10n(channel.guild.id if channel.guild else 0, 'self_roles', self.bot.conn)
 
             buttons = self.c.execute(
                 '''
                 SELECT
-                    button_id,
+                    id,
                     label,
                     emoji,
                     role_id
                 FROM
-                    buttons
+                    button
                 WHERE
                     message_id = ?
                 ORDER BY
@@ -283,7 +285,8 @@ class ReactionRoles(commands.Cog):
             self.save()
 
     async def cog_check(self, ctx) -> bool:
-        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles')
+        l10n = await get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles', self.bot.conn)
+        self.fmv = l10n.format_value
         return await checks.is_mod().predicate(ctx)
 
     @commands.group(name='reaction_role', aliases=['rr'], invoke_without_command=True)
@@ -313,10 +316,10 @@ class ReactionRoles(commands.Cog):
         """
         if game:
             if not (reaction := self.emojis.get(game, None)):
-                await ctx.reply(self.l10n.format_value('invalid-game', {'game': game}))
+                await ctx.reply(self.fmv('invalid-game', {'game': game}))
                 return
         else:
-            msg = await ctx.reply(self.l10n.format_value('react-message'))
+            msg = await ctx.reply(self.fmv('react-message'))
 
             def check(reaction, user):
                 return user == ctx.author and reaction.message.id == msg.id
@@ -325,7 +328,7 @@ class ReactionRoles(commands.Cog):
                 reaction, _ = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
                 reaction = reaction.emoji
             except TimeoutError:
-                await ctx.send(self.l10n.format_value('react-timeout'))
+                await ctx.send(self.fmv('react-timeout'))
                 return
         await message.add_reaction(reaction)
 
@@ -352,8 +355,8 @@ class ReactionRoles(commands.Cog):
 
         embed = discord.Embed(color=discord.Color.blurple())
         embed.add_field(
-            name=self.l10n.format_value('react-success'),
-            value=self.l10n.format_value('id', {'id': ID})
+            name=self.fmv('react-success'),
+            value=self.fmv('id', {'id': ID})
         )
 
         if game:
@@ -388,17 +391,16 @@ class ReactionRoles(commands.Cog):
                 self.reactions[str(ctx.guild.id)].remove(reaction_role)
                 self.save()
 
-                await ctx.reply(self.l10n.format_value('remove-success', {'id': ID}))
+                await ctx.reply(self.fmv('remove-success', {'id': ID}))
                 return
 
-        await ctx.reply(self.l10n.format_value('react-notfound', {'id': ID}))
+        await ctx.reply(self.fmv('react-notfound', {'id': ID}))
 
     def save(self):
         """Save the data to a json file"""
         with open('db/self_roles.json', 'w') as f:
             json.dump(self.reactions, f)
 
-def setup(bot):
-    """Called when this file is attempted to be loaded as an extension"""
-    bot.add_cog(ButtonRoles(bot))
-    bot.add_cog(ReactionRoles(bot))
+async def setup(bot):
+    await bot.add_cog(ButtonRoles(bot))
+    await bot.add_cog(ReactionRoles(bot))
