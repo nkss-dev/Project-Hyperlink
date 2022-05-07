@@ -7,19 +7,18 @@ from discord.ext import commands
 class Logger(commands.Cog):
     """Logs edited and deleted messages"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.cache = {}
-        
+        self.channel_ids: dict[int, tuple[int, int]] = {}
+
     async def cog_load(self):
         guild_channels = await self.bot.conn.fetch(
             'SELECT id, edit_channel, delete_channel FROM guild'
         )
         for channels in guild_channels:
-            edit = self.bot.get_channel(channels['edit_channel'])
-            delete = self.bot.get_channel(channels['delete_channel'])
-            if edit and delete:
-                self.cache[channels['id']] = edit, delete
+            edit = channels['edit_channel']
+            delete = channels['delete_channel']
+            self.channel_ids[channels['id']] = edit, delete
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
@@ -27,7 +26,7 @@ class Logger(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        if message.guild.id not in self.cache:
+        if message.guild.id not in self.channel_ids:
             return
 
         l10n = await get_l10n(message.guild.id, 'logger', self.bot.conn)
@@ -55,12 +54,16 @@ class Logger(commands.Cog):
             text=l10n.format_value('user-id', {'id': message.author.id})
         )
 
-        await self.cache[message.guild.id][1].send(embed=embed)
+        channel = self.bot.get_channel(self.channel_ids[message.guild.id][1])
+        if not channel:
+            # Placeholder for error logging system
+            return
+        await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent):
         """Called when multiple messages are deleted at once"""
-        if payload.guild_id not in self.cache:
+        if payload.guild_id not in self.channel_ids:
             return
 
         l10n = await get_l10n(payload.guild_id, 'logger', self.bot.conn)
@@ -76,7 +79,11 @@ class Logger(commands.Cog):
         )
         embed.timestamp = discord.utils.utcnow()
 
-        await self.cache[payload.guild_id][1].send(embed=embed)
+        channel = self.bot.get_channel(self.channel_ids[payload.guild_id][1])
+        if not channel:
+            # Placeholder for error logging system
+            return
+        await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
@@ -84,7 +91,7 @@ class Logger(commands.Cog):
         if before.author.bot or not before.guild:
             return
 
-        if before.guild.id not in self.cache:
+        if before.guild.id not in self.channel_ids:
             return
 
         if before.content == after.content:
@@ -118,7 +125,11 @@ class Logger(commands.Cog):
             text=l10n.format_value('user-id', {'id': before.author.id})
         )
 
-        await self.cache[before.guild.id][0].send(embed=embed)
+        channel = self.bot.get_channel(self.channel_ids[before.guild.id][0])
+        if not channel:
+            # Placeholder for error logging system
+            return
+        await channel.send(embed=embed)
 
 
 async def setup(bot):
