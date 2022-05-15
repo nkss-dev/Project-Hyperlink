@@ -95,7 +95,7 @@ class Events(commands.Cog):
             member.id
         )
 
-        roles = get_group_roles(self.bot.conn, batch, member.guild)
+        roles = await get_group_roles(self.bot.conn, batch, member.guild)
         # Exit if server isn't of a club/society
         if roles is None:
             return False

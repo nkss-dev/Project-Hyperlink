@@ -92,7 +92,7 @@ async def getWebhook(channel, member) -> discord.Webhook | None:
         return webhook
 
 
-def get_group_roles(conn, batch, guild) -> tuple[discord.Role, discord.Role] | None:
+async def get_group_roles(conn, batch, guild) -> tuple[discord.Role, discord.Role] | None:
     names = {
         1: 'fresher',
         2: 'sophomore',
@@ -100,14 +100,18 @@ def get_group_roles(conn, batch, guild) -> tuple[discord.Role, discord.Role] | N
         4: 'senior'
     }
 
-    # Calculate which year the student is in
-    passing_date = datetime(year=batch, month=6, day=1)
-    time = passing_date - datetime.utcnow()
-    remaining_years = time.days // 365
-    year = names[4 - remaining_years]
+    if batch:
+        # Calculate which year the student is in
+        passing_date = datetime(year=batch, month=6, day=1)
+        time = passing_date - datetime.utcnow()
+        remaining_years = time.days // 365
+        year = names[4 - remaining_years]
+    else:
+        # Assigning temporary year for non-verified user
+        year = names[1]
 
     # Fetch roles to be assigned
-    roles = conn.fetchrow(
+    roles = await conn.fetchrow(
         f'''
         SELECT
             {year}_role,
