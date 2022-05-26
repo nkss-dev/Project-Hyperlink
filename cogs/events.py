@@ -6,6 +6,7 @@ from datetime import timedelta
 import discord
 from discord.ext import commands
 
+from utils import checks
 from utils.l10n import get_l10n
 from utils.utils import assign_student_roles, get_group_roles
 
@@ -121,6 +122,62 @@ class Events(commands.Cog):
             await member.add_roles(role)
         return True
 
+    async def assign_user_roles(self, member: discord.Member) -> bool:
+        fields = await self.bot.conn.fetch(
+            '''
+            SELECT
+                field,
+                value,
+                role_ids
+            FROM
+                guild_role
+            WHERE
+                id = $1
+            ''', member.guild.id
+        )
+        if not fields:
+            return False
+
+        details = await self.bot.conn.fetchrow(
+            '''
+            SELECT
+                roll_number,
+                section,
+                sub_section,
+                batch,
+                hostel_number,
+                verified
+            FROM
+                student
+            WHERE
+                discord_uid = $1
+            ''', member.id
+        )
+        if not details:
+            if role_id := fields['field'].get('!exists'):
+                role = member.guild.get_role(role_id)
+                if role:
+                    await member.add_roles(role)
+                else:
+                    # Placeholder for error logging system
+                    pass
+            return True
+
+        roles: list[discord.Role] = []
+        for field in fields:
+            if value := details.get(field['field']):
+                if str(value) != field['value']:
+                    continue
+                for role_id in field['role_ids']:
+                    if role := member.guild.get_role(role_id):
+                        roles.append(role)
+                    else:
+                        # Placeholder for error logging system
+                        pass
+
+        await member.add_roles(*roles)
+        return True
+
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Called when a member joins a guild"""
@@ -146,8 +203,7 @@ class Events(commands.Cog):
                 event
             WHERE
                 guild_id = $1
-            ''',
-            guild.id
+            ''', guild.id
         )
         if guild_details:
             *on_join, welcome = guild_details
@@ -155,6 +211,11 @@ class Events(commands.Cog):
 
         # Handle special events for club and society servers
         if await self.join_club_or_society(member):
+            return
+
+        # Handle special events for NITKKR servers
+        # which assign roles based on student details
+        if await self.assign_user_roles(member):
             return
 
         # Handle special events for servers with verification
