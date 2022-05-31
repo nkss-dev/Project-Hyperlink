@@ -60,15 +60,13 @@ async def postgres():
         host=config.postgres.host,
         database=config.postgres.database,
         user=config.postgres.user,
-        password=config.postgres.password
+        password=config.postgres.password,
+        port=config.postgres.port
     )
 
-    with open('utils/records.sql') as sql:
-        await conn.execute(sql.read())
-    with open('utils/groups.sql') as sql:
-        await conn.execute(sql.read())
-    with open('utils/guilds.sql') as sql:
-        await conn.execute(sql.read())
+    for name in ('records', 'groups', 'guilds'):
+        with open(f'utils/schemas/{name}.sql') as sql:
+            await conn.execute(sql.read())
 
     await conn.close()
 
