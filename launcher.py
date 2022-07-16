@@ -53,21 +53,3 @@ for name in ('links', 'self_roles'):
     with open(f'utils/schemas/{name}.sql') as sql:
         c.executescript(sql.read())
         conn.commit()
-
-# PostgreSQL db
-async def postgres():
-    conn = await asyncpg.connect(
-        host=config.postgres.host,
-        database=config.postgres.database,
-        user=config.postgres.user,
-        password=config.postgres.password,
-        port=config.postgres.port
-    )
-
-    for name in ('records', 'groups', 'guilds'):
-        with open(f'utils/schemas/{name}.sql') as sql:
-            await conn.execute(sql.read())
-
-    await conn.close()
-
-asyncio.run(postgres())
