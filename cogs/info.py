@@ -1,52 +1,16 @@
-import re
-import requests
 import json
 from datetime import datetime
-from typing import Union
+from typing import Optional, Union
 
+import config
 import discord
+from discord import app_commands
 from discord.ext import commands
 from tabulate import tabulate
 
 from utils import checks
 from utils.l10n import get_l10n
-from utils.utils import deleteOnReaction, is_alone
 
-
-class ProfileChoice(discord.ui.View):
-    """UI class for profile"""
-
-    def __init__(self, embed, l10n, user):
-        super().__init__()
-        self.embed = embed
-        self.l10n = l10n
-        self.type = False
-        self.user = user
-
-    async def interaction_check(self, interaction) -> bool:
-        """check if the interaction is authorised or not"""
-        if interaction.user != self.user:
-            await interaction.response.send_message(
-                content=self.l10n.format_value('incorrect-user'),
-                ephemeral=True
-            )
-            return False
-        return True
-
-    @discord.ui.button(label='Hidden', style=discord.ButtonStyle.green)
-    async def hidden(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """invoked when the `Hidden` button is clicked"""
-        await interaction.response.send_message(embed=self.embed, ephemeral=True)
-        await interaction.message.delete()
-        self.type = False
-        self.stop()
-
-    @discord.ui.button(label='Exposed', style=discord.ButtonStyle.red)
-    async def exposed(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """invoked when the `Exposed` button is clicked"""
-        await interaction.message.delete()
-        self.type = True
-        self.stop()
 
 class Info(commands.Cog):
     """Information commands"""
@@ -59,7 +23,7 @@ class Info(commands.Cog):
 
     async def cog_load(self):
         hostels = await self.bot.conn.fetch(
-            'SELECT number, name FROM HOSTEL'
+            'SELECT number, name FROM hostel'
         )
         self.hostels = dict(hostels)
 
@@ -187,22 +151,12 @@ class Info(commands.Cog):
 
         return embed
 
-    async def cog_check(self, ctx) -> bool:
-        self.l10n = await get_l10n(
-            ctx.guild.id if ctx.guild else 0,
-            'info',
-            self.bot.conn
-        )
-        return await checks.is_exists().predicate(ctx)
-
-    @commands.command(aliases=['p'])
-    async def profile(self, ctx, *, member: Union[discord.Member, discord.User] = None):
-        """Show the user's profile in an embed.
-
-        The embed contains details related to both, the server and the college.
-        The user is given a choice between keeping the profile hidden or visible. \
-        If the command is invoked in a DM channel, the choice defaults to visible.
-        """
+    @app_commands.command()
+    @app_commands.rename(member='user')
+    @app_commands.describe(member='The user you want to see the profile of')
+    @checks.is_exists()
+    async def profile(self, interaction: discord.Interaction, *, member: Optional[Union[discord.Member, discord.User]]):
+        """View your or someone else's personal profile card."""
         """
         Parameters
         ------------
@@ -212,37 +166,32 @@ class Info(commands.Cog):
             authorised to view another user's profile. If left blank, the \
             member defaults to the author of the command.
         """
-        if member is None:
-            member = ctx.author
-        else:
-            await checks.is_authorised().predicate(ctx)
+        guild = interaction.guild
+        self.l10n = await get_l10n(
+            guild.id if guild else 0,
+            'info',
+            self.bot.conn
+        )
 
-        embed = await self.get_profile_embed(bool(ctx.guild), member)
+        if member is None or member == interaction.user:
+            member = interaction.user
+        else:
+            await checks.is_authorised().predicate(interaction)
+
+        embed = await self.get_profile_embed(bool(guild), member)
         if not embed:
-            ctx.author = member
+            interaction.user = member
             raise commands.CheckFailure('RecordNotFound')
 
-        if not await is_alone(ctx.channel, ctx.author, self.bot.user):
-            view = ProfileChoice(embed, self.l10n, ctx.author)
-            await ctx.send(self.l10n.format_value('choice'), view=view)
-            await view.wait()
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-            if view.type:
-                embed.set_footer(text=self.l10n.format_value('footer'))
-                message = await ctx.send(embed=embed)
-            else:
-                await ctx.message.delete()
-                return
-        else:
-            message = await ctx.send(embed=embed)
-        await deleteOnReaction(ctx, message)
-
-    @commands.command()
-    @commands.bot_has_permissions(manage_nicknames=True)
+    # Deprecated command
+    @app_commands.command()
     @checks.is_verified()
-    @commands.guild_only()
-    async def nick(self, ctx, *, member: discord.Member=None):
-        """Change the nick of a user to their first name."""
+    @commands.bot_has_permissions(manage_nicknames=True)
+    @app_commands.guild_only()
+    async def nick(self, interaction: discord.Interaction, *, member: Optional[discord.Member]):
+        """Change your or someone else's nick to their first name."""
         """
         Parameters
         ------------
@@ -252,11 +201,11 @@ class Info(commands.Cog):
             authorised to change another user's nickname.
             If left blank, the member defaults to the author of the command.
         """
-        member = member or ctx.author
-        if await self.bot.is_owner(member):
+        member = member or interaction.user
+        if member.id in config.owner_ids:
             pass
-        elif member != ctx.author:
-            if not ctx.author.guild_permissions.manage_nicknames:
+        elif member != interaction.user:
+            if not interaction.user.guild_permissions.manage_nicknames:
                 raise commands.MissingPermissions(['manage_nicknames'])
         else:
             if not member.guild_permissions.change_nickname:
@@ -267,7 +216,7 @@ class Info(commands.Cog):
         )
 
         if not name:
-            ctx.author = member
+            # ctx.author = member
             raise commands.CheckFailure('RecordNotFound')
 
         old_nick = member.nick
@@ -283,12 +232,13 @@ class Info(commands.Cog):
             description=self.l10n.format_value('nick-change-success', nick),
             color=discord.Color.blurple()
         )
-        await ctx.reply(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @commands.command()
+    @app_commands.command()
+    @app_commands.describe(batch='The batch of which the stats are shown')
     @checks.is_verified()
-    async def memlist(self, ctx, batch: int):
-        """Show the stats of students of the specified batch.
+    async def memlist(self, interaction: discord.Interaction, batch: int):
+        """View the stats of students of the specified batch.
 
         The displayed table has 3 value columns and is separated by sub-sections
         Columns:
@@ -357,22 +307,41 @@ class Info(commands.Cog):
             description=f'```swift\n{cropped_table}```',
             color=discord.Color.blurple()
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @commands.command(aliases=['inv'])
-    async def invite(self, ctx):
-        """Send the invite of some Discord servers"""
+    @app_commands.command()
+    @checks.is_exists()
+    async def invite(self, interaction: discord.Interaction):
+        """Grab the invite links of some Discord servers"""
+        l10n = await get_l10n(
+            interaction.guild.id if interaction.guild else 0,
+            'info',
+            self.bot.conn
+        )
         servers = (
+            'NITKKR: https://discord.gg/r7eckfHjvy',
             'NITKKR\'24: https://discord.gg/4eF7R6afqv',
-            'kkr++: https://discord.gg/epaTW7tjYR'
+            'NITKKR\'25: https://discord.gg/C4s3f3zKpq',
+        )
+        misc_servers = (
+            'eSP NITKKR: https://discord.gg/myCYvRHSvr',
+            'kkr++: https://discord.gg/epaTW7tjYR',
         )
 
         embed = discord.Embed(
-            title = self.l10n.format_value('invite'),
-            description = '\n'.join(servers),
-            color = discord.Color.blurple()
+            title=l10n.format_value('invite'),
+            color=discord.Color.blurple()
         )
-        await ctx.send(embed=embed)
+        embed.add_field(
+            name=l10n.format_value('servers'),
+            value='\n'.join(servers)
+        )
+        embed.add_field(
+            name=l10n.format_value('misc_servers'),
+            value='\n'.join(misc_servers)
+        )
+
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot):
