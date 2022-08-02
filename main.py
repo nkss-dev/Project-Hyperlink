@@ -1,4 +1,7 @@
+import aiohttp
+import asyncio
 import re
+import sys
 import traceback
 from aiohttp import web
 
@@ -29,7 +32,10 @@ initial_extensions = (
 
 
 class ProjectHyperlink(commands.Bot):
-    """A Discord bot for servers based around NITKKR"""
+    """A personal moderation bot made as a part of the NKSSS project"""
+
+    pool: asyncpg.Pool
+    session: aiohttp.ClientSession
 
     def __init__(self):
         intents = discord.Intents(
@@ -57,7 +63,8 @@ class ProjectHyperlink(commands.Bot):
             base.append('%')
         else:
             prefixes = await bot.conn.fetch(
-                'select prefix from prefix where id = $1', msg.guild.id
+                'SELECT prefix FROM bot_prefix WHERE guild_id = $1',
+                msg.guild.id
             )
             if prefixes:
                 prefixes = [prefix['prefix'] for prefix in prefixes]
@@ -73,47 +80,60 @@ class ProjectHyperlink(commands.Bot):
         print(f'Logged in as {self.user} (ID: {self.user.id})')
 
     async def setup_hook(self):
-        """Setup all initial requirements"""
-        # Connect to the database
-        self.conn = await asyncpg.create_pool(
-            host=config.postgres.host,
-            database=config.postgres.database,
-            user=config.postgres.user,
-            password=config.postgres.password
-        )
-
         # Launch the API
         app['bot'] = self
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, 'localhost', 8080)
         await site.start()
+        print('API launched successfully!')
 
-        # Load all the extensions
+    async def close(self) -> None:
+        await self.session.close()
+        await asyncio.wait_for(self.pool.close(), timeout=None)
+        await super().close()
+
+
+async def main():
+    async with ProjectHyperlink() as bot:
+        try:
+            pool = await asyncpg.create_pool(
+                dsn=config.dsn,
+                command_timeout=60,
+                max_inactive_connection_lifetime=0
+            )
+        except Exception:
+            raise
+
+        if pool is None:
+            raise RuntimeError('Could not connect to the database')
+        bot.pool = pool
+
+        session = aiohttp.ClientSession()
+        bot.session = session
+
+        # !TODO: Setup logging
         for extension in initial_extensions:
             try:
-                await self.load_extension(extension)
+                await bot.load_extension(extension)
             except Exception:
                 print(
                     '\33[91m'
                     + f'\nFailed to load extension {extension}.\n'
                     + '\33[93m'
                     + traceback.format_exc()
-                    + '\33[0m'
+                    + '\33[0m',
+                    file=sys.stderr
                 )
 
-    def run(self):
-        super().run(config.bot_token, reconnect=True)
-
+        @bot.check_once
+        async def bracketCheck(ctx):
+            """Raise an error if any argument is enclosed in angular brackets"""
+            if re.search(r'<[^#@a:].+>', ctx.message.content):
+                raise commands.CheckFailure('AngularBracketsNotAllowed')
+            return True
+        
+        await bot.start(config.bot_token)
 
 if __name__ == '__main__':
-    bot = ProjectHyperlink()
-
-    @bot.check_once
-    async def bracketCheck(ctx):
-        """Raise an error if any argument is enclosed in angular brackets"""
-        if re.search(r'<[^#@a:].+>', ctx.message.content):
-            raise commands.CheckFailure('AngularBracketsNotAllowed')
-        return True
-
-    bot.run()
+    asyncio.run(main())
