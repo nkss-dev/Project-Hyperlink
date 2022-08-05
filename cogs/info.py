@@ -116,7 +116,7 @@ class Info(commands.Cog):
 
     @app_commands.command()
     @app_commands.rename(member='user')
-    @app_commands.describe(member='The user you want to see the profile of')
+    @app_commands.describe(member='The user whose profile will be displayed')
     @checks.is_exists()
     async def profile(self, interaction: discord.Interaction, *, member: Optional[Union[discord.Member, discord.User]]):
         """View your or someone else's personal profile card."""
@@ -202,7 +202,7 @@ class Info(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command()
-    @app_commands.describe(batch='The batch of which the stats are shown')
+    @app_commands.describe(batch='The batch of which the stats will be displayed')
     @checks.is_verified()
     async def memlist(self, interaction: discord.Interaction, batch: int):
         """View the stats of students of the specified batch.
@@ -304,8 +304,25 @@ class Info(commands.Cog):
             'kkr++: https://discord.gg/epaTW7tjYR',
         )
 
+        perms = discord.Permissions.none()
+        # General Permssions
+        perms.view_audit_log = True
+        perms.manage_roles = True
+        perms.kick_members = True
+        perms.manage_nicknames = True
+        perms.manage_webhooks = True
+        perms.read_messages = True
+        perms.manage_events = True
+        # Text Permissions
+        perms.send_messages = True
+        perms.send_messages_in_threads = True
+        perms.manage_messages = True
+        perms.use_external_emojis = True
+        perms.add_reactions = True
+
         embed = discord.Embed(
             title=l10n.format_value('invite'),
+            description=f'<{discord.utils.oauth_url(self.bot.user.id, permissions=perms)}>',
             color=discord.Color.blurple()
         )
         embed.add_field(
