@@ -135,12 +135,20 @@ class Info(commands.Cog):
         if member is None or member == interaction.user:
             member = interaction.user
         else:
-            await checks.is_authorised().predicate(interaction)
+            auth = await checks.is_authorised().predicate(interaction)
+            if auth is False:
+                await interaction.response.send_message(
+                    self.l10n.format_value('MissingAuthorisation-profile'),
+                    ephemeral=True
+                )
+                return
 
         embed = await self.get_profile_embed(bool(guild), member)
         if not embed:
-            interaction.user = member
-            raise commands.CheckFailure('RecordNotFound')
+            await interaction.response.send_message(
+                self.l10n.format_value('RecordNotFound', {'member': interaction.user}),
+                ephemeral=True
+            )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -213,6 +221,7 @@ class Info(commands.Cog):
         `batch`: <class 'int'>
             The batch for which the stats are shown.
         """
+        l10n = await self.bot.get_l10n(interaction.guild.id if interaction.guild else 0)
         data = await self.bot.pool.fetch(
             '''
             SELECT
@@ -230,6 +239,13 @@ class Info(commands.Cog):
                 section
             ''', batch
         )
+        if not data:
+            await interaction.response.send_message(
+                l10n.format_value('NotFound-batch'),
+                ephemeral=True
+            )
+            return
+
         sections, counts = [], []
         for row in data:
             if sections and row['section'][:4] == sections[-1]:
