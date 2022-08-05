@@ -1,4 +1,5 @@
 import aiohttp
+from aiohttp import web
 import asyncio
 import re
 import sys
@@ -9,6 +10,7 @@ import asyncpg
 import config
 import discord
 from discord.ext import commands
+from fluent.runtime import FluentLocalization, FluentResourceLoader
 
 from api.main import app
 
@@ -30,12 +32,16 @@ initial_extensions = (
     'cogs.voltorb',
 )
 
+loader = FluentResourceLoader('l10n/{locale}')
+
 
 class ProjectHyperlink(commands.Bot):
     """A personal moderation bot made as a part of the NKSSS project"""
 
     pool: asyncpg.Pool
     session: aiohttp.ClientSession
+    locales: dict[int, str] = {}
+    l10n: dict[str, FluentLocalization] = {}
 
     def __init__(self):
         intents = discord.Intents(
@@ -62,7 +68,7 @@ class ProjectHyperlink(commands.Bot):
         if not msg.guild:
             base.append('%')
         else:
-            prefixes = await bot.conn.fetch(
+            prefixes = await bot.pool.fetch(
                 'SELECT prefix FROM bot_prefix WHERE guild_id = $1',
                 msg.guild.id
             )
@@ -72,6 +78,18 @@ class ProjectHyperlink(commands.Bot):
                 prefixes = ['%']
             base.extend(prefixes)
         return base
+
+    async def get_l10n(self, id: int = 0) -> FluentLocalization:
+        if not self.locales.get(id):
+            self.locales[id] = await self.pool.fetchval(
+                'SELECT locale FROM guild WHERE id = $1', id
+            ) or 'en-GB'
+        locale = self.locales[id]
+
+        if not self.l10n.get(locale):
+            files = map(lambda file: f"{file.split('.')[-1]}.ftl", initial_extensions)
+            self.l10n[locale] = FluentLocalization([locale], files, loader)
+        return self.l10n[locale]
 
     async def on_ready(self):
         if not hasattr(self, 'launch_time'):

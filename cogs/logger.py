@@ -1,5 +1,3 @@
-from utils.l10n import get_l10n
-
 import discord
 from discord.ext import commands
 
@@ -7,7 +5,7 @@ from discord.ext import commands
 class Logger(commands.Cog):
     """Logs edited and deleted messages"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot):
         self.bot = bot
         self.channel_ids: dict[int, tuple[int, int]] = {}
 
@@ -29,7 +27,7 @@ class Logger(commands.Cog):
         if message.guild.id not in self.channel_ids:
             return
 
-        l10n = await get_l10n(message.guild.id, 'logger', self.bot.conn)
+        l10n = await self.bot.get_l10n(message.guild.id)
 
         embed = discord.Embed(
             description=l10n.format_value(
@@ -66,7 +64,7 @@ class Logger(commands.Cog):
         if payload.guild_id not in self.channel_ids:
             return
 
-        l10n = await get_l10n(payload.guild_id, 'logger', self.bot.conn)
+        l10n = await self.bot.get_l10n(payload.guild_id)
 
         messages = {
             'count': len(payload.message_ids),
@@ -97,7 +95,7 @@ class Logger(commands.Cog):
         if before.content == after.content:
             return
 
-        l10n = await get_l10n(before.guild.id, 'logger', self.bot.conn)
+        l10n = await self.bot.get_l10n(before.guild.id)
 
         embed = discord.Embed(
             description=l10n.format_value(

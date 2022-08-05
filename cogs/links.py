@@ -8,7 +8,6 @@ import discord
 from discord.ext import commands, tasks
 
 from utils import checks
-from utils.l10n import get_l10n
 from utils.utils import getURLs
 
 
@@ -93,7 +92,7 @@ class Links(commands.Cog):
             (self.info.batch,)
         ).fetchone()
         guild = self.bot.get_guild(guild_id)
-        self.l10n = await get_l10n(guild_id, 'links', self.bot.conn)
+        self.l10n = await self.bot.get_l10n(guild_id)
 
         time = discord.utils.utcnow() + timedelta(hours=12.5)
         date = time.strftime('%d-%m-%Y')
@@ -178,7 +177,7 @@ class Links(commands.Cog):
         if ids and ids[0] != ctx.channel.id and ctx.author != ctx.guild.owner:
             raise commands.CheckFailure('LinkProtection')
 
-        self.l10n = await get_l10n(ctx.guild.id, 'links', self.bot.conn)
+        self.l10n = await self.bot.get_l10n(ctx.guild.id)
         self.info = DashboardInfo(
             batch, section, ctx.guild.id, ids[0], ids[1], manager_roles
         )

@@ -6,8 +6,6 @@ from datetime import timedelta
 import discord
 from discord.ext import commands
 
-from utils import checks
-from utils.l10n import get_l10n
 from utils.utils import assign_student_roles, get_group_roles
 
 
@@ -25,11 +23,7 @@ class Events(commands.Cog):
         if not re.fullmatch(f'<@!?{self.bot.user.id}>', message.content):
             return
 
-        l10n = await get_l10n(
-            message.guild.id if message.guild else 0,
-            'events',
-            self.bot.conn
-        )
+        l10n = await self.bot.get_l10n(message.guild.id if message.guild else 0)
 
         embed = discord.Embed(
             title=l10n.format_value('details-title'),
@@ -79,29 +73,29 @@ class Events(commands.Cog):
         if welcome:
             await member.send(welcome.replace('{$server}', guild.name))
 
-        role_ids = await self.bot.conn.fetch(
+        role_ids = await self.bot.pool.fetch(
             'SELECT role FROM join_role WHERE id = $1', guild.id
         )
         for role_id in role_ids:
             if role := guild.get_role(role_id['role']):
                 await member.add_roles(role)
             else:
-                await self.bot.conn.execute(
+                await self.bot.pool.execute(
                     'DELETE FROM join_role WHERE role = $1', role_id
                 )
 
     async def join_club_or_society(self, member) -> bool:
-        batch = await self.bot.conn.fetchval(
+        batch = await self.bot.pool.fetchval(
             'SELECT batch FROM student WHERE discord_uid = $1',
             member.id
         )
 
-        roles = await get_group_roles(self.bot.conn, batch, member.guild)
+        roles = await get_group_roles(self.bot.pool, batch, member.guild)
         # Exit if server isn't of a club/society
         if roles is None:
             return False
 
-        is_member = await self.bot.conn.fetchval(
+        is_member = await self.bot.pool.fetchval(
             '''
             SELECT
                 EXISTS (
@@ -123,7 +117,7 @@ class Events(commands.Cog):
         return True
 
     async def assign_user_roles(self, member: discord.Member) -> bool:
-        fields = await self.bot.conn.fetch(
+        fields = await self.bot.pool.fetch(
             '''
             SELECT
                 field,
@@ -138,7 +132,7 @@ class Events(commands.Cog):
         if not fields:
             return False
 
-        details = await self.bot.conn.fetchrow(
+        details = await self.bot.pool.fetchrow(
             '''
             SELECT
                 roll_number,
@@ -185,7 +179,7 @@ class Events(commands.Cog):
 
         # Assign the bot role if any
         if member.bot:
-            bot_role_id = await self.bot.conn.fetchval(
+            bot_role_id = await self.bot.pool.fetchval(
                 'SELECT bot_role FROM guild WHERE id = $1', guild.id
             )
             if bot_role := guild.get_role(bot_role_id):
@@ -193,7 +187,7 @@ class Events(commands.Cog):
             return
 
         # Handle all generic events
-        guild_details = await self.bot.conn.fetchrow(
+        guild_details = await self.bot.pool.fetchrow(
             '''
             SELECT
                 join_channel,
@@ -219,13 +213,13 @@ class Events(commands.Cog):
             return
 
         # Handle special events for servers with verification
-        server = await self.bot.conn.fetchrow(
+        server = await self.bot.pool.fetchrow(
             'SELECT * FROM verified_server WHERE id = $1', guild.id
         )
         if not server:
             return
 
-        student = await self.bot.conn.fetchrow(
+        student = await self.bot.pool.fetchrow(
             '''
             SELECT
                 section,
@@ -250,7 +244,7 @@ class Events(commands.Cog):
                         student['batch'],
                         student['hostel_number'],
                     ),
-                    self.bot.conn
+                    self.bot.pool
                 )
                 return
         else:
@@ -258,7 +252,7 @@ class Events(commands.Cog):
             instruct = self.bot.get_channel(server['instruction_channel'])
             command = self.bot.get_channel(server['command_channel'])
 
-            l10n = await get_l10n(guild.id, 'events', self.bot.conn)
+            l10n = await self.bot.get_l10n(guild.id)
             mentions = {
                 'instruction-channel': instruct.mention,
                 'command-channel': command.mention,
@@ -337,9 +331,9 @@ class Events(commands.Cog):
     async def on_member_remove(self, member: discord.Member):
         """Called when a member leaves a guild"""
         guild = member.guild
-        l10n = await get_l10n(guild.id, 'events', self.bot.conn)
+        l10n = await self.bot.get_l10n(guild.id)
 
-        events = await self.bot.conn.fetchrow(
+        events = await self.bot.pool.fetchrow(
             '''
             SELECT
                 leave_channel,
@@ -361,7 +355,7 @@ class Events(commands.Cog):
             }
             channel = await self.leave_handler(events, guild, member, l10n)
 
-        verified = await self.bot.conn.fetch(
+        verified = await self.bot.pool.fetch(
             'SELECT verified FROM student WHERE discord_uid = $1', member.id
         )
         if not verified:
@@ -370,7 +364,7 @@ class Events(commands.Cog):
             return
 
         if not verified[0]['verified']:
-            await self.bot.conn.execute(
+            await self.bot.pool.execute(
                 'UPDATE student SET discord_uid = NULL WHERE discord_uid = $1',
                 member.id
             )
@@ -381,11 +375,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         """Called when any error is thrown"""
-        l10n = await get_l10n(
-            ctx.guild.id if ctx.guild else 0,
-            'events',
-            self.bot.conn
-        )
+        l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
 
         if isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):

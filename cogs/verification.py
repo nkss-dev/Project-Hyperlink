@@ -12,7 +12,6 @@ import smtplib
 from email.message import EmailMessage
 
 from utils import checks
-from utils.l10n import get_l10n
 from utils.utils import assign_student_roles, generateID
 
 
@@ -44,7 +43,7 @@ class Verify(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.codes = []
+        self.codes = {}
 
         with open('db/emojis.json') as emojis:
             self.emojis = json.load(emojis)['utility']
@@ -143,9 +142,6 @@ class Verify(commands.Cog):
             await ctx.send_help(ctx.command)
             return
 
-        l10n = await get_l10n(ctx.guild.id, 'verification', self.bot.conn)
-        self.fmv = l10n.format_value
-
         verified = await self.bot.conn.fetch(
             'SELECT verified FROM student WHERE discord_uid = $1',
             ctx.author.id
@@ -157,6 +153,9 @@ class Verify(commands.Cog):
                     raise commands.CheckFailure('AccountAlreadyLinked')
             else:
                 raise commands.CheckFailure('UserAlreadyVerified')
+
+        l10n = await self.bot.get_l10n(ctx.guild.id)
+        self.fmv = l10n.format_value
 
     async def cleanup(self, author, name):
         """Execute finisher code after successful verification"""

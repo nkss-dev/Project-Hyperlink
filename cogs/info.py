@@ -9,7 +9,6 @@ from discord.ext import commands
 from tabulate import tabulate
 
 from utils import checks
-from utils.l10n import get_l10n
 
 
 class Info(commands.Cog):
@@ -29,7 +28,7 @@ class Info(commands.Cog):
 
     async def get_profile_embed(self, guild: bool, member) -> discord.Embed:
         """Return the details of the given user in an embed"""
-        student = await self.bot.conn.fetchrow(
+        student = await self.bot.pool.fetchrow(
             '''
             SELECT
                 roll_number,
@@ -61,7 +60,7 @@ class Info(commands.Cog):
         status = 'verified' if student['verified'] else 'not-verified'
 
         # Fetch the student's groups
-        _groups = await self.bot.conn.fetch(
+        _groups = await self.bot.pool.fetch(
             '''
             SELECT
                 name,
@@ -167,11 +166,7 @@ class Info(commands.Cog):
             member defaults to the author of the command.
         """
         guild = interaction.guild
-        self.l10n = await get_l10n(
-            guild.id if guild else 0,
-            'info',
-            self.bot.conn
-        )
+        self.l10n = await self.bot.get_l10n(guild.id if guild else 0)
 
         if member is None or member == interaction.user:
             member = interaction.user
@@ -211,8 +206,8 @@ class Info(commands.Cog):
             if not member.guild_permissions.change_nickname:
                 raise commands.MissingPermissions(['change_nickname'])
 
-        name = await self.bot.conn.fetchval(
-            'SELECT name FROM student WHERE discord_uid = $1', member.id
+        name = await self.bot.pool.fetchval(
+            'SELECT name FROM student WHERE discord_id = $1', member.id
         )
 
         if not name:
@@ -318,11 +313,7 @@ class Info(commands.Cog):
     @checks.is_exists()
     async def invite(self, interaction: discord.Interaction):
         """Grab the invite links of some Discord servers"""
-        l10n = await get_l10n(
-            interaction.guild.id if interaction.guild else 0,
-            'info',
-            self.bot.conn
-        )
+        l10n = await self.bot.get_l10n(interaction.guild.id if interaction.guild else 0)
         servers = (
             'NITKKR: https://discord.gg/r7eckfHjvy',
             'NITKKR\'24: https://discord.gg/4eF7R6afqv',

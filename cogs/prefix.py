@@ -1,7 +1,6 @@
 from discord.ext import commands
 
 from utils import checks
-from utils.l10n import get_l10n
 
 
 class Prefix(commands.Cog):
@@ -11,18 +10,14 @@ class Prefix(commands.Cog):
         self.bot = bot
 
     async def cog_check(self, ctx):
-        l10n = await get_l10n(
-            ctx.guild.id if ctx.guild else 0,
-            'prefix',
-            self.bot.conn
-        )
+        l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
         self.fmv = l10n.format_value
         return await checks.is_verified().predicate(ctx)
 
     async def fetch_prefix(self, id: int) -> map:
         return map(
             lambda prefix: prefix['prefix'],
-            await self.bot.conn.fetch(
+            await self.bot.pool.fetch(
                 'SELECT prefix FROM prefix WHERE id = $1', id
             )
         )
@@ -50,7 +45,7 @@ class Prefix(commands.Cog):
             await ctx.reply(self.fmv('exists-true', {'prefix': prefix}))
             return
 
-        await self.bot.conn.execute(
+        await self.bot.pool.execute(
             'INSERT INTO prefix VALUES ($1, $2)', ctx.guild.id, prefix
         )
 
@@ -71,7 +66,7 @@ class Prefix(commands.Cog):
             await ctx.reply(self.fmv('exists-false', {'prefix': prefix}))
             return
 
-        await self.bot.conn.execute(
+        await self.bot.pool.execute(
             'DELETE FROM prefix WHERE id = $1 AND prefix = $2',
             ctx.guild.id, prefix
         )
@@ -87,10 +82,10 @@ class Prefix(commands.Cog):
         `prefix`: <class 'str'>
             The prefix to set.
         """
-        await self.bot.conn.execute(
+        await self.bot.pool.execute(
             'DELETE FROM prefix WHERE id = $1', ctx.guild.id
         )
-        await self.bot.conn.execute(
+        await self.bot.pool.execute(
             'INSERT INTO prefix VALUES ($1, $2)', ctx.guild.id, prefix
         )
 

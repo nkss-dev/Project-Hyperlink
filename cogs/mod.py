@@ -9,7 +9,6 @@ from discord.ext import commands
 from discord.utils import sleep_until
 
 from utils import checks
-from utils.l10n import get_l10n
 
 
 class Mod(commands.Cog):
@@ -26,7 +25,7 @@ class Mod(commands.Cog):
     async def cog_check(self, ctx) -> bool:
         if not ctx.guild:
             raise commands.NoPrivateMessage
-        self.l10n = await get_l10n(ctx.guild.id, 'mod', self.bot.conn)
+        self.l10n = await self.bot.get_l10n(ctx.guild.id)
         return await checks.is_mod().predicate(ctx)
 
     @commands.command(aliases=['m'])
@@ -104,7 +103,7 @@ class Mod(commands.Cog):
                 await ctx.reply(self.l10n.format_value('mute-role-not-allowed'))
                 return
 
-            mute_role_id = await self.bot.conn.fetchval(
+            mute_role_id = await self.bot.pool.fetchval(
                 'SELECT mute_role FROM guild WHERE id = $1', ctx.guild.id
             )
             if not mute_role_id:

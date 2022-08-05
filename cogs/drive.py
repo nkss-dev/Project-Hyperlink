@@ -14,12 +14,11 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
 from utils import checks
-from utils.l10n import get_l10n
 from utils.utils import yesOrNo
 
 
-class GoogleDrive():
-    """Drive API functions"""
+class GoogleDrive:
+    """[depreciated] Drive API functions"""
 
     def __init__(self):
         self.root = '1U2taK5kEhOiUJi70ZkU2aBWY83uVuMmD'
@@ -56,7 +55,7 @@ class GoogleDrive():
 
     def uploadFile(self, name: str, parent_id: str = None) -> dict[str, str]:
         """Upload specified file to the given folder"""
-        meta_data = {'name': name.split('/')[-1]}
+        meta_data = {'name': name.split('/', 1)[-1]}
         if parent_id:
             meta_data['parents'] = [parent_id]
 
@@ -123,13 +122,13 @@ class Drive(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     @staticmethod
-    def get_query_str(args: tuple, type: str = 'default') -> tuple[str, list]:
+    def get_query_str(args: tuple, mode: str = 'default') -> tuple[str, list]:
         """Return a compatible search query for the Drive API"""
         query_args = []
         ignored_args = []
         query = ''
 
-        if type == 'default':
+        if mode == 'default':
             for arg in args:
                 if re.match(r'(.)\1{2}', arg):
                     ignored_args.append(f'`{arg}`')
@@ -142,11 +141,7 @@ class Drive(commands.Cog):
         return query, ignored_args
 
     async def cog_check(self, ctx) -> bool:
-        self.l10n = await get_l10n(
-            ctx.guild.id if ctx.guild else 0,
-            'drive',
-            self.bot.conn
-        )
+        self.l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
         return await checks.is_verified().predicate(ctx)
 
     @commands.group(invoke_without_command=True)
@@ -156,7 +151,7 @@ class Drive(commands.Cog):
 
     @drive.command()
     @commands.cooldown(2, 10.0, commands.BucketType.user)
-    async def search(self, ctx, *query: tuple):
+    async def search(self, ctx, *query: str):
         """Search for the given query and send a corresponding embed.
 
         The input query is divided into separate keywords split by a space \
@@ -167,8 +162,7 @@ class Drive(commands.Cog):
         `query`: <class 'list'>
             The list of keywords to be searched on the Drive.
             Each keyword must be space separated and any multi-word keyword \
-            must be enclosed inside "double quotes". Any keyword less than 2 \
-            characters will be ignored.
+            must be enclosed inside "double quotes".
         """
         await ctx.message.add_reaction(self.emojis['loading'])
 
@@ -350,7 +344,10 @@ class Drive(commands.Cog):
                     await message.delete()
 
                 # Create the course folder and the subsequent child folder
-                meta_data = {'name': message.content, 'parents': [parents[-1]['id']]}
+                meta_data = {
+                    'name': message.content,
+                    'parents': [parents[-1]['id']]
+                }
                 parents.append(self.drive.createFolder(meta_data))
                 meta_data = {
                     'name': folder,
@@ -367,7 +364,10 @@ class Drive(commands.Cog):
 
                 # Create the child folder
                 if not parent:
-                    meta_data = {'name': folder, 'parents': [course_folder[0]['id']]}
+                    meta_data = {
+                        'name': folder,
+                        'parents': [course_folder[0]['id']]
+                    }
                     parents.append(self.drive.createFolder(meta_data))
                 else:
                     parents.append(parent[0])

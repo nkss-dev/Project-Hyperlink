@@ -4,7 +4,6 @@ import os
 import discord
 from discord.ext import commands
 
-from utils.l10n import get_l10n
 from utils.utils import is_alone, yesOrNo
 
 
@@ -18,11 +17,7 @@ class OwnerOnly(commands.Cog):
             self.emojis = json.load(f)['utility']
 
     async def cog_check(self, ctx) -> bool:
-        l10n = await get_l10n(
-            ctx.guild.id if ctx.guild else 0,
-            'owner',
-            self.bot.conn
-        )
+        l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
         self.fmv = l10n.format_value
         return await commands.is_owner().predicate(ctx)
 

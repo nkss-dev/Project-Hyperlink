@@ -6,7 +6,6 @@ import discord
 from discord.ext import commands
 
 from utils import checks
-from utils.l10n import get_l10n
 from utils.utils import generateID
 
 
@@ -56,11 +55,7 @@ class ButtonRoles(commands.Cog):
         self.bot.loop.create_task(self.load_views())
 
     async def cog_check(self, ctx) -> bool:
-        l10n = await get_l10n(
-            ctx.guild.id if ctx.guild else 0,
-            'self_roles',
-            self.bot.conn
-        )
+        l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
         self.fmv = l10n.format_value
         return await checks.is_mod().predicate(ctx)
 
@@ -195,7 +190,7 @@ class ButtonRoles(commands.Cog):
         for view in views:
             self.views[view[1]] = RoleView()
             channel = self.bot.get_channel(view[0])
-            l10n = await get_l10n(channel.guild.id if channel.guild else 0, 'self_roles', self.bot.conn)
+            l10n = await self.bot.get_l10n(channel.guild.id if channel.guild else 0)
 
             buttons = self.c.execute(
                 '''
@@ -285,7 +280,7 @@ class ReactionRoles(commands.Cog):
             self.save()
 
     async def cog_check(self, ctx) -> bool:
-        l10n = await get_l10n(ctx.guild.id if ctx.guild else 0, 'self_roles', self.bot.conn)
+        l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
         self.fmv = l10n.format_value
         return await checks.is_mod().predicate(ctx)
 
