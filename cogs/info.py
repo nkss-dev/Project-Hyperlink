@@ -8,44 +8,34 @@ from discord import app_commands
 from discord.ext import commands
 from tabulate import tabulate
 
+from main import ProjectHyperlink
 from utils import checks
 
 
 class Info(commands.Cog):
     """Information commands"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
 
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
     async def cog_load(self):
-        hostels = await self.bot.conn.fetch(
-            'SELECT number, name FROM hostel'
-        )
-        self.hostels = dict(hostels)
+        async with self.bot.session.get(f'{config.api_url}/hostels') as resp:
+            assert resp.status == 200
+            data = await resp.json()
+        self.hostels = {hostel.pop('id'): hostel for hostel in data['data']}
 
     async def get_profile_embed(self, guild: bool, member) -> discord.Embed:
         """Return the details of the given user in an embed"""
-        student = await self.bot.pool.fetchrow(
-            '''
-            SELECT
-                roll_number,
-                section,
-                sub_section,
-                name,
-                mobile,
-                birthday,
-                email,
-                hostel_number,
-                verified
-            FROM
-                student
-            WHERE
-                discord_uid = $1
-            ''', member.id
-        )
+        async with self.bot.session.get(
+            f'{config.api_url}/discord/users/{member.id}',
+            headers={'Authorization': f'Bearer {config.api_token}'}
+        ) as resp:
+            assert resp.status == 200
+            data = await resp.json()
+        student = data['data']
 
         if not student:
             return discord.Embed()
@@ -57,33 +47,7 @@ class Info(commands.Cog):
             color = discord.Color.blurple()
 
         # Set emoji based on verification status
-        status = 'verified' if student['verified'] else 'not-verified'
-
-        # Fetch the student's groups
-        _groups = await self.bot.pool.fetch(
-            '''
-            SELECT
-                name,
-                alias,
-                invite,
-                guest_role
-            FROM
-                group_discord_user
-            WHERE
-                discord_uid = $1
-            ''', member.id
-        )
-        groups = []
-        group_names = []
-        for full_name, alias, invite, role in _groups:
-            name = alias or full_name
-            group_names.append(name)
-            if invite and role:
-                hovertext = f'Click here to join the official {name} server'
-                text = f'[{name}](https://discord.gg/{invite} "{hovertext}")'
-            else:
-                text = name
-            groups.append(text)
+        status = 'verified' if student['is_verified'] else 'not-verified'
 
         # Generating the embed
         embed = discord.Embed(
@@ -97,21 +61,21 @@ class Info(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
 
         # Add generic student details
-        if hostel := student['hostel_number']:
-            hostel = f'{hostel} - {self.hostels[hostel]}'
+        if hostel := student['hostel_id']:
+            hostel = f"{hostel} - {self.hostels[hostel]['name']}"
 
         fields = {
             'roll': student['roll_number'],
-            'sec': student['section'] + student['sub_section'][4],
+            'sec': student['section'],
             'email': student['email'],
             'hostel': hostel,
-            'groups': ', '.join(groups) or self.l10n.format_value('no-group'),
+            'groups': ', '.join(student['clubs']) or self.l10n.format_value('no-group'),
         }
-        if student['mobile']:
-            fields['mob'] = student['mobile']
-        if bday := student['birthday']:
-            bday = datetime(bday.year, bday.month, bday.day)
-            fields['bday'] = discord.utils.format_dt(bday, style='D')
+        if student['mobile']['Valid']:
+            fields['mob'] = student['mobile']['String']
+        if student['birth_date']['Valid']:
+            birth_date = datetime.strptime(student['birth_date']['Time'][:10], '%Y-%m-%d')
+            fields['bday'] = discord.utils.format_dt(birth_date, style='D')
 
         for name, value in fields.items():
             embed.add_field(name=self.l10n.format_value(name), value=value)
@@ -120,10 +84,10 @@ class Info(commands.Cog):
         user_roles = []
         if guild:
             ignored_roles = [
-                student['section'],
-                student['sub_section'],
-                student['hostel_number'],
-                *group_names,
+                student['section'][:4],
+                student['section'][:3] + student['section'][4:].zfill(2),
+                student['hostel_id'],
+                *student['clubs'],
                 '@everyone'
             ]
             for role in member.roles:
@@ -273,7 +237,7 @@ class Info(commands.Cog):
                 counts[-1] = [count[0] + row['joined'], count[1] + row['remaining'], count[2] + row['verified']]
             else:
                 sections.append(row['section'][:4])
-            counts.append([row['joined'], row['remaining'], row['verified']])
+                counts.append([row['joined'], row['remaining'], row['verified']])
         data = [[section, *count] for section, count in zip(sections, counts)]
 
         # Get the indices of the rows to be deleted
