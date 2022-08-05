@@ -254,13 +254,13 @@ class Info(commands.Cog):
         `batch`: <class 'int'>
             The batch for which the stats are shown.
         """
-        data = await self.bot.conn.fetch(
+        data = await self.bot.pool.fetch(
             '''
             SELECT
                 section,
-                COUNT(discord_uid) AS joined,
-                COUNT(*) - COUNT(discord_uid) AS remaining,
-                COUNT(*) FILTER (WHERE verified) AS verified
+                COUNT(discord_id) AS joined,
+                COUNT(*) - COUNT(discord_id) AS remaining,
+                COUNT(*) FILTER (WHERE is_verified) AS verified
             FROM
                 student
             WHERE
@@ -273,8 +273,13 @@ class Info(commands.Cog):
         )
         sections, counts = [], []
         for row in data:
-            sections.append(row['section'])
+            if sections and row['section'][:4] == sections[-1]:
+                count = counts[-1]
+                counts[-1] = [count[0] + row['joined'], count[1] + row['remaining'], count[2] + row['verified']]
+            else:
+                sections.append(row['section'][:4])
             counts.append([row['joined'], row['remaining'], row['verified']])
+        data = [[section, *count] for section, count in zip(sections, counts)]
 
         # Get the indices of the rows to be deleted
         indices = []
@@ -288,7 +293,7 @@ class Info(commands.Cog):
         total = [sum(count) for count in zip(*counts)]
 
         table = tabulate(
-            [*[list(row) for row in data], ['Total', *total]],
+            [*data, ['Total', *total]],
             headers=('Section', 'Joined', 'Remaining', 'Verified'),
             tablefmt='grid'
         ).split('\n')
