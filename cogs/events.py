@@ -112,7 +112,7 @@ class Events(commands.Cog):
 
     async def join_club_or_society(self, member) -> bool:
         batch = await self.bot.pool.fetchval(
-            'SELECT batch FROM student WHERE discord_uid = $1',
+            'SELECT batch FROM student WHERE discord_id = $1',
             member.id
         )
 
@@ -128,10 +128,10 @@ class Events(commands.Cog):
                     SELECT
                         *
                     FROM
-                        group_discord_user
+                        club_discord_user
                     WHERE
-                        id = $1
-                        AND discord_uid = $2
+                        guild_id = $1
+                        AND discord_id = $2
                 )
             ''', member.guild.id, member.id
         )
@@ -152,7 +152,7 @@ class Events(commands.Cog):
             FROM
                 guild_role
             WHERE
-                id = $1
+                guild_id = $1
             ''', member.guild.id
         )
         if not fields:
@@ -252,6 +252,7 @@ class Events(commands.Cog):
             '''
             SELECT
                 section,
+                email,
                 batch,
                 hostel_id,
                 is_verified
@@ -263,7 +264,7 @@ class Events(commands.Cog):
         )
 
         if guild_info['batch'] == 0:
-            if student['is_verified']:
+            if student and student['is_verified']:
                 await assign_student_roles(
                     member, (
                         student['section'][:2],
@@ -273,9 +274,13 @@ class Events(commands.Cog):
                     self.bot.pool
                 )
                 return
-            message = 'verify-instruction-email'
-        elif guild_info['batch'] == student['batch']:
             if student:
+                message = 'verify-instruction-known'
+                # code to send email goes here
+            else:
+                message = 'verify-instruction'
+        else:
+            if student and guild_info['batch'] == student['batch']:
                 await assign_student_roles(
                     member, (
                         student['section'],
@@ -285,11 +290,11 @@ class Events(commands.Cog):
                     self.bot.pool
                 )
                 return
-            message = 'verify-instruction-basic'
-        else:
-            await member.send(self.l10n.format_value('incorrect server'))
-            await member.kick(reason=self.l10n.format_value('incorrect server'))
-            return
+            elif student:
+                await member.send(self.l10n.format_value('incorrect server'))
+                await member.kick(reason=self.l10n.format_value('incorrect server'))
+                return
+            message = 'verify-instruction'
 
         # Add a restricting guest role to the user
         role_id = guild_info['guest_role']
@@ -301,11 +306,12 @@ class Events(commands.Cog):
         info_ch = self.bot.get_channel(guild_info['info_channel'])
         cmd_ch = self.bot.get_channel(guild_info['command_channel'])
         
-        info_ch.send(
-            self.l10n.format_value(
-                message, {'member': member.mention, 'cmd_ch': cmd_ch.mention}
-            )
-        )
+        vars: dict[str, str] = {
+            'info_ch': info_ch.mention,
+            'email': student['email'] if student else '',
+            'member': member.mention
+        }
+        await cmd_ch.send(self.l10n.format_value(message, vars))
 
     @staticmethod
     async def leave_handler(events, guild, member, l10n):

@@ -30,3 +30,6 @@ email-not-received = You did not receive any email yet.
 section-not-provided = Section is required.
 rollno-not-provided = Roll number is required.
 branch-not-provided = Branch is required.
+
+verify-instruction = Hey, {$member}! Since you're unknown to us, you've been restricted to access our channels until you verify. For instructions on verification, simply refer {$info_ch}.
+verify-instruction-known = Hey, {$member}! This server requires you to be verified via an OTP sent to your institute email (`{$email}`). Please paste the OTP sent to your email here!

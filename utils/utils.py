@@ -13,15 +13,15 @@ async def assign_student_roles(member, details, conn):
     These currently include:
         Branch, Section, Sub-Section, Hostel, Clubs
     """
-    groups = conn.fetch(
+    groups = await conn.fetch(
         '''
         SELECT
             name,
             alias
         FROM
-            group_discord_user
+            club_discord_user
         WHERE
-            discord_uid = $1
+            discord_id = $1
         ''', member.id
     )
 
@@ -94,7 +94,7 @@ async def getWebhook(channel, member) -> discord.Webhook | None:
 
 async def get_group_roles(conn, batch, guild) -> tuple[discord.Role, discord.Role] | None:
     names = {
-        1: 'fresher',
+        1: 'freshman',
         2: 'sophomore',
         3: 'junior',
         4: 'senior'
@@ -117,9 +117,9 @@ async def get_group_roles(conn, batch, guild) -> tuple[discord.Role, discord.Rol
             {year}_role,
             guest_role
         FROM
-            group_discord
+            club_discord
         WHERE
-            id = $1
+            guild_id = $1
         ''', guild.id
     )
     if not roles:
