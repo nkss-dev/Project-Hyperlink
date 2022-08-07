@@ -106,9 +106,9 @@ class Events(commands.Cog):
         if valid_roles:
             await member.add_roles(*valid_roles)
         if broken_ids:
-                await self.bot.pool.execute(
+            await self.bot.pool.execute(
                 'DELETE FROM join_role WHERE role_id = ANY($1)', broken_ids
-                )
+            )
 
     async def join_club_or_society(self, member) -> bool:
         batch = await self.bot.pool.fetchval(
@@ -241,71 +241,71 @@ class Events(commands.Cog):
         if await self.assign_user_roles(member):
             return
 
-        # Handle special events for servers with verification
-        server = await self.bot.pool.fetchrow(
-            'SELECT * FROM verified_server WHERE id = $1', guild.id
+        # Handle special events for affiliated servers
+        guild_info = await self.bot.pool.fetchrow(
+            'SELECT * FROM affiliated_guild WHERE guild_id = $1', guild.id
         )
-        if not server:
+        if not guild_info:
             return
 
         student = await self.bot.pool.fetchrow(
             '''
             SELECT
                 section,
-                sub_section,
                 batch,
-                hostel_number,
-                verified
+                hostel_id,
+                is_verified
             FROM
                 student
             WHERE
-                discord_uid = $1
+                discord_id = $1
             ''', member.id
         )
 
-        if student:
-            if student['verified'] and server['batch'] in (0, student['batch']):
+        if guild_info['batch'] == 0:
+            if student['is_verified']:
                 await assign_student_roles(
-                    member,
-                    (
+                    member, (
                         student['section'][:2],
-                        student['sub_section'],
                         student['batch'],
-                        student['hostel_number'],
+                        student['hostel_id'],
                     ),
                     self.bot.pool
                 )
                 return
+            message = 'verify-instruction-email'
+        elif guild_info['batch'] == student['batch']:
+            if student:
+                await assign_student_roles(
+                    member, (
+                        student['section'],
+                        student['section'][:3] + student['section'][4:].zfill(2),
+                        student['hostel_id'],
+                    ),
+                    self.bot.pool
+                )
+                return
+            message = 'verify-instruction-basic'
         else:
-            # Sends a dm to the new user explaining that they have to verify
-            instruct = self.bot.get_channel(server['instruction_channel'])
-            command = self.bot.get_channel(server['command_channel'])
-
-            l10n = await self.bot.get_l10n(guild.id)
-            mentions = {
-                'instruction-channel': instruct.mention,
-                'command-channel': command.mention,
-                'owner': guild.owner.mention if guild.owner else None
-            }
-            embed = discord.Embed(
-                title=l10n.format_value('dm-title', {'guild': guild.name}),
-                description=l10n.format_value('dm-description', mentions),
-                color=discord.Color.blurple()
-            )
-            embed.set_footer(text=l10n.format_value('dm-footer'))
-
-            try:
-                await member.send(embed=embed)
-            except discord.Forbidden:
-                pass
+            await member.send(self.l10n.format_value('incorrect server'))
+            await member.kick(reason=self.l10n.format_value('incorrect server'))
+            return
 
         # Add a restricting guest role to the user
-        role = guild.get_role(server['guest_role'])
-        if role:
+        role_id = guild_info['guest_role']
+        if role := guild.get_role(role_id):
             await member.add_roles(role)
         else:
-            # Placeholder for error logging system
-            pass
+            logging.warning(f"(table: affiliated_guild) -> Role ID {role_id} not found")
+        
+        info_ch = self.bot.get_channel(guild_info['info_channel'])
+        cmd_ch = self.bot.get_channel(guild_info['command_channel'])
+        
+        info_ch.send(
+            self.l10n.format_value(
+                message, {'member': member.mention, 'cmd_ch': cmd_ch.mention}
+            )
+        )
 
     @staticmethod
     async def leave_handler(events, guild, member, l10n):
@@ -476,7 +476,7 @@ class Events(commands.Cog):
             await ctx.reply(error)
 
         else:
-            raise error
+            logging.error(error)
 
 
 async def setup(bot):
