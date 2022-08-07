@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 import re
 from datetime import timedelta
@@ -6,13 +7,14 @@ from datetime import timedelta
 import discord
 from discord.ext import commands
 
+from main import ProjectHyperlink
 from utils.utils import assign_student_roles, get_group_roles
 
 
 class Events(commands.Cog):
     """Handle events"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
@@ -64,24 +66,48 @@ class Events(commands.Cog):
 
         await ping.edit(content=None, embed=embed)
 
-    async def join_handler(self, on_join, welcome, member, guild):
-        # Sends welcome message on the server's channel
-        if channel := guild.get_channel(on_join[0]):
-            await channel.send(on_join[1].replace('{$user}', member.mention))
+    async def join_handler(self, events, member: discord.Member):
+        # Send a welcome message to a guild channel and/or the member
+        guild = member.guild
+        for event in events:
+            types = event['event_types']
+            if message := event['message']:
+                message = message.replace('{$user}', member.mention)
+                message = message.replace('{$guild}', guild.name)
+            else:
+                message = self.l10n.format_value(
+                    'welcome-message',
+                    {'user': member.mention}
+                )
 
-        # Sends welcome message to the user's DM
-        if welcome:
-            await member.send(welcome.replace('{$server}', guild.name))
+            channel_id = event['channel_id']
+            if not (channel := guild.get_channel(channel_id)):
+                logging.warning(f"(table: event) -> Channel ID {channel_id} not found")
+                # The only event possible without a channel ID, is a DM; for
+                # which, a message is needed. If that is also absent, continue.
+                if not message:
+                    continue
+
+            if 'join' in types and channel:
+                await channel.send(message)
+            if 'welcome' in types and message:
+                await member.send(message)
 
         role_ids = await self.bot.pool.fetch(
-            'SELECT role FROM join_role WHERE id = $1', guild.id
+            'SELECT role_id FROM join_role WHERE guild_id = $1', guild.id
         )
+        valid_roles: list[discord.Role] = []
+        broken_ids = []
         for role_id in role_ids:
             if role := guild.get_role(role_id['role']):
-                await member.add_roles(role)
+                valid_roles.append(role)
             else:
+                broken_ids.append(role)
+        if valid_roles:
+            await member.add_roles(*valid_roles)
+        if broken_ids:
                 await self.bot.pool.execute(
-                    'DELETE FROM join_role WHERE role = $1', role_id
+                'DELETE FROM join_role WHERE role_id = ANY($1)', broken_ids
                 )
 
     async def join_club_or_society(self, member) -> bool:
@@ -137,14 +163,13 @@ class Events(commands.Cog):
             SELECT
                 roll_number,
                 section,
-                sub_section,
                 batch,
-                hostel_number,
-                verified
+                hostel_id,
+                is_verified
             FROM
                 student
             WHERE
-                discord_uid = $1
+                discord_id = $1
             ''', member.id
         )
         if not details:
@@ -176,6 +201,7 @@ class Events(commands.Cog):
     async def on_member_join(self, member: discord.Member):
         """Called when a member joins a guild"""
         guild = member.guild
+        self.l10n = await self.bot.get_l10n(guild.id)
 
         # Assign the bot role if any
         if member.bot:
@@ -187,21 +213,24 @@ class Events(commands.Cog):
             return
 
         # Handle all generic events
-        guild_details = await self.bot.pool.fetchrow(
+        event = await self.bot.pool.fetch(
             '''
             SELECT
-                join_channel,
-                join_message,
-                welcome_message
+                event_types,
+                channel_id,
+                message
             FROM
                 event
             WHERE
                 guild_id = $1
+                AND (
+                    'join' = ANY(event_types)
+                    OR 'weclome' = ANY(event_types)
+                )
             ''', guild.id
         )
-        if guild_details:
-            *on_join, welcome = guild_details
-            await self.join_handler(on_join, welcome, member, guild)
+        if event:
+            await self.join_handler(event, member)
 
         # Handle special events for club and society servers
         if await self.join_club_or_society(member):
