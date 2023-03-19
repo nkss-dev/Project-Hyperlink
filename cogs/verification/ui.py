@@ -1,8 +1,9 @@
 import discord
-
 import traceback
 
+from cogs.verification.utils import authenticate
 from main import ProjectHyperlink
+from utils.utils import assign_student_roles
 
 
 class VerificationView(discord.ui.View):
@@ -34,11 +35,21 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
         self.bot = bot
 
     async def on_submit(self, interaction: discord.Interaction):
+        # To please linter gods:
+        assert isinstance(interaction.user, discord.Member)
+        assert interaction.channel_id is not None
+        assert self.roll.value is not None
+
+        member = interaction.user
+
         student = await self.bot.pool.fetchrow(
             f"""
             SELECT
+                section,
                 name,
-                email
+                email,
+                batch,
+                hostel_id
             FROM
                 student
             WHERE
@@ -58,11 +69,40 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
             ephemeral=True,
         )
 
+        verified = await authenticate(
+            self.roll.value,
+            student["name"],
+            student["email"],
+            self.bot,
+            member,
+            interaction.channel_id,
+            interaction.followup.send,
+        )
+        if verified is False:
+            return
+
+        await interaction.followup.send(
+            f"Your email has been verified successfully, {member.mention}!"
+        )
+
+        await assign_student_roles(
+            member,
+            (
+                student["section"][:2],
+                student["section"][:4],
+                student["section"][:3] + student["section"][4:].zfill(2),
+                student["batch"],
+                student["hostel_id"],
+            ),
+            self.bot.pool,
+        )
+        if member.display_name != student["name"]:
+            first_name = student["name"].split(" ", 1)[0]
+            await member.edit(nick=first_name)
+
     async def on_error(
         self, interaction: discord.Interaction, error: Exception
     ) -> None:
-        await interaction.response.send_message(
-            "Oops! Something went wrong.", ephemeral=True
-        )
+        await interaction.followup.send("Oops! Something went wrong.", ephemeral=True)
 
         traceback.print_exception(type(error), error, error.__traceback__)
