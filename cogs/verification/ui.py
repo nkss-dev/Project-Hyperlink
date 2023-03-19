@@ -7,20 +7,21 @@ from utils.utils import assign_student_roles
 
 
 class VerificationView(discord.ui.View):
-    def __init__(self, label: str, bot: ProjectHyperlink):
+    def __init__(self, label: str, bot: ProjectHyperlink, fmv):
         super().__init__()
 
-        button = VerificationButton(label, bot)
+        button = VerificationButton(label, bot, fmv)
         self.add_item(button)
 
 
 class VerificationButton(discord.ui.Button):
-    def __init__(self, label, bot: ProjectHyperlink, **kwargs):
+    def __init__(self, label, bot: ProjectHyperlink, fmv, **kwargs):
         super().__init__(label=label, style=discord.ButtonStyle.green, **kwargs)
         self.bot = bot
+        self.fmv = fmv
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(VerificationModal(self.bot))
+        await interaction.response.send_modal(VerificationModal(self.bot, self.fmv))
 
 
 class VerificationModal(discord.ui.Modal, title="Verification"):
@@ -28,11 +29,13 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
         label="Roll Number",
         placeholder="12022005",
         max_length=8,
+        min_length=8,
     )
 
-    def __init__(self, bot: ProjectHyperlink):
+    def __init__(self, bot: ProjectHyperlink, fmv):
         super().__init__()
         self.bot = bot
+        self.fmv = fmv
 
     async def on_submit(self, interaction: discord.Interaction):
         # To please linter gods:
@@ -59,13 +62,13 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
         )
         if not student:
             await interaction.response.send_message(
-                f"{self.roll.value} was not found in our database. Please try again with a correct roll number. If you think this was a mistake, contact a moderator",
+                self.fmv("roll-notfound", {"roll": self.roll.value}),
                 ephemeral=True,
             )
             return
 
         await interaction.response.send_message(
-            f"An OTP has been sent to `{student['email']}`! Please paste the OTP below",
+            self.fmv("email-sent", {"email": student["email"]}),
             ephemeral=True,
         )
 
@@ -82,7 +85,7 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
             return
 
         await interaction.followup.send(
-            f"Your email has been verified successfully, {member.mention}!"
+            self.fmv("verification-success", {"mention": member.mention})
         )
 
         await assign_student_roles(

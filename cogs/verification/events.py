@@ -72,7 +72,11 @@ class VerificationEvents(commands.Cog):
             )
             return
 
-        view = VerificationView(self.l10n.format_value("verify-button-label"), self.bot)
+        view = VerificationView(
+            self.l10n.format_value("verify-button-label"),
+            self.bot,
+            self.l10n.format_value,
+        )
         await channel.send(
             self.l10n.format_value("verification-prompt", {"member": member.mention}),
             view=view,
