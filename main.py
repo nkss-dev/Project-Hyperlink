@@ -1,6 +1,6 @@
 import aiohttp
-from aiohttp import web
 import asyncio
+import logging
 import re
 import sys
 import traceback
@@ -13,6 +13,7 @@ from discord.ext import commands
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
 from api.main import app
+from utils.logger import BotLogHandler
 
 initial_extensions = (
     'cogs.drive',
@@ -114,6 +115,9 @@ class ProjectHyperlink(commands.Bot):
 
 async def main():
     async with ProjectHyperlink() as bot:
+        bot.logger = logging.getLogger("BotLogger")
+        bot.logger.addHandler(BotLogHandler(bot, 1086928165303234680))
+
         try:
             pool = await asyncpg.create_pool(
                 dsn=config.dsn,
