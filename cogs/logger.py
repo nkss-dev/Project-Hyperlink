@@ -10,12 +10,12 @@ class Logger(commands.Cog):
         self.channel_ids: dict[int, tuple[int, int]] = {}
 
     async def cog_load(self):
-        guild_channels = await self.bot.conn.fetch(
-            'SELECT id, edit_channel, delete_channel FROM guild'
+        guild_channels = await self.bot.pool.fetch(
+            'SELECT id, edit_log, delete_log FROM guild'
         )
         for channels in guild_channels:
-            edit = channels['edit_channel']
-            delete = channels['delete_channel']
+            edit = channels['edit_log']
+            delete = channels['delete_log']
             self.channel_ids[channels['id']] = edit, delete
 
     @commands.Cog.listener()
