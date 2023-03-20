@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 
-from cogs.verification.ui import VerificationView
 from cogs.verification.utils import post_verification_handler
 from main import ProjectHyperlink
 
@@ -71,14 +70,8 @@ class VerificationEvents(commands.Cog):
             await post_verification_handler(member, student, self.bot.pool)
             return
 
-        view = VerificationView(
-            self.l10n.format_value("verify-button-label"),
-            self.bot,
-            self.l10n.format_value,
-        )
         await channel.send(
             self.l10n.format_value("verification-prompt", {"member": member.mention}),
-            view=view,
         )
 
 
