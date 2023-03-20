@@ -81,14 +81,10 @@ async def authenticate(
     return True
 
 
-async def assign_student_roles(
+async def post_verification_handler(
     member: discord.Member, student: dict[str, str], conn: asyncpg.Pool
 ):
-    """Add multiple college related roles to the user.
-
-    These currently include:
-        Branch, Section, Sub-Section, Hostel, Clubs
-    """
+    """Do post successful verification stuff"""
     groups = await conn.fetch(
         """
         SELECT
@@ -115,3 +111,7 @@ async def assign_student_roles(
         if role := discord.utils.get(member.guild.roles, name=str(role_name)):
             roles.append(role)
     await member.add_roles(*roles)
+
+    if member.display_name != student["name"]:
+        first_name = student["name"].split(" ", 1)[0]
+        await member.edit(nick=first_name)

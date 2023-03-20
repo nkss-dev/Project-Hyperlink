@@ -2,7 +2,7 @@ import discord
 import traceback
 
 from cogs.verification.utils import authenticate
-from cogs.verification.utils import assign_student_roles
+from cogs.verification.utils import post_verification_handler
 from main import ProjectHyperlink
 
 
@@ -89,10 +89,7 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
             self.fmv("verification-success", {"mention": member.mention})
         )
 
-        await assign_student_roles(member, student, self.bot.pool)
-        if member.display_name != student["name"]:
-            first_name = student["name"].split(" ", 1)[0]
-            await member.edit(nick=first_name)
+        await post_verification_handler(member, student, self.bot.pool)
 
     async def on_error(
         self, interaction: discord.Interaction, error: Exception

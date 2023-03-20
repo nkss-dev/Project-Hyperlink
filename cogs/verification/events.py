@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from cogs.verification.ui import VerificationView
-from cogs.verification.utils import assign_student_roles
+from cogs.verification.utils import post_verification_handler
 from main import ProjectHyperlink
 
 GUILD_IDS = {
@@ -62,7 +62,7 @@ class VerificationEvents(commands.Cog):
                 await member.kick(reason=message)
                 return
 
-            await assign_student_roles(member, student, self.bot.pool)
+            await post_verification_handler(member, student, self.bot.pool)
             return
 
         view = VerificationView(
