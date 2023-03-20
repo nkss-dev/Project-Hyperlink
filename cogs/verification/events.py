@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+from cogs.verification.ui import VerificationView
 from cogs.verification.utils import post_verification_handler
 from main import ProjectHyperlink
 
@@ -16,6 +17,26 @@ class VerificationEvents(commands.Cog):
 
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        guild = interaction.guild
+        l10n = await self.bot.get_l10n(guild.id if guild else 0)
+        self.fmv = l10n.format_value
+        return True
+
+    @discord.app_commands.command()
+    async def verification(self, interaction: discord.Interaction):
+        """Send a verification button"""
+        view = VerificationView(
+            self.fmv("verify-button-label"),
+            self.bot,
+            self.fmv,
+        )
+
+        await interaction.response.send_message(
+            self.fmv("verification-message"),
+            view=view,
+        )
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -41,6 +62,7 @@ class VerificationEvents(commands.Cog):
             SELECT
                 roll_number,
                 section,
+                name,
                 email,
                 batch,
                 hostel_id,
