@@ -57,7 +57,13 @@ class VerificationEvents(commands.Cog):
         # TODO: Remove `is_verified` column from the database
         if student and student["is_verified"]:
             if GUILD_IDS[guild.id] != 0 and GUILD_IDS[guild.id] != student["batch"]:
-                message = self.l10n.format_value("incorrect server")
+                message = self.l10n.format_value(
+                    "restricted-guild",
+                    {
+                        "server_batch": GUILD_IDS[guild.id],
+                        "student_batch": student["batch"],
+                    },
+                )
                 await member.send(message)
                 await member.kick(reason=message)
                 return

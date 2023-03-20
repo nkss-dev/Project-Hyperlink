@@ -1,9 +1,14 @@
 import discord
 import traceback
 
-from cogs.verification.utils import authenticate
-from cogs.verification.utils import post_verification_handler
+from cogs.verification.utils import authenticate, post_verification_handler
 from main import ProjectHyperlink
+
+GUILD_IDS = {
+    904633974306005033: 0,
+    783215699707166760: 2024,
+    915517972594982942: 2025,
+}
 
 
 class VerificationView(discord.ui.View):
@@ -66,6 +71,14 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
                 self.fmv("roll-notfound", {"roll": self.roll.value}),
                 ephemeral=True,
             )
+            return
+
+        if (
+            GUILD_IDS[member.guild.id] != 0
+            and GUILD_IDS[member.guild.id] != student["batch"]
+        ):
+            message = self.fmv("incorrect-guild", {"batch": student["batch"]})
+            await interaction.response.send_message(message, ephemeral=True)
             return
 
         await interaction.response.send_message(
