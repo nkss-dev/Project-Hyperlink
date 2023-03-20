@@ -40,6 +40,7 @@ class VerificationEvents(commands.Cog):
         student: dict[str, str] = await self.bot.pool.fetchrow(
             """
             SELECT
+                roll_number,
                 section,
                 email,
                 batch,
@@ -61,15 +62,7 @@ class VerificationEvents(commands.Cog):
                 await member.kick(reason=message)
                 return
 
-            await assign_student_roles(
-                member,
-                (
-                    student["section"][:2],
-                    student["batch"],
-                    student["hostel_id"],
-                ),
-                self.bot.pool,
-            )
+            await assign_student_roles(member, student, self.bot.pool)
             return
 
         view = VerificationView(

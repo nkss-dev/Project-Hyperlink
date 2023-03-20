@@ -48,6 +48,7 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
         student: dict[str, str] = await self.bot.pool.fetchrow(
             f"""
             SELECT
+                roll_number,
                 section,
                 name,
                 email,
@@ -88,17 +89,7 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
             self.fmv("verification-success", {"mention": member.mention})
         )
 
-        await assign_student_roles(
-            member,
-            (
-                student["section"][:2],
-                student["section"][:4],
-                student["section"][:3] + student["section"][4:].zfill(2),
-                student["batch"],
-                student["hostel_id"],
-            ),
-            self.bot.pool,
-        )
+        await assign_student_roles(member, student, self.bot.pool)
         if member.display_name != student["name"]:
             first_name = student["name"].split(" ", 1)[0]
             await member.edit(nick=first_name)

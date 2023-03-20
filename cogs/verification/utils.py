@@ -82,7 +82,7 @@ async def authenticate(
 
 
 async def assign_student_roles(
-    member: discord.Member, details: tuple[str, ...], conn: asyncpg.Pool
+    member: discord.Member, student: dict[str, str], conn: asyncpg.Pool
 ):
     """Add multiple college related roles to the user.
 
@@ -92,18 +92,21 @@ async def assign_student_roles(
     groups = await conn.fetch(
         """
         SELECT
-            name,
-            alias
+            COALESCE(club.alias, club.name)
         FROM
-            club_discord_user
+            club
         WHERE
-            discord_id = $1
+            club.name = ANY(SELECT club_name FROM club_member WHERE roll_number = $1)
         """,
-        member.id,
+        student["roll_number"],
     )
 
     role_names = (
-        *details,
+        student["section"][:2],
+        student["section"][:4],
+        student["section"][:3] + student["section"][4:].zfill(2),
+        student["batch"],
+        student["hostel_id"],
         *[group["alias"] or group["name"] for group in groups],
         "verified",
     )
