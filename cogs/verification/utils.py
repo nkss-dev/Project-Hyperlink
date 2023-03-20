@@ -88,7 +88,7 @@ async def post_verification_handler(
     groups = await conn.fetch(
         """
         SELECT
-            COALESCE(club.alias, club.name)
+            COALESCE(club.alias, club.name) AS short_name
         FROM
             club
         WHERE
@@ -103,7 +103,7 @@ async def post_verification_handler(
         student["section"][:3] + student["section"][4:].zfill(2),
         student["batch"],
         student["hostel_id"],
-        *[group["alias"] or group["name"] for group in groups],
+        *[group["short_name"] for group in groups],
         "verified",
     )
     roles = []
