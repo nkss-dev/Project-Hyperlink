@@ -2,6 +2,7 @@ import re
 import smtplib
 from email.message import EmailMessage
 
+import asyncpg
 import config
 import discord
 
@@ -78,3 +79,36 @@ async def authenticate(
     # TODO: Kick old account from affiliated servers
 
     return True
+
+
+async def assign_student_roles(
+    member: discord.Member, details: tuple[str, ...], conn: asyncpg.Pool
+):
+    """Add multiple college related roles to the user.
+
+    These currently include:
+        Branch, Section, Sub-Section, Hostel, Clubs
+    """
+    groups = await conn.fetch(
+        """
+        SELECT
+            name,
+            alias
+        FROM
+            club_discord_user
+        WHERE
+            discord_id = $1
+        """,
+        member.id,
+    )
+
+    role_names = (
+        *details,
+        *[group["alias"] or group["name"] for group in groups],
+        "verified",
+    )
+    roles = []
+    for role_name in role_names:
+        if role := discord.utils.get(member.guild.roles, name=str(role_name)):
+            roles.append(role)
+    await member.add_roles(*roles)

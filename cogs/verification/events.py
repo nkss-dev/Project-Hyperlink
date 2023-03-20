@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 
 from cogs.verification.ui import VerificationView
+from cogs.verification.utils import assign_student_roles
 from main import ProjectHyperlink
-from utils.utils import assign_student_roles
 
 GUILD_IDS = {
     904633974306005033: 0,
@@ -37,7 +37,7 @@ class VerificationEvents(commands.Cog):
             return
 
         # TODO: Fetch to breadboard instead
-        student = await self.bot.pool.fetchrow(
+        student: dict[str, str] = await self.bot.pool.fetchrow(
             """
             SELECT
                 section,

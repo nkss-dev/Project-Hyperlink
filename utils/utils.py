@@ -7,35 +7,6 @@ from random import random
 import discord
 
 
-async def assign_student_roles(member, details, conn):
-    """Add multiple college related roles to the user.
-
-    These currently include:
-        Branch, Section, Sub-Section, Hostel, Clubs
-    """
-    groups = await conn.fetch(
-        '''
-        SELECT
-            name,
-            alias
-        FROM
-            club_discord_user
-        WHERE
-            discord_id = $1
-        ''', member.id
-    )
-
-    role_names = (
-        *details,
-        *[group['alias'] or group['name'] for group in groups]
-    )
-    roles = []
-    for role_name in role_names:
-        if role := discord.utils.get(member.guild.roles, name=str(role_name)):
-            roles.append(role)
-    await member.add_roles(*roles)
-
-
 async def deleteOnReaction(ctx, message: discord.Message, emoji: str = '🗑️'):
     """Delete the given message when a certain reaction is used"""
     await message.add_reaction(emoji)

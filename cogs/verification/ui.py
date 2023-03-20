@@ -2,8 +2,8 @@ import discord
 import traceback
 
 from cogs.verification.utils import authenticate
+from cogs.verification.utils import assign_student_roles
 from main import ProjectHyperlink
-from utils.utils import assign_student_roles
 
 
 class VerificationView(discord.ui.View):
@@ -45,7 +45,7 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
 
         member = interaction.user
 
-        student = await self.bot.pool.fetchrow(
+        student: dict[str, str] = await self.bot.pool.fetchrow(
             f"""
             SELECT
                 section,
