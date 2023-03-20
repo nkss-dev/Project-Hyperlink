@@ -26,6 +26,15 @@ class VerificationButton(discord.ui.Button):
         self.fmv = fmv
 
     async def callback(self, interaction: discord.Interaction):
+        # TODO: Change this to use the check
+        for role in interaction.user.roles:
+            if role.name == "verified":
+                await interaction.response.send_message(
+                    self.fmv("verified-already"),
+                    ephemeral=True,
+                )
+                return
+
         await interaction.response.send_modal(VerificationModal(self.bot, self.fmv))
 
 
