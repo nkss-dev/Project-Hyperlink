@@ -13,7 +13,7 @@ GUILD_IDS = {
 
 class VerificationView(discord.ui.View):
     def __init__(self, label: str, bot: ProjectHyperlink, fmv):
-        super().__init__()
+        super().__init__(timeout=None)
 
         button = VerificationButton(label, bot, fmv)
         self.add_item(button)
