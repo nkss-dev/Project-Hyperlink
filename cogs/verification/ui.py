@@ -1,15 +1,10 @@
 from typing import Any
 
 import discord
+from discord.app_commands import AppCommandError
 
 from cogs.verification.utils import verify
 from main import ProjectHyperlink
-
-GUILD_IDS = {
-    904633974306005033: 0,
-    783215699707166760: 2024,
-    915517972594982942: 2025,
-}
 
 
 class VerificationView(discord.ui.View):
@@ -22,11 +17,14 @@ class VerificationView(discord.ui.View):
 
     async def on_error(
         self,
-        interaction: discord.Interaction,
+        interaction: discord.Interaction[ProjectHyperlink],
         error: Exception,
         _: discord.ui.Item[Any],
     ) -> None:
-        await self.bot.tree.on_error(interaction, error)
+        if isinstance(error, AppCommandError):
+            await self.bot.tree.on_error(interaction, error)
+        else:
+            self.bot.logger.critical(error)
 
 
 class VerificationButton(discord.ui.Button):
@@ -64,6 +62,9 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
         await verify(self.bot, interaction, interaction.user, self.roll.value)
 
     async def on_error(
-        self, interaction: discord.Interaction, error: Exception
+        self, interaction: discord.Interaction[ProjectHyperlink], error: Exception
     ) -> None:
-        await self.bot.tree.on_error(interaction, error)
+        if isinstance(error, AppCommandError):
+            await self.bot.tree.on_error(interaction, error)
+        else:
+            self.bot.logger.critical(error)
