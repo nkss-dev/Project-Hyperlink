@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from cogs.verification.ui import VerificationView
-from cogs.verification.utils import post_verification_handler
+from cogs.verification.utils import post_verification_handler, verify
 from main import ProjectHyperlink
 
 GUILD_IDS = {
@@ -34,6 +34,24 @@ class VerificationEvents(commands.Cog):
             self.fmv("verification-message"),
             view=view,
         )
+
+    @discord.app_commands.command(name="verify")
+    @discord.app_commands.guild_only()
+    async def verify_command(self, interaction: discord.Interaction, roll: str):
+        assert isinstance(interaction.user, discord.Member)
+
+        self.guild_batch = await self.bot.pool.fetchval(
+            "SELECT batch FROM affiliated_guild WHERE guild_id = $1",
+            interaction.guild.id,
+        )
+        if self.guild_batch is None:
+            raise commands.CheckFailure("RestrictedGuild")
+
+        for role in interaction.user.roles:
+            if role.name == "verified":
+                raise discord.app_commands.CheckFailure("UserAlreadyVerified")
+
+        await verify(self.bot, interaction, interaction.user, roll)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
