@@ -412,6 +412,9 @@ class Events(commands.Cog):
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.reply(error)
 
+        elif isinstance(error, commands.MaxConcurrencyReached):
+            await ctx.reply(l10n.format_value(type(error).__name__))
+
         else:
             self.bot.logger.error(error)
 
