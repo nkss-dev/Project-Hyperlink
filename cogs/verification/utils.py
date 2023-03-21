@@ -9,6 +9,12 @@ import discord
 from main import ProjectHyperlink
 from utils.utils import generateID
 
+GUILD_IDS = {
+    904633974306005033: 0,
+    783215699707166760: 2024,
+    915517972594982942: 2025,
+}
+
 
 async def authenticate(
     roll: str,
@@ -115,3 +121,64 @@ async def post_verification_handler(
     if member.display_name != student["name"]:
         first_name = student["name"].split(" ", 1)[0]
         await member.edit(nick=first_name)
+
+
+async def verify(
+    bot: ProjectHyperlink,
+    interaction: discord.Interaction,
+    member: discord.Member,
+    roll: str,
+):
+    assert interaction.channel_id is not None
+
+    l10n = await bot.get_l10n(interaction.guild.id if interaction.guild else 0)
+
+    student: dict[str, str] = await bot.pool.fetchrow(
+        f"""
+        SELECT
+            roll_number,
+            section,
+            name,
+            email,
+            batch,
+            hostel_id
+        FROM
+            student
+        WHERE
+            roll_number = $1
+        """,
+        roll,
+    )
+    if not student:
+        raise discord.app_commands.CheckFailure("NotFound-roll", {"roll": roll})
+
+    if (
+        GUILD_IDS[member.guild.id] != 0
+        and GUILD_IDS[member.guild.id] != student["batch"]
+    ):
+        raise discord.app_commands.CheckFailure(
+            "BadRequest-incorrect-guild", {"batch": student["batch"]}
+        )
+
+    await interaction.response.send_message(
+        l10n.format_value("email-sent", {"email": student["email"]}),
+        ephemeral=True,
+    )
+
+    verified = await authenticate(
+        roll,
+        student["name"],
+        student["email"],
+        bot,
+        member,
+        interaction.channel_id,
+        interaction.followup.send,
+    )
+    if verified is False:
+        return
+
+    await interaction.followup.send(
+        l10n.format_value("verification-success", {"mention": member.mention})
+    )
+
+    await post_verification_handler(member, student, bot.pool)

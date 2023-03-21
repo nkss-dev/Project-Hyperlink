@@ -60,64 +60,10 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
         self.fmv = fmv
 
     async def on_submit(self, interaction: discord.Interaction):
-        # To please linter gods:
         assert isinstance(interaction.user, discord.Member)
-        assert interaction.channel_id is not None
         assert self.roll.value is not None
 
-        member = interaction.user
-
-        student: dict[str, str] = await self.bot.pool.fetchrow(
-            f"""
-            SELECT
-                roll_number,
-                section,
-                name,
-                email,
-                batch,
-                hostel_id
-            FROM
-                student
-            WHERE
-                roll_number = $1
-            """,
-            self.roll.value,
-        )
-        if not student:
-            raise discord.app_commands.CheckFailure(
-                "NotFound-roll", {"roll": self.roll.value}
-            )
-
-        if (
-            GUILD_IDS[member.guild.id] != 0
-            and GUILD_IDS[member.guild.id] != student["batch"]
-        ):
-            raise discord.app_commands.CheckFailure(
-                "BadRequest-incorrect-guild", {"batch": student["batch"]}
-            )
-
-        await interaction.response.send_message(
-            self.fmv("email-sent", {"email": student["email"]}),
-            ephemeral=True,
-        )
-
-        verified = await authenticate(
-            self.roll.value,
-            student["name"],
-            student["email"],
-            self.bot,
-            member,
-            interaction.channel_id,
-            interaction.followup.send,
-        )
-        if verified is False:
-            return
-
-        await interaction.followup.send(
-            self.fmv("verification-success", {"mention": member.mention})
-        )
-
-        await post_verification_handler(member, student, self.bot.pool)
+        await verify(self.bot, interaction, interaction.user, self.roll.value)
 
     async def on_error(
         self, interaction: discord.Interaction, error: Exception
