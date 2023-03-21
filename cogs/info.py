@@ -129,6 +129,9 @@ class Info(commands.Cog):
             authorised to view another user's profile. If left blank, the \
             member defaults to the author of the command.
         """
+        if member.bot:
+            raise app_commands.CheckFailure('NotForBot')
+
         guild = interaction.guild
         self.l10n = await self.bot.get_l10n(guild.id if guild else 0)
 
@@ -143,10 +146,7 @@ class Info(commands.Cog):
 
         embed = await self.get_profile_embed(bool(guild), member)
         if not embed:
-            await interaction.response.send_message(
-                self.l10n.format_value('RecordNotFound', {'member': interaction.user.mention}),
-                ephemeral=True
-            )
+            raise app_commands.CheckFailure('RecordNotFound', {'member': member.mention})
         else:
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
