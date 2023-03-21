@@ -25,7 +25,7 @@ class VerificationEvents(commands.Cog):
         return True
 
     @discord.app_commands.command()
-    @discord.app_commands.guild_only()
+    @discord.app_commands.guilds(*GUILD_IDS.keys())
     async def verification(self, interaction: discord.Interaction):
         """Send a verification button"""
         view = VerificationView(self.fmv("verify-button-label"), self.bot)
