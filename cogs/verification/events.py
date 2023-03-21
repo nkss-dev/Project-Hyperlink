@@ -38,6 +38,7 @@ class VerificationEvents(commands.Cog):
     @discord.app_commands.command(name="verify")
     @discord.app_commands.guild_only()
     async def verify_command(self, interaction: discord.Interaction, roll: str):
+        assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
         self.guild_batch = await self.bot.pool.fetchval(
