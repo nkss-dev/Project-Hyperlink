@@ -5,10 +5,11 @@ import re
 from datetime import timedelta
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from main import ProjectHyperlink
-from utils.utils import assign_student_roles, get_group_roles
+from utils.utils import get_group_roles
 
 
 class Events(commands.Cog):
@@ -16,6 +17,8 @@ class Events(commands.Cog):
 
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
+        self.bot.tree.on_error = self.on_app_command_error
+
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
 
@@ -411,6 +414,34 @@ class Events(commands.Cog):
 
         else:
             logging.error(error)
+
+    async def on_app_command_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ):
+        id = interaction.guild.id if interaction.guild else 0
+        l10n = await self.bot.get_l10n(id)
+
+        error_text = error.args[0]
+        error_variables = error.args[1] if len(error.args) > 1 else {}
+
+        if isinstance(error, app_commands.CommandInvokeError):
+            wrapped_error = error.__cause__
+
+            if isinstance(wrapped_error, commands.ExtensionError):
+                await interaction.response.send_message(error.__cause__, ephemeral=True)
+                return
+
+        elif isinstance(error, app_commands.CheckFailure):
+            if isinstance(error, app_commands.MissingPermissions):
+                await interaction.response.send_message(error, ephemeral=True)
+                return
+
+            await interaction.response.send_message(
+                l10n.format_value(error_text, error_variables), ephemeral=True
+            )
+            return
+
+        self.bot.logger.error(error)
 
 
 async def setup(bot):
