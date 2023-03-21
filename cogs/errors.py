@@ -14,9 +14,7 @@ class Errors(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        """Called when any error is thrown"""
         l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
-        print(ctx.guild.id if ctx.guild else 0, l10n)
 
         if isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):
@@ -85,13 +83,24 @@ class Errors(commands.Cog):
             await ctx.reply(l10n.format_value(type(error).__name__))
 
         else:
-            self.bot.logger.error(error)
+            self.bot.logger.error(error, exc_info=True)
 
     async def on_app_command_error(
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ):
         id = interaction.guild.id if interaction.guild else 0
         l10n = await self.bot.get_l10n(id)
+
+        if error.args[0] == "UnhandledError":
+            await interaction.response.send_message(
+                l10n.format_value(error.args[0]), ephemeral=True
+            )
+            self.bot.logger.critical(
+                "Unhandled Error",
+                exc_info=True,
+                extra={"user": interaction.user},
+            )
+            return
 
         error_text = error.args[0]
         error_variables = error.args[1] if len(error.args) > 1 else {}
@@ -113,7 +122,7 @@ class Errors(commands.Cog):
             )
             return
 
-        self.bot.logger.error(error)
+        self.bot.logger.error(error, exc_info=True)
 
 
 async def setup(bot: ProjectHyperlink):

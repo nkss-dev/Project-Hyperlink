@@ -24,7 +24,10 @@ class VerificationView(discord.ui.View):
         if isinstance(error, AppCommandError):
             await self.bot.tree.on_error(interaction, error)
         else:
-            self.bot.logger.critical(error)
+            await self.bot.tree.on_error(
+                interaction,
+                AppCommandError("UnhandledError"),
+            )
 
 
 class VerificationButton(discord.ui.Button):
