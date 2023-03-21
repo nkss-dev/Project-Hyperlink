@@ -17,6 +17,11 @@ class Info(commands.Cog):
 
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
+        self.ctx_menu = app_commands.ContextMenu(
+            name='Profile',
+            callback=self.profile
+        )
+        self.bot.tree.add_command(self.ctx_menu)
 
         with open('db/emojis.json') as f:
             self.emojis = json.load(f)['utility']
@@ -114,11 +119,8 @@ class Info(commands.Cog):
 
         return embed
 
-    @app_commands.command()
-    @app_commands.rename(member='user')
-    @app_commands.describe(member='The user whose profile will be displayed')
     @checks.is_exists()
-    async def profile(self, interaction: discord.Interaction, *, member: Optional[Union[discord.Member, discord.User]]):
+    async def profile(self, interaction: discord.Interaction, member: discord.Member | discord.User):
         """View your or someone else's personal profile card."""
         """
         Parameters
@@ -132,9 +134,7 @@ class Info(commands.Cog):
         guild = interaction.guild
         self.l10n = await self.bot.get_l10n(guild.id if guild else 0)
 
-        if member is None or member == interaction.user:
-            member = interaction.user
-        else:
+        if member != interaction.user:
             auth = await checks.is_authorised().predicate(interaction)
             if auth is False:
                 await interaction.response.send_message(
@@ -146,11 +146,17 @@ class Info(commands.Cog):
         embed = await self.get_profile_embed(bool(guild), member)
         if not embed:
             await interaction.response.send_message(
-                self.l10n.format_value('RecordNotFound', {'member': interaction.user}),
+                self.l10n.format_value('RecordNotFound', {'member': interaction.user.mention}),
                 ephemeral=True
             )
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+    @app_commands.command(name='profile')
+    @app_commands.rename(member='user')
+    @app_commands.describe(member='The user whose profile will be displayed')
+    async def command_profile(self, interaction: discord.Interaction, member: Optional[discord.Member | discord.User]):
+        await self.profile(interaction, member or interaction.user)
 
     # Deprecated command
     @app_commands.command()
