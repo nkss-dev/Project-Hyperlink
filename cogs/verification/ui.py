@@ -2,7 +2,7 @@ from typing import Any
 
 import discord
 
-from cogs.verification.utils import authenticate, post_verification_handler
+from cogs.verification.utils import verify
 from main import ProjectHyperlink
 
 GUILD_IDS = {
@@ -13,11 +13,11 @@ GUILD_IDS = {
 
 
 class VerificationView(discord.ui.View):
-    def __init__(self, label: str, bot: ProjectHyperlink, fmv):
+    def __init__(self, label: str, bot: ProjectHyperlink):
         super().__init__(timeout=None)
         self.bot = bot
 
-        button = VerificationButton(label, bot, fmv)
+        button = VerificationButton(label, bot)
         self.add_item(button)
 
     async def on_error(
@@ -30,10 +30,9 @@ class VerificationView(discord.ui.View):
 
 
 class VerificationButton(discord.ui.Button):
-    def __init__(self, label, bot: ProjectHyperlink, fmv, **kwargs):
+    def __init__(self, label, bot: ProjectHyperlink, **kwargs):
         super().__init__(label=label, style=discord.ButtonStyle.green, **kwargs)
         self.bot = bot
-        self.fmv = fmv
 
     async def callback(self, interaction: discord.Interaction):
         assert isinstance(interaction.user, discord.Member)
@@ -43,7 +42,7 @@ class VerificationButton(discord.ui.Button):
             if role.name == "verified":
                 raise discord.app_commands.CheckFailure("UserAlreadyVerified")
 
-        await interaction.response.send_modal(VerificationModal(self.bot, self.fmv))
+        await interaction.response.send_modal(VerificationModal(self.bot))
 
 
 class VerificationModal(discord.ui.Modal, title="Verification"):
@@ -54,10 +53,9 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
         min_length=8,
     )
 
-    def __init__(self, bot: ProjectHyperlink, fmv):
+    def __init__(self, bot: ProjectHyperlink):
         super().__init__()
         self.bot = bot
-        self.fmv = fmv
 
     async def on_submit(self, interaction: discord.Interaction):
         assert isinstance(interaction.user, discord.Member)
