@@ -39,7 +39,7 @@ class BotLogHandler(logging.Handler):
                 )
                 embed.add_field(name="Traceback", value=f"```{tb}```", inline=False)
 
-            user: discord.Member | discord.User | None = record.__dict__.get("user", {})
+            user: discord.Member | discord.User | None = record.__dict__.get("user")
             if user is not None:
                 embed.add_field(name="Invoked by", value=f"{user.mention}: {user.id}")
 
