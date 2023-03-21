@@ -413,7 +413,7 @@ class Events(commands.Cog):
             await ctx.reply(error)
 
         else:
-            logging.error(error)
+            self.bot.logger.error(error)
 
     async def on_app_command_error(
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
