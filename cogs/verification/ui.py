@@ -1,5 +1,6 @@
+from typing import Any
+
 import discord
-import traceback
 
 from cogs.verification.utils import authenticate, post_verification_handler
 from main import ProjectHyperlink
@@ -14,9 +15,18 @@ GUILD_IDS = {
 class VerificationView(discord.ui.View):
     def __init__(self, label: str, bot: ProjectHyperlink, fmv):
         super().__init__(timeout=None)
+        self.bot = bot
 
         button = VerificationButton(label, bot, fmv)
         self.add_item(button)
+
+    async def on_error(
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        _: discord.ui.Item[Any],
+    ) -> None:
+        await self.bot.tree.on_error(interaction, error)
 
 
 class VerificationButton(discord.ui.Button):
@@ -26,14 +36,12 @@ class VerificationButton(discord.ui.Button):
         self.fmv = fmv
 
     async def callback(self, interaction: discord.Interaction):
+        assert isinstance(interaction.user, discord.Member)
+
         # TODO: Change this to use the check
         for role in interaction.user.roles:
             if role.name == "verified":
-                await interaction.response.send_message(
-                    self.fmv("verified-already"),
-                    ephemeral=True,
-                )
-                return
+                raise discord.app_commands.CheckFailure("UserAlreadyVerified")
 
         await interaction.response.send_modal(VerificationModal(self.bot, self.fmv))
 
@@ -76,19 +84,17 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
             self.roll.value,
         )
         if not student:
-            await interaction.response.send_message(
-                self.fmv("roll-notfound", {"roll": self.roll.value}),
-                ephemeral=True,
+            raise discord.app_commands.CheckFailure(
+                "NotFound-roll", {"roll": self.roll.value}
             )
-            return
 
         if (
             GUILD_IDS[member.guild.id] != 0
             and GUILD_IDS[member.guild.id] != student["batch"]
         ):
-            message = self.fmv("incorrect-guild", {"batch": student["batch"]})
-            await interaction.response.send_message(message, ephemeral=True)
-            return
+            raise discord.app_commands.CheckFailure(
+                "BadRequest-incorrect-guild", {"batch": student["batch"]}
+            )
 
         await interaction.response.send_message(
             self.fmv("email-sent", {"email": student["email"]}),
@@ -116,6 +122,4 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
     async def on_error(
         self, interaction: discord.Interaction, error: Exception
     ) -> None:
-        await interaction.followup.send("Oops! Something went wrong.", ephemeral=True)
-
-        traceback.print_exception(type(error), error, error.__traceback__)
+        await self.bot.tree.on_error(interaction, error)
