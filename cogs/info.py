@@ -38,12 +38,10 @@ class Info(commands.Cog):
             f'{config.api_url}/discord/users/{member.id}',
             headers={'Authorization': f'Bearer {config.api_token}'}
         ) as resp:
-            assert resp.status == 200
-            data = await resp.json()
-        student = data['data']
-
-        if not student:
-            return discord.Embed()
+            if resp.status == 200:
+                student = (await resp.json())['data']
+            else:
+                return discord.Embed()
 
         # Set color based on context
         if guild and isinstance(member, discord.Member):
