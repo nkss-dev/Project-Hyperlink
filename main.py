@@ -16,7 +16,9 @@ from api.main import app
 from utils.logger import BotLogHandler
 
 initial_extensions = (
+    'cogs.verification.verification',
     'cogs.drive',
+    'cogs.errors',
     'cogs.events',
     'cogs.help',
     'cogs.ign',
