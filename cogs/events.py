@@ -1,4 +1,3 @@
-import json
 import logging
 import time
 import re
@@ -18,9 +17,6 @@ class Events(commands.Cog):
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
         self.bot.tree.on_error = self.on_app_command_error
-
-        with open('db/emojis.json') as f:
-            self.emojis = json.load(f)['utility']
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -400,12 +396,6 @@ class Events(commands.Cog):
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, discord.errors.Forbidden):
                 await ctx.reply(l10n.format_value('CommandInvokeError-Forbidden'))
-
-            elif isinstance(error.original, commands.ExtensionError):
-                await ctx.reply(error.original)
-                await ctx.message.remove_reaction(
-                    self.emojis['loading'], self.bot.user)
-
             else:
                 raise error
 
