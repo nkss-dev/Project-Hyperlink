@@ -70,6 +70,10 @@ async def authenticate(
                 "message", timeout=300.0, check=check
             )
         except asyncio.TimeoutError:
+            bot.logger.warning(
+                "Verification timed out in `{member.guild.name}`",
+                extra={"user": member},
+            )
             raise discord.app_commands.CheckFailure(
                 "TimeoutError-otp", {"author": member.mention}
             )
