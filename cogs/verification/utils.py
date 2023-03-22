@@ -122,6 +122,8 @@ async def post_verification_handler(
         first_name = student["name"].split(" ", 1)[0]
         await member.edit(nick=first_name)
 
+    # TODO: Allow access to the user in all other affiliated guilds
+
 
 async def verify(
     bot: ProjectHyperlink,
@@ -157,7 +159,12 @@ async def verify(
         and GUILD_IDS[member.guild.id] != student["batch"]
     ):
         raise discord.app_commands.CheckFailure(
-            "BadRequest-incorrect-guild", {"batch": student["batch"]}
+            "BadRequest-restricted-guild",
+            {
+                "roll": student["roll_number"],
+                "server_batch": GUILD_IDS[member.guild.id],
+                "student_batch": student["batch"],
+            },
         )
 
     await interaction.response.send_message(
