@@ -1,3 +1,4 @@
+import asyncio
 import re
 import smtplib
 from email.message import EmailMessage
@@ -5,6 +6,7 @@ from email.message import EmailMessage
 import asyncpg
 import config
 import discord
+from fluent.runtime import FluentLocalization
 
 from main import ProjectHyperlink
 from utils.utils import generateID
@@ -17,30 +19,31 @@ GUILD_IDS = {
 
 
 async def authenticate(
-    roll: str,
     name: str,
     email: str,
     bot: ProjectHyperlink,
-    author: discord.Member,
-    channel_id: int,
-    send_message,
+    member: discord.Member,
+    interaction: discord.Interaction[ProjectHyperlink],
+    l10n: FluentLocalization,
 ) -> bool:
     """Authenticate a given Disord user by verification through email."""
     otp = generateID(seed="01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
     # Creating the email
     msg = EmailMessage()
-    msg["Subject"] = f"Verification of {author} in {author.guild}"
+    msg["Subject"] = f"Verification of {member} in {member.guild}"
     msg["From"] = config.email
     msg["To"] = email
 
     variables = {
         "{$user}": name,
         "{$otp}": otp,
-        "{$guild}": author.guild.name,
+        "{$guild}": member.guild.name,
         "{$channel}": "https://discord.com/channels/"
-        + f"{author.guild.id}/{channel_id}",
+        + f"{member.guild.id}/{interaction.channel_id}",
     }
+
+    # TODO: Parse HTML using html.parser.HTML instead of RegEx
     with open("utils/verification.html") as f:
         html = f.read()
     html = re.sub(r"({\$\w+})", lambda x: variables[x.group(0)], html)
@@ -52,17 +55,26 @@ async def authenticate(
         smtp.send_message(msg)
 
     def check(msg: discord.Message):
-        return msg.author == author and msg.channel.id == channel_id
+        return msg.author == member and msg.channel.id == interaction.channel_id
 
     while True:
-        message: discord.Message = await bot.wait_for("message", check=check)
-        content = message.content
-        if otp == content:
-            break
+        try:
+            message: discord.Message = await bot.wait_for(
+                "message", timeout=10.0, check=check
+            )
+        except asyncio.TimeoutError:
+            raise discord.app_commands.CheckFailure(
+                "TimeoutError-otp", {"author": member.mention}
+            )
+        else:
+            temp_otp = message.content
+            if otp == temp_otp:
+                break
 
-        await send_message(
-            f"`{content}` is incorrent. Please try again with the correct OTP."
-        )
+            await interaction.followup.send(
+                l10n.format_value("BadRequest-otp", {"OTP": temp_otp}),
+                ephemeral=True,
+            )
 
     return True
 
@@ -128,7 +140,7 @@ async def post_verification_handler(
 
 async def verify(
     bot: ProjectHyperlink,
-    interaction: discord.Interaction,
+    interaction: discord.Interaction[ProjectHyperlink],
     member: discord.Member,
     roll: str,
 ):
@@ -174,13 +186,7 @@ async def verify(
     )
 
     verified = await authenticate(
-        roll,
-        student["name"],
-        student["email"],
-        bot,
-        member,
-        interaction.channel_id,
-        interaction.followup.send,
+        student["name"], student["email"], bot, member, interaction, l10n
     )
     if verified is False:
         return
