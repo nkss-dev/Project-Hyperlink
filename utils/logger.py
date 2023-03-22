@@ -16,7 +16,6 @@ class BotLogHandler(logging.Handler):
             "DEBUG": discord.Color.blurple(),
             "INFO": discord.Color.blurple(),
             "WARNING": discord.Color.orange(),
-            "WARN": discord.Color.orange(),
             "ERROR": discord.Color.red(),
             "EXCEPTION": discord.Color.red(),
             "CRITICAL": discord.Color.red(),
