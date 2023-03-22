@@ -18,7 +18,7 @@ class Prefix(commands.Cog):
         return map(
             lambda prefix: prefix['prefix'],
             await self.bot.pool.fetch(
-                'SELECT prefix FROM prefix WHERE id = $1', id
+                'SELECT prefix FROM bot_prefix WHERE guild_id = $1', id
             )
         )
 
@@ -67,7 +67,7 @@ class Prefix(commands.Cog):
             return
 
         await self.bot.pool.execute(
-            'DELETE FROM prefix WHERE id = $1 AND prefix = $2',
+            'DELETE FROM bot_prefix WHERE guild_id = $1 AND prefix = $2',
             ctx.guild.id, prefix
         )
 
@@ -83,7 +83,7 @@ class Prefix(commands.Cog):
             The prefix to set.
         """
         await self.bot.pool.execute(
-            'DELETE FROM prefix WHERE id = $1', ctx.guild.id
+            'DELETE FROM bot_prefix WHERE guild_id = $1', ctx.guild.id
         )
         await self.bot.pool.execute(
             'INSERT INTO prefix VALUES ($1, $2)', ctx.guild.id, prefix
