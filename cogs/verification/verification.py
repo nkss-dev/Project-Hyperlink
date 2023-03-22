@@ -37,7 +37,9 @@ class VerificationEvents(commands.Cog):
 
     @discord.app_commands.command(name="verify")
     @discord.app_commands.guild_only()
-    async def verify_command(self, interaction: discord.Interaction, roll: str):
+    async def verify_command(
+        self, interaction: discord.Interaction[ProjectHyperlink], roll: str
+    ):
         assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
@@ -45,7 +47,7 @@ class VerificationEvents(commands.Cog):
             if role.name == "verified":
                 raise discord.app_commands.CheckFailure("UserAlreadyVerified")
 
-        await verify(self.bot, interaction, interaction.user, roll)
+        await verify(self.bot, interaction, roll)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

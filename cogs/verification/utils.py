@@ -141,10 +141,12 @@ async def post_verification_handler(
 async def verify(
     bot: ProjectHyperlink,
     interaction: discord.Interaction[ProjectHyperlink],
-    member: discord.Member,
     roll: str,
 ):
     assert interaction.channel_id is not None
+    assert isinstance(interaction.user, discord.Member)
+
+    member = interaction.user
 
     l10n = await bot.get_l10n(interaction.guild.id if interaction.guild else 0)
 

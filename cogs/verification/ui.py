@@ -58,11 +58,11 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
         super().__init__()
         self.bot = bot
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction[ProjectHyperlink]):
         assert isinstance(interaction.user, discord.Member)
         assert self.roll.value is not None
 
-        await verify(self.bot, interaction, interaction.user, self.roll.value)
+        await verify(self.bot, interaction, self.roll.value)
 
     async def on_error(
         self, interaction: discord.Interaction[ProjectHyperlink], error: Exception
