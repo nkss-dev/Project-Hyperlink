@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import traceback
 from aiohttp import ClientSession, web
 from datetime import datetime
 
@@ -12,7 +11,7 @@ from discord.ext import commands
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
 from api.main import app
-from utils.logger import ErrorHandler
+from utils.logger import ErrorHandler, Logger
 
 initial_extensions = [
     "cogs.verification.verification",
@@ -109,7 +108,7 @@ class ProjectHyperlink(commands.Bot):
         return self._l10n[locale]
 
     async def on_ready(self):
-        logging.info(f"Logged in as {self.user} (ID: {self.user.id})")
+        self.logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def setup_hook(self) -> None:
         self.launch_time = discord.utils.utcnow()
@@ -118,13 +117,7 @@ class ProjectHyperlink(commands.Bot):
             try:
                 await self.load_extension(extension)
             except Exception:
-                logging.error(
-                    "\33[91m"
-                    + f"\nFailed to load extension {extension}.\n"
-                    + "\33[93m"
-                    + traceback.format_exc()
-                    + "\33[0m",
-                )
+                self.logger.exception(f"Failed to load extension `{extension}`")
 
         # Launch the API
         app["bot"] = self
@@ -134,12 +127,11 @@ class ProjectHyperlink(commands.Bot):
         port = int(os.environ.get("PORT") or 8080)
         site = web.TCPSite(runner, "0.0.0.0", port)
         await site.start()
-        logging.info(f"API running at localhost:{port}!")
+        self.logger.info(f"API running at localhost:{port}")
 
 
 async def main():
-    logger = logging.getLogger("discord")
-    logger.setLevel(logging.DEBUG)
+    logger = Logger()
 
     async with ClientSession() as client, asyncpg.create_pool(
         dsn=config.dsn, command_timeout=60, max_inactive_connection_lifetime=0
