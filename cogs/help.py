@@ -15,7 +15,7 @@ class HelpEmbed(Embed):
 class Help(commands.HelpCommand):
     """Help commands"""
 
-    def __init__(self, bot):
+    def __init__(self):
         super().__init__(
             command_attrs={
                 'help': 'The help command for the bot',
@@ -23,7 +23,6 @@ class Help(commands.HelpCommand):
                 'aliases': ['commands']
             }
         )
-        self.bot = bot
 
     async def send(self, **kwargs):
         """a shortcut to sending to get_destination"""
@@ -31,7 +30,7 @@ class Help(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
         """Called when `<prefix>help` is called"""
-        l10n = await self.bot.get_l10n(self.context.guild.id if self.context.guild else 0)
+        l10n = await self.context.bot.get_l10n(self.context.guild.id if self.context.guild else 0)
         bot = self.context.me
 
         embed = HelpEmbed(l10n, title=l10n.format_value('help-title', {'name': bot.name}))
@@ -58,7 +57,7 @@ class Help(commands.HelpCommand):
 
     async def send_command_help(self, command):
         """Called when `<prefix>help <command>` is called"""
-        l10n = await self.bot.get_l10n(self.context.guild.id if self.context.guild else 0)
+        l10n = await self.context.bot.get_l10n(self.context.guild.id if self.context.guild else 0)
 
         embed = HelpEmbed(
             l10n,
@@ -100,7 +99,7 @@ class Help(commands.HelpCommand):
 
     async def send_help_embed(self, title, description, commands):
         """helper function to add commands to an embed and send it"""
-        l10n = await self.bot.get_l10n(self.context.guild.id if self.context.guild else 0)
+        l10n = await self.context.bot.get_l10n(self.context.guild.id if self.context.guild else 0)
         embed = HelpEmbed(
             l10n,
             title=title,
@@ -124,9 +123,9 @@ class Help(commands.HelpCommand):
 
     async def send_cog_help(self, cog):
         """Called when `<prefix>help <cog>` is called"""
-        l10n = await self.bot.get_l10n(self.context.guild.id if self.context.guild else 0)
+        l10n = await self.context.bot.get_l10n(self.context.guild.id if self.context.guild else 0)
         title = cog.qualified_name or l10n.format_value('category-notfound')
         await self.send_help_embed(title, cog.description, cog.get_commands())
 
 async def setup(bot):
-    bot.help_command = Help(bot)
+    bot.help_command = Help()
