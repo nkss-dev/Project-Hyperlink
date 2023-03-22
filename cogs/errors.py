@@ -13,7 +13,11 @@ class Errors(commands.Cog):
         self.bot.tree.on_error = self.on_app_command_error
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(
+        self,
+        ctx: commands.Context[ProjectHyperlink],
+        error: commands.CommandError,
+    ):
         l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
 
         if isinstance(error, commands.UserInputError):
@@ -27,13 +31,13 @@ class Errors(commands.Cog):
 
             elif isinstance(error, commands.BadArgument):
                 if isinstance(error, commands.MessageNotFound):
-                    await ctx.reply(error)
+                    await ctx.reply(str(error))
 
                 else:
-                    await ctx.reply(error)
+                    await ctx.reply(str(error))
 
             elif isinstance(error, commands.BadUnionArgument):
-                await ctx.reply(error)
+                await ctx.reply(str(error))
 
             else:
                 raise error
@@ -46,10 +50,10 @@ class Errors(commands.Cog):
                 await ctx.reply(l10n.format_value("CheckFailure-NotOwner"))
 
             elif isinstance(error, commands.MissingPermissions):
-                await ctx.reply(error)
+                await ctx.reply(str(error))
 
             elif isinstance(error, commands.BotMissingPermissions):
-                await ctx.reply(error)
+                await ctx.reply(str(error))
 
             elif isinstance(error, commands.MissingAnyRole):
                 missing_roles = []
@@ -77,7 +81,7 @@ class Errors(commands.Cog):
                 raise error
 
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.reply(error)
+            await ctx.reply(str(error))
 
         elif isinstance(error, commands.MaxConcurrencyReached):
             await ctx.reply(l10n.format_value(type(error).__name__))
@@ -86,7 +90,9 @@ class Errors(commands.Cog):
             self.bot.logger.error(error, exc_info=True)
 
     async def on_app_command_error(
-        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+        self,
+        interaction: discord.Interaction,
+        error: app_commands.AppCommandError,
     ):
         id = interaction.guild.id if interaction.guild else 0
         l10n = await self.bot.get_l10n(id)
