@@ -27,6 +27,11 @@ async def authenticate(
     l10n: FluentLocalization,
 ) -> bool:
     """Authenticate a given Disord user by verification through email."""
+    await interaction.response.send_message(
+        l10n.format_value("email-sent", {"email": email}),
+        ephemeral=True,
+    )
+
     otp = generateID(seed="01234567890123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
     # Creating the email
@@ -62,7 +67,7 @@ async def authenticate(
     while True:
         try:
             message: discord.Message = await bot.wait_for(
-                "message", timeout=10.0, check=check
+                "message", timeout=300.0, check=check
             )
         except asyncio.TimeoutError:
             raise discord.app_commands.CheckFailure(
@@ -189,11 +194,6 @@ async def verify(
                 "student_batch": student["batch"],
             },
         )
-
-    await interaction.response.send_message(
-        l10n.format_value("email-sent", {"email": student["email"]}),
-        ephemeral=True,
-    )
 
     verified = await authenticate(
         student["name"], student["email"], bot, member, interaction, l10n
