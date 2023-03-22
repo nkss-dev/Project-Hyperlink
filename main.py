@@ -68,7 +68,7 @@ class ProjectHyperlink(commands.Bot):
 
         self.pool = db_pool
         self.initial_extensions = initial_extensions
-        self.launch_time: datetime
+        self.launch_time = discord.utils.utcnow()
         self.logger = logger
         self.session = web_client
 
@@ -111,8 +111,6 @@ class ProjectHyperlink(commands.Bot):
         self.logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def setup_hook(self) -> None:
-        self.launch_time = discord.utils.utcnow()
-
         for extension in initial_extensions:
             try:
                 await self.load_extension(extension)
