@@ -41,13 +41,6 @@ class VerificationEvents(commands.Cog):
         assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
-        self.guild_batch = await self.bot.pool.fetchval(
-            "SELECT batch FROM affiliated_guild WHERE guild_id = $1",
-            interaction.guild.id,
-        )
-        if self.guild_batch is None:
-            raise commands.CheckFailure("RestrictedGuild")
-
         for role in interaction.user.roles:
             if role.name == "verified":
                 raise discord.app_commands.CheckFailure("UserAlreadyVerified")
