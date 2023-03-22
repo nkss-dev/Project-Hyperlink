@@ -91,10 +91,13 @@ class Errors(commands.Cog):
         id = interaction.guild.id if interaction.guild else 0
         l10n = await self.bot.get_l10n(id)
 
+        if interaction.response.is_done():
+            send_callback = interaction.followup.send
+        else:
+            send_callback = interaction.response.send_message
+
         if error.args[0] == "UnhandledError":
-            await interaction.response.send_message(
-                l10n.format_value(error.args[0]), ephemeral=True
-            )
+            await send_callback(l10n.format_value(error.args[0]), ephemeral=True)
             self.bot.logger.critical(
                 "Unhandled Error",
                 exc_info=True,
@@ -109,15 +112,15 @@ class Errors(commands.Cog):
             wrapped_error = error.__cause__
 
             if isinstance(wrapped_error, commands.ExtensionError):
-                await interaction.response.send_message(error.__cause__, ephemeral=True)
+                await send_callback(str(error.__cause__), ephemeral=True)
                 return
 
         elif isinstance(error, app_commands.CheckFailure):
             if isinstance(error, app_commands.MissingPermissions):
-                await interaction.response.send_message(error, ephemeral=True)
+                await send_callback(str(error), ephemeral=True)
                 return
 
-            await interaction.response.send_message(
+            await send_callback(
                 l10n.format_value(error_text, error_variables), ephemeral=True
             )
             return
