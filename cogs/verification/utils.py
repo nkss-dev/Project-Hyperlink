@@ -64,11 +64,19 @@ async def authenticate(
             f"`{content}` is incorrent. Please try again with the correct OTP."
         )
 
-    old_user_id = await bot.pool.fetchval(
-        "SELECT discord_id FROM student WHERE roll_number = $1", roll
+    return True
+
+
+async def post_verification_handler(
+    member: discord.Member, student: dict[str, str], pool: asyncpg.Pool
+):
+    """Do post successful verification stuff"""
+    old_user_id = await pool.fetchval(
+        "SELECT discord_id FROM student WHERE roll_number = $1",
+        student["roll_number"],
     )
 
-    await bot.pool.execute(
+    await pool.execute(
         """
         UPDATE
             student
@@ -78,20 +86,13 @@ async def authenticate(
         WHERE
             roll_number = $2
         """,
-        author.id,
-        roll,
+        member.id,
+        student["roll_number"],
     )
 
-    # TODO: Kick old account from affiliated servers
+    # TODO: Kick `old_user_id` from affiliated servers
 
-    return True
-
-
-async def post_verification_handler(
-    member: discord.Member, student: dict[str, str], conn: asyncpg.Pool
-):
-    """Do post successful verification stuff"""
-    groups = await conn.fetch(
+    groups = await pool.fetch(
         """
         SELECT
             COALESCE(club.alias, club.name) AS short_name
