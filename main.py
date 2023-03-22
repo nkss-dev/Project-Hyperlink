@@ -1,10 +1,11 @@
-import aiohttp
 import asyncio
 import logging
+import os
 import re
 import sys
 import traceback
-from aiohttp import web
+from aiohttp import ClientSession, web
+from datetime import datetime
 
 import asyncpg
 import config
@@ -12,39 +13,47 @@ import discord
 from discord.ext import commands
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
+from utils.checks import is_verified
 from api.main import app
-from utils.logger import BotLogHandler
+from utils.logger import ErrorHandler
 
-initial_extensions = (
-    'cogs.verification.verification',
-    'cogs.drive',
-    'cogs.errors',
-    'cogs.events',
-    'cogs.help',
-    'cogs.ign',
-    'cogs.info',
-    'cogs.logger',
-    'cogs.mod',
-    'cogs.owner',
-    'cogs.prefix',
-    'cogs.self_roles',
-    'cogs.tag',
-    'cogs.VoiceChat',
-    'cogs.voltorb',
-)
+initial_extensions = [
+    "cogs.verification.verification",
+    "cogs.drive",
+    "cogs.errors",
+    "cogs.events",
+    # 'cogs.groups',
+    "cogs.help",
+    "cogs.ign",
+    "cogs.info",
+    # 'cogs.levels',
+    "cogs.logger",
+    "cogs.mod",
+    "cogs.owner",
+    "cogs.prefix",
+    # 'cogs.reminder',
+    "cogs.self_roles",
+    # 'cogs.setup',
+    "cogs.tag",
+    "cogs.verification",
+    "cogs.VoiceChat",
+    "cogs.voltorb",
+]
 
-loader = FluentResourceLoader('l10n/{locale}')
+loader = FluentResourceLoader("l10n/{locale}")
 
 
 class ProjectHyperlink(commands.Bot):
     """A personal moderation bot made as a part of the NKSSS project"""
 
-    pool: asyncpg.Pool
-    session: aiohttp.ClientSession
-    locales: dict[int, str] = {}
-    l10n: dict[str, FluentLocalization] = {}
-
-    def __init__(self):
+    def __init__(
+        self,
+        *args,
+        db_pool: asyncpg.Pool,
+        logger: logging.Logger,
+        web_client: ClientSession,
+        **kwargs,
+    ):
         intents = discord.Intents(
             bans=True,
             emojis=True,
@@ -53,109 +62,105 @@ class ProjectHyperlink(commands.Bot):
             messages=True,
             message_content=True,
             reactions=True,
-            voice_states=True
+            voice_states=True,
         )
         super().__init__(
+            *args,
+            **kwargs,
             command_prefix=self._prefix_callable,
             intents=intents,
-            owner_ids=config.owner_ids
+            owner_ids=config.owner_ids,
         )
+        self._l10n: dict[str, FluentLocalization] = {}
+        self._guild_locales = {0: "en-GB"}
+
+        self.pool = db_pool
+        self.initial_extensions = initial_extensions
+        self.launch_time: datetime
+        self.logger = logger
+        self.session = web_client
 
     @staticmethod
-    async def _prefix_callable(bot, msg) -> list:
+    async def _prefix_callable(bot, msg: discord.Message) -> list:
         """Return the bot's prefix for a guild or a DM"""
         await bot.wait_until_ready()
         base = []
         if not msg.guild:
-            base.append('%')
+            base.append("%")
         else:
             prefixes = await bot.pool.fetch(
-                'SELECT prefix FROM bot_prefix WHERE guild_id = $1',
-                msg.guild.id
+                "SELECT prefix FROM bot_prefix WHERE guild_id = $1", msg.guild.id
             )
             if prefixes:
-                prefixes = [prefix['prefix'] for prefix in prefixes]
+                prefixes = [prefix["prefix"] for prefix in prefixes]
             else:
-                prefixes = ['%']
+                prefixes = ["%"]
             base.extend(prefixes)
         return base
 
-    async def get_l10n(self, id: int = 0) -> FluentLocalization:
-        if not self.locales.get(id):
-            self.locales[id] = await self.pool.fetchval(
-                'SELECT locale FROM guild WHERE id = $1', id
-            ) or 'en-GB'
-        locale = self.locales[id]
+    async def get_l10n(self, guild_id: int = 0) -> FluentLocalization:
+        if self._guild_locales.get(guild_id) is None:
+            self._guild_locales[guild_id] = (
+                await self.pool.fetchval(
+                    "SELECT locale FROM guild WHERE id = $1", guild_id
+                )
+                or "en-GB"
+            )
+        locale = self._guild_locales[guild_id]
 
-        if not self.l10n.get(locale):
-            files = map(lambda file: f"{file.split('.')[-1]}.ftl", initial_extensions)
-            self.l10n[locale] = FluentLocalization([locale], files, loader)
-        return self.l10n[locale]
+        if self._l10n.get(locale) is None:
+            # TODO: `files` must not depend on `initial_extensions`
+            files = [f"{file.split('.')[-1]}.ftl" for file in initial_extensions]
+            self._l10n[locale] = FluentLocalization([locale], files, loader)
+
+        return self._l10n[locale]
 
     async def on_ready(self):
-        if not hasattr(self, 'launch_time'):
-            self.launch_time = discord.utils.utcnow()
+        logging.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
-        print(f'Logged in as {self.user} (ID: {self.user.id})')
+    async def setup_hook(self) -> None:
+        self.launch_time = discord.utils.utcnow()
 
-    async def setup_hook(self):
+        for extension in initial_extensions:
+            try:
+                await self.load_extension(extension)
+            except Exception:
+                logging.error(
+                    "\33[91m"
+                    + f"\nFailed to load extension {extension}.\n"
+                    + "\33[93m"
+                    + traceback.format_exc()
+                    + "\33[0m",
+                )
+
         # Launch the API
-        app['bot'] = self
+        app["bot"] = self
         runner = web.AppRunner(app)
         await runner.setup()
-        site = web.TCPSite(runner, 'localhost', 8080)
-        await site.start()
-        print('API launched successfully!')
 
-    async def close(self) -> None:
-        await self.session.close()
-        await asyncio.wait_for(self.pool.close(), timeout=None)
-        await super().close()
+        port = int(os.environ.get("PORT") or 8080)
+        site = web.TCPSite(runner, "0.0.0.0", port)
+        # await site.start()
+        logging.info(f"API running at localhost:{port}!")
 
 
 async def main():
-    async with ProjectHyperlink() as bot:
-        bot.logger = logging.getLogger("BotLogger")
-        bot.logger.addHandler(BotLogHandler(bot, 1086928165303234680))
+    logger = logging.getLogger("discord")
+    logger.setLevel(logging.DEBUG)
 
-        try:
-            pool = await asyncpg.create_pool(
-                dsn=config.dsn,
-                command_timeout=60,
-                max_inactive_connection_lifetime=0
-            )
-        except Exception:
-            raise
+    async with ClientSession() as client, asyncpg.create_pool(
+        dsn=config.dsn, command_timeout=60, max_inactive_connection_lifetime=0
+    ) as pool:
+        async with ProjectHyperlink(
+            db_pool=pool,
+            logger=logger,
+            web_client=client,
+        ) as bot:
+            logger.addHandler(ErrorHandler(bot, 1086928165303234680))
+            discord.utils.setup_logging(level=logging.INFO, root=False)
 
-        if pool is None:
-            raise RuntimeError('Could not connect to the database')
-        bot.pool = pool
+            await bot.start(config.bot_token)
 
-        session = aiohttp.ClientSession()
-        bot.session = session
 
-        # !TODO: Setup logging
-        for extension in initial_extensions:
-            try:
-                await bot.load_extension(extension)
-            except Exception:
-                print(
-                    '\33[91m'
-                    + f'\nFailed to load extension {extension}.\n'
-                    + '\33[93m'
-                    + traceback.format_exc()
-                    + '\33[0m',
-                    file=sys.stderr
-                )
-
-        @bot.check_once
-        async def bracketCheck(ctx):
-            """Raise an error if any argument is enclosed in angular brackets"""
-            if re.search(r'<[^#@a:].+>', ctx.message.content):
-                raise commands.CheckFailure('AngularBracketsNotAllowed')
-            return True
-        
-        await bot.start(config.bot_token)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
