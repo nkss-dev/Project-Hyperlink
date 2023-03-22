@@ -16,10 +16,10 @@ class Prefix(commands.Cog):
 
     async def fetch_prefix(self, id: int) -> map:
         return map(
-            lambda prefix: prefix['prefix'],
+            lambda prefix: prefix["prefix"],
             await self.bot.pool.fetch(
-                'SELECT prefix FROM bot_prefix WHERE guild_id = $1', id
-            )
+                "SELECT prefix FROM bot_prefix WHERE guild_id = $1", id
+            ),
         )
 
     @commands.group(invoke_without_command=True)
@@ -42,14 +42,14 @@ class Prefix(commands.Cog):
         prefixes = await self.fetch_prefix(ctx.guild.id)
 
         if prefix in prefixes:
-            await ctx.reply(self.fmv('exists-true', {'prefix': prefix}))
+            await ctx.reply(self.fmv("exists-true", {"prefix": prefix}))
             return
 
         await self.bot.pool.execute(
-            'INSERT INTO prefix VALUES ($1, $2)', ctx.guild.id, prefix
+            "INSERT INTO bot_prefix VALUES ($1, $2)", ctx.guild.id, prefix
         )
 
-        await ctx.reply(self.fmv('add-success', {'prefix': prefix}))
+        await ctx.reply(self.fmv("add-success", {"prefix": prefix}))
 
     @prefix.command()
     async def remove(self, ctx, prefix: str):
@@ -63,15 +63,16 @@ class Prefix(commands.Cog):
         prefixes = await self.fetch_prefix(ctx.guild.id)
 
         if prefix not in prefixes:
-            await ctx.reply(self.fmv('exists-false', {'prefix': prefix}))
+            await ctx.reply(self.fmv("exists-false", {"prefix": prefix}))
             return
 
         await self.bot.pool.execute(
-            'DELETE FROM bot_prefix WHERE guild_id = $1 AND prefix = $2',
-            ctx.guild.id, prefix
+            "DELETE FROM bot_prefix WHERE guild_id = $1 AND prefix = $2",
+            ctx.guild.id,
+            prefix,
         )
 
-        await ctx.reply(self.fmv('remove-success', {'prefix': prefix}))
+        await ctx.reply(self.fmv("remove-success", {"prefix": prefix}))
 
     @prefix.command()
     async def set(self, ctx, prefix: str):
@@ -83,13 +84,13 @@ class Prefix(commands.Cog):
             The prefix to set.
         """
         await self.bot.pool.execute(
-            'DELETE FROM bot_prefix WHERE guild_id = $1', ctx.guild.id
+            "DELETE FROM bot_prefix WHERE guild_id = $1", ctx.guild.id
         )
         await self.bot.pool.execute(
-            'INSERT INTO prefix VALUES ($1, $2)', ctx.guild.id, prefix
+            "INSERT INTO prefix VALUES ($1, $2)", ctx.guild.id, prefix
         )
 
-        await ctx.reply(self.fmv('guild-prefix', {'prefix': prefix}))
+        await ctx.reply(self.fmv("guild-prefix", {"prefix": prefix}))
 
 
 async def setup(bot):
