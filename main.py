@@ -1,8 +1,6 @@
 import asyncio
 import logging
 import os
-import re
-import sys
 import traceback
 from aiohttp import ClientSession, web
 from datetime import datetime
@@ -13,7 +11,6 @@ import discord
 from discord.ext import commands
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
-from utils.checks import is_verified
 from api.main import app
 from utils.logger import ErrorHandler
 
@@ -22,18 +19,14 @@ initial_extensions = [
     "cogs.drive",
     "cogs.errors",
     "cogs.events",
-    # 'cogs.groups',
     "cogs.help",
     "cogs.ign",
     "cogs.info",
-    # 'cogs.levels',
     "cogs.logger",
     "cogs.mod",
     "cogs.owner",
     "cogs.prefix",
-    # 'cogs.reminder',
     "cogs.self_roles",
-    # 'cogs.setup',
     "cogs.tag",
     "cogs.verification",
     "cogs.VoiceChat",
@@ -140,7 +133,7 @@ class ProjectHyperlink(commands.Bot):
 
         port = int(os.environ.get("PORT") or 8080)
         site = web.TCPSite(runner, "0.0.0.0", port)
-        # await site.start()
+        await site.start()
         logging.info(f"API running at localhost:{port}!")
 
 
