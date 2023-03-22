@@ -56,9 +56,20 @@ class Errors(commands.Cog):
                 await ctx.reply(str(error))
 
             elif isinstance(error, commands.MissingAnyRole):
+                assert ctx.guild is not None
+
                 missing_roles = []
-                for role in error.missing_roles:
-                    missing_roles.append(ctx.guild.get_role(role).mention)
+                for role_id in error.missing_roles:
+                    role = ctx.guild.get_role(int(role_id))
+                    if role is not None:
+                        missing_roles.append(role.mention)
+                        continue
+
+                    self.bot.logger.warning(
+                        "Role id `{role_id}` not found in `{ctx.guild.name}`",
+                        exc_info=True,
+                    )
+
                 embed = discord.Embed(
                     description=l10n.format_value(
                         "CheckFailure-MissingAnyRole",
