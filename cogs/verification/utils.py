@@ -54,6 +54,8 @@ async def authenticate(
         smtp.login(config.email, config.password_token)
         smtp.send_message(msg)
 
+    bot.logger.info(f"Verification email sent to `{email}`", extra={"user": member})
+
     def check(msg: discord.Message):
         return msg.author == member and msg.channel.id == interaction.channel_id
 
@@ -67,6 +69,8 @@ async def authenticate(
                 "TimeoutError-otp", {"author": member.mention}
             )
         else:
+            await message.delete()
+
             temp_otp = message.content
             if otp == temp_otp:
                 break
@@ -74,6 +78,10 @@ async def authenticate(
             await interaction.followup.send(
                 l10n.format_value("BadRequest-otp", {"OTP": temp_otp}),
                 ephemeral=True,
+            )
+            bot.logger.info(
+                f"Incorrect OTP (`{temp_otp}`) provided for verification",
+                extra={"user": member},
             )
 
     return True
@@ -194,7 +202,12 @@ async def verify(
         return
 
     await interaction.followup.send(
-        l10n.format_value("verification-success", {"mention": member.mention})
+        l10n.format_value("verification-success", {"mention": member.mention}),
+        ephemeral=True,
+    )
+    bot.logger.info(
+        f"Verification successful in `{member.guild.name}`",
+        extra={"user": member},
     )
 
     await post_verification_handler(member, student, bot.pool)

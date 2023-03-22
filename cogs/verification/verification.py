@@ -12,8 +12,8 @@ GUILD_IDS = {
 }
 
 
-class VerificationEvents(commands.Cog):
-    """Exclusively manage verification events"""
+class Verification(commands.Cog):
+    """The Great Wall of NITKKR"""
 
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
@@ -43,8 +43,13 @@ class VerificationEvents(commands.Cog):
         assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
+        # TODO: Change this to use the check
         for role in interaction.user.roles:
             if role.name == "verified":
+                self.bot.logger.info(
+                    f"Verified user attempted to verify in `{interaction.guild.name}` using the slash command",
+                    extra={"user": interaction.user},
+                )
                 raise discord.app_commands.CheckFailure("UserAlreadyVerified")
 
         await verify(self.bot, interaction, roll)
@@ -63,7 +68,7 @@ class VerificationEvents(commands.Cog):
         channel = discord.utils.get(guild.text_channels, name="verify-here")
         if channel is None:
             self.bot.logger.critical(
-                f"Verification channel not found for the guild **{guild.name}**!"
+                f"Verification channel not found for the guild `{guild.name}`!"
             )
             return
 
@@ -101,15 +106,24 @@ class VerificationEvents(commands.Cog):
                 )
                 message = f"{member.mention} was kicked from `{guild.name}` due to incorrect guild"
                 await member.kick(reason=message)
+                self.bot.logger.info(message)
                 return
 
             await post_verification_handler(member, student, self.bot.pool)
+            self.bot.logger.info(
+                f"{member.mention} was provided direct access to `{guild.name}`"
+            )
             return
 
+        # TODO: Somehow delete this message once the user verifies
         await channel.send(
             self.l10n.format_value("verification-prompt", {"member": member.mention}),
+        )
+        self.bot.logger.info(
+            f"Verification prompt sent to new user in `{guild.name}`",
+            extra={"user": member},
         )
 
 
 async def setup(bot):
-    await bot.add_cog(VerificationEvents(bot))
+    await bot.add_cog(Verification(bot))

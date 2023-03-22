@@ -7,6 +7,7 @@ from cogs.verification.utils import verify
 from main import ProjectHyperlink
 
 
+# TODO: Make view persistent
 class VerificationView(discord.ui.View):
     def __init__(self, label: str, bot: ProjectHyperlink):
         super().__init__(timeout=None)
@@ -36,11 +37,16 @@ class VerificationButton(discord.ui.Button):
         self.bot = bot
 
     async def callback(self, interaction: discord.Interaction):
+        assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
         # TODO: Change this to use the check
         for role in interaction.user.roles:
             if role.name == "verified":
+                self.bot.logger.info(
+                    f"Verified user attempted to verify in `{interaction.guild.name}` using the verification button",
+                    extra={"user": interaction.user},
+                )
                 raise discord.app_commands.CheckFailure("UserAlreadyVerified")
 
         await interaction.response.send_modal(VerificationModal(self.bot))
