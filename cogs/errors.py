@@ -98,7 +98,7 @@ class Errors(commands.Cog):
             await ctx.reply(l10n.format_value(type(error).__name__))
 
         else:
-            self.bot.logger.error(error, exc_info=True)
+            self.bot.logger.exception(error)
 
     async def on_app_command_error(
         self,
@@ -142,7 +142,7 @@ class Errors(commands.Cog):
             )
             return
 
-        self.bot.logger.error(error, exc_info=True)
+        self.bot.logger.exception(error)
 
 
 async def setup(bot: ProjectHyperlink):
