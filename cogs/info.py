@@ -19,19 +19,19 @@ class Info(commands.Cog):
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
         self.ctx_menu = app_commands.ContextMenu(
-            name='Profile',
-            callback=self.profile
+            name="Profile",
+            callback=self.profile,
         )
         self.bot.tree.add_command(self.ctx_menu)
 
-        with open('db/emojis.json') as f:
-            self.emojis = json.load(f)['utility']
+        with open("db/emojis.json") as f:
+            self.emojis = json.load(f)["utility"]
 
     async def cog_load(self):
-        async with self.bot.session.get(f'{config.api_url}/hostels') as resp:
+        async with self.bot.session.get(f"{config.api_url}/hostels") as resp:
             assert resp.status == 200
             data = await resp.json()
-        self.hostels = {hostel.pop('id'): hostel for hostel in data['data']}
+        self.hostels = {hostel.pop("id"): hostel for hostel in data["data"]}
 
     @app_commands.command()
     @app_commands.describe(
@@ -91,11 +91,11 @@ class Info(commands.Cog):
     async def get_profile_embed(self, guild: bool, member) -> discord.Embed:
         """Return the details of the given user in an embed"""
         async with self.bot.session.get(
-            f'{config.api_url}/discord/users/{member.id}',
-            headers={'Authorization': f'Bearer {config.api_token}'}
+            f"{config.api_url}/discord/users/{member.id}",
+            headers={"Authorization": f"Bearer {config.api_token}"},
         ) as resp:
             if resp.status == 200:
-                student = (await resp.json())['data']
+                student = (await resp.json())["data"]
             else:
                 return discord.Embed()
 
@@ -106,35 +106,37 @@ class Info(commands.Cog):
             color = discord.Color.blurple()
 
         # Set emoji based on verification status
-        status = 'verified' if student['is_verified'] else 'not-verified'
+        status = "verified" if student["is_verified"] else "not-verified"
 
         # Generating the embed
         embed = discord.Embed(
-            title=f"{student['name']} {self.emojis[status]}",
-            color=color
+            title=f"{student['name']} {self.emojis[status]}", color=color
         )
         embed.set_author(
-            name=self.l10n.format_value('profile-name', {'member': str(member)}),
-            icon_url=member.display_avatar.url
+            name=self.l10n.format_value("profile-name", {"member": str(member)}),
+            icon_url=member.display_avatar.url,
         )
         embed.set_thumbnail(url=member.display_avatar.url)
 
         # Add generic student details
-        if hostel := student['hostel_id']:
+        if hostel := student["hostel_id"]:
             hostel = f"{hostel} - {self.hostels[hostel]['name']}"
 
         fields = {
-            'roll': student['roll_number'],
-            'sec': student['section'],
-            'email': student['email'],
-            'hostel': hostel,
-            'groups': ', '.join(student['clubs']) or self.l10n.format_value('no-group'),
+            "roll": student["roll_number"],
+            "sec": student["section"],
+            "email": student["email"],
+            "hostel": hostel,
+            "groups": ", ".join(student["clubs"].keys())
+            or self.l10n.format_value("no-group"),
         }
-        if student['mobile']['Valid']:
-            fields['mob'] = student['mobile']['String']
-        if student['birth_date']['Valid']:
-            birth_date = datetime.strptime(student['birth_date']['Time'][:10], '%Y-%m-%d')
-            fields['bday'] = discord.utils.format_dt(birth_date, style='D')
+        if student["mobile"]["Valid"]:
+            fields["mob"] = student["mobile"]["String"]
+        if student["birth_date"]["Valid"]:
+            birth_date = datetime.strptime(
+                student["birth_date"]["Time"][:10], "%Y-%m-%d"
+            )
+            fields["bday"] = discord.utils.format_dt(birth_date, style="D")
 
         for name, value in fields.items():
             embed.add_field(name=self.l10n.format_value(name), value=value)
@@ -143,11 +145,11 @@ class Info(commands.Cog):
         user_roles = []
         if guild:
             ignored_roles = [
-                student['section'][:4],
-                student['section'][:3] + student['section'][4:].zfill(2),
-                student['hostel_id'],
-                *student['clubs'],
-                '@everyone'
+                student["section"][:4],
+                student["section"][:3] + student["section"][4:].zfill(2),
+                student["hostel_id"],
+                *student["clubs"].keys(),
+                "@everyone",
             ]
             for role in member.roles:
                 try:
@@ -155,26 +157,25 @@ class Info(commands.Cog):
                 except ValueError:
                     user_roles.append(role.mention)
             if user_roles:
-                user_roles = ', '.join(user_roles[::-1])
+                user_roles = ", ".join(user_roles[::-1])
 
         # Add field displaying the user's server/Discord join date
         if guild and user_roles:
-            embed.add_field(
-                name=self.l10n.format_value('roles'),
-                value=user_roles
-            )
+            embed.add_field(name=self.l10n.format_value("roles"), value=user_roles)
 
         join_dt = member.joined_at if guild else member.created_at
         embed.add_field(
-            name=self.l10n.format_value('join'),
-            value=discord.utils.format_dt(join_dt, style='D'),
-            inline=False
+            name=self.l10n.format_value("join"),
+            value=discord.utils.format_dt(join_dt, style="D"),
+            inline=False,
         )
 
         return embed
 
     @checks.is_exists()
-    async def profile(self, interaction: discord.Interaction, member: discord.Member | discord.User):
+    async def profile(
+        self, interaction: discord.Interaction, member: discord.Member | discord.User
+    ):
         """View your or someone else's personal profile card."""
         """
         Parameters
@@ -186,7 +187,7 @@ class Info(commands.Cog):
             member defaults to the author of the command.
         """
         if member.bot:
-            raise app_commands.CheckFailure('NotForBot')
+            raise app_commands.CheckFailure("NotForBot")
 
         guild = interaction.guild
         self.l10n = await self.bot.get_l10n(guild.id if guild else 0)
@@ -195,21 +196,27 @@ class Info(commands.Cog):
             auth = await checks.is_authorised().predicate(interaction)
             if auth is False:
                 await interaction.response.send_message(
-                    self.l10n.format_value('MissingAuthorisation-profile'),
-                    ephemeral=True
+                    self.l10n.format_value("MissingAuthorisation-profile"),
+                    ephemeral=True,
                 )
                 return
 
         embed = await self.get_profile_embed(bool(guild), member)
         if not embed:
-            raise app_commands.CheckFailure('RecordNotFound', {'member': member.mention})
+            raise app_commands.CheckFailure(
+                "RecordNotFound", {"member": member.mention}
+            )
         else:
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name='profile')
-    @app_commands.rename(member='user')
-    @app_commands.describe(member='The user whose profile will be displayed')
-    async def command_profile(self, interaction: discord.Interaction, member: Optional[discord.Member | discord.User]):
+    @app_commands.command(name="profile")
+    @app_commands.rename(member="user")
+    @app_commands.describe(member="The user whose profile will be displayed")
+    async def command_profile(
+        self,
+        interaction: discord.Interaction,
+        member: Optional[discord.Member | discord.User],
+    ):
         await self.profile(interaction, member or interaction.user)
 
     # Deprecated command
@@ -217,7 +224,9 @@ class Info(commands.Cog):
     @checks.is_verified()
     @commands.bot_has_permissions(manage_nicknames=True)
     @app_commands.guild_only()
-    async def nick(self, interaction: discord.Interaction, *, member: Optional[discord.Member]):
+    async def nick(
+        self, interaction: discord.Interaction, *, member: Optional[discord.Member]
+    ):
         """Change your or someone else's nick to their first name."""
         """
         Parameters
@@ -233,36 +242,32 @@ class Info(commands.Cog):
             pass
         elif member != interaction.user:
             if not interaction.user.guild_permissions.manage_nicknames:
-                raise commands.MissingPermissions(['manage_nicknames'])
+                raise commands.MissingPermissions(["manage_nicknames"])
         else:
             if not member.guild_permissions.change_nickname:
-                raise commands.MissingPermissions(['change_nickname'])
+                raise commands.MissingPermissions(["change_nickname"])
 
         name = await self.bot.pool.fetchval(
-            'SELECT name FROM student WHERE discord_id = $1', member.id
+            "SELECT name FROM student WHERE discord_id = $1", member.id
         )
 
         if not name:
             # ctx.author = member
-            raise commands.CheckFailure('RecordNotFound')
+            raise commands.CheckFailure("RecordNotFound")
 
         old_nick = member.nick
-        first_name = name.split(' ', 1)[0]
+        first_name = name.split(" ", 1)[0]
         await member.edit(nick=first_name)
 
-        nick = {
-            'member': member.mention,
-            'old': f'{old_nick}',
-            'new': first_name
-        }
+        nick = {"member": member.mention, "old": f"{old_nick}", "new": first_name}
         embed = discord.Embed(
-            description=self.l10n.format_value('nick-change-success', nick),
-            color=discord.Color.blurple()
+            description=self.l10n.format_value("nick-change-success", nick),
+            color=discord.Color.blurple(),
         )
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command()
-    @app_commands.describe(batch='The batch of which the stats will be displayed')
+    @app_commands.describe(batch="The batch of which the stats will be displayed")
     @checks.is_verified()
     async def memlist(self, interaction: discord.Interaction, batch: int):
         """View the stats of students of the specified batch.
@@ -283,7 +288,7 @@ class Info(commands.Cog):
         """
         l10n = await self.bot.get_l10n(interaction.guild.id if interaction.guild else 0)
         data = await self.bot.pool.fetch(
-            '''
+            """
             SELECT
                 section,
                 COUNT(discord_id) AS joined,
@@ -297,29 +302,33 @@ class Info(commands.Cog):
                 section
             ORDER BY
                 section
-            ''', batch
+            """,
+            batch,
         )
         if not data:
             await interaction.response.send_message(
-                l10n.format_value('NotFound-batch'),
-                ephemeral=True
+                l10n.format_value("NotFound-batch"), ephemeral=True
             )
             return
 
         sections, counts = [], []
         for row in data:
-            if sections and row['section'][:4] == sections[-1]:
+            if sections and row["section"][:4] == sections[-1]:
                 count = counts[-1]
-                counts[-1] = [count[0] + row['joined'], count[1] + row['remaining'], count[2] + row['verified']]
+                counts[-1] = [
+                    count[0] + row["joined"],
+                    count[1] + row["remaining"],
+                    count[2] + row["verified"],
+                ]
             else:
-                sections.append(row['section'][:4])
-                counts.append([row['joined'], row['remaining'], row['verified']])
+                sections.append(row["section"][:4])
+                counts.append([row["joined"], row["remaining"], row["verified"]])
         data = [[section, *count] for section, count in zip(sections, counts)]
 
         # Get the indices of the rows to be deleted
         indices = []
         previous = sections[0]
-        for i, section in zip(range(2, len(sections)*2, 2), sections[1:]):
+        for i, section in zip(range(2, len(sections) * 2, 2), sections[1:]):
             if section[:2] == previous[:2]:
                 indices.append(i + 2)
             previous = section
@@ -328,10 +337,10 @@ class Info(commands.Cog):
         total = [sum(count) for count in zip(*counts)]
 
         table = tabulate(
-            [*data, ['Total', *total]],
-            headers=('Section', 'Joined', 'Remaining', 'Verified'),
-            tablefmt='grid'
-        ).split('\n')
+            [*data, ["Total", *total]],
+            headers=("Section", "Joined", "Remaining", "Verified"),
+            tablefmt="grid",
+        ).split("\n")
         table[2] = table[0]
 
         # Delete the extra dashed lines
@@ -341,27 +350,25 @@ class Info(commands.Cog):
                 indices.remove(i)
             except ValueError:
                 cropped_table.append(row)
-        cropped_table = '\n'.join(cropped_table)
+        cropped_table = "\n".join(cropped_table)
 
         embed = discord.Embed(
-            description=f'```swift\n{cropped_table}```',
-            color=discord.Color.blurple()
+            description=f"```swift\n{cropped_table}```", color=discord.Color.blurple()
         )
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command()
-    @checks.is_exists()
     async def invite(self, interaction: discord.Interaction):
         """Grab the invite links of some Discord servers"""
         l10n = await self.bot.get_l10n(interaction.guild.id if interaction.guild else 0)
         servers = (
-            'NITKKR: https://discord.gg/r7eckfHjvy',
-            'NITKKR\'24: https://discord.gg/4eF7R6afqv',
-            'NITKKR\'25: https://discord.gg/C4s3f3zKpq',
+            "NITKKR: https://discord.gg/r7eckfHjvy",
+            "NITKKR'24: https://discord.gg/4eF7R6afqv",
+            "NITKKR'25: https://discord.gg/C4s3f3zKpq",
         )
         misc_servers = (
-            'eSP NITKKR: https://discord.gg/myCYvRHSvr',
-            'kkr++: https://discord.gg/epaTW7tjYR',
+            "eSP NITKKR: https://discord.gg/myCYvRHSvr",
+            "kkr++: https://discord.gg/epaTW7tjYR",
         )
 
         perms = discord.Permissions.none()
@@ -381,17 +388,16 @@ class Info(commands.Cog):
         perms.add_reactions = True
 
         embed = discord.Embed(
-            title=l10n.format_value('invite'),
-            description=f'<{discord.utils.oauth_url(self.bot.user.id, permissions=perms)}>',
-            color=discord.Color.blurple()
+            title=l10n.format_value("invite"),
+            description=f"<{discord.utils.oauth_url(self.bot.user.id, permissions=perms)}>",
+            color=discord.Color.blurple(),
         )
         embed.add_field(
-            name=l10n.format_value('servers'),
-            value='\n'.join(servers)
+            name=l10n.format_value("servers"),
+            value="\n".join(servers),
         )
         embed.add_field(
-            name=l10n.format_value('misc_servers'),
-            value='\n'.join(misc_servers)
+            name=l10n.format_value("misc_servers"), value="\n".join(misc_servers)
         )
 
         await interaction.response.send_message(embed=embed)
