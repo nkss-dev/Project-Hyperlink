@@ -47,12 +47,12 @@ class ProjectHyperlink(commands.Bot):
         **kwargs,
     ):
         intents = discord.Intents(
-            bans=True,
             emojis=True,
             guilds=True,
             members=True,
             messages=True,
             message_content=True,
+            moderation=True,
             reactions=True,
             voice_states=True,
         )
