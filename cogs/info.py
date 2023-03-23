@@ -33,6 +33,12 @@ class Info(commands.Cog):
             data = await resp.json()
         self.hostels = {hostel.pop("id"): hostel for hostel in data["data"]}
 
+    async def interaction_check(
+        self, interaction: discord.Interaction[ProjectHyperlink], /
+    ) -> bool:
+        self.l10n = await self.bot.get_l10n(interaction.guild_id or 0)
+        return super().interaction_check(interaction)
+
     @app_commands.command()
     @app_commands.describe(
         code="The code of the course that you want",
@@ -189,9 +195,6 @@ class Info(commands.Cog):
         if member.bot:
             raise app_commands.CheckFailure("NotForBot")
 
-        guild = interaction.guild
-        self.l10n = await self.bot.get_l10n(guild.id if guild else 0)
-
         if member != interaction.user:
             auth = await checks.is_authorised().predicate(interaction)
             if auth is False:
@@ -201,7 +204,7 @@ class Info(commands.Cog):
                 )
                 return
 
-        embed = await self.get_profile_embed(bool(guild), member)
+        embed = await self.get_profile_embed(bool(interaction.guild), member)
         if not embed:
             raise app_commands.CheckFailure(
                 "RecordNotFound", {"member": member.mention}
@@ -286,7 +289,6 @@ class Info(commands.Cog):
         `batch`: <class 'int'>
             The batch for which the stats are shown.
         """
-        l10n = await self.bot.get_l10n(interaction.guild.id if interaction.guild else 0)
         data = await self.bot.pool.fetch(
             """
             SELECT
@@ -307,7 +309,7 @@ class Info(commands.Cog):
         )
         if not data:
             await interaction.response.send_message(
-                l10n.format_value("NotFound-batch"), ephemeral=True
+                self.l10n.format_value("NotFound-batch"), ephemeral=True
             )
             return
 
@@ -360,7 +362,6 @@ class Info(commands.Cog):
     @app_commands.command()
     async def invite(self, interaction: discord.Interaction):
         """Grab the invite links of some Discord servers"""
-        l10n = await self.bot.get_l10n(interaction.guild.id if interaction.guild else 0)
         servers = (
             "NITKKR: https://discord.gg/r7eckfHjvy",
             "NITKKR'24: https://discord.gg/4eF7R6afqv",
@@ -388,16 +389,16 @@ class Info(commands.Cog):
         perms.add_reactions = True
 
         embed = discord.Embed(
-            title=l10n.format_value("invite"),
+            title=self.l10n.format_value("invite"),
             description=f"<{discord.utils.oauth_url(self.bot.user.id, permissions=perms)}>",
             color=discord.Color.blurple(),
         )
         embed.add_field(
-            name=l10n.format_value("servers"),
+            name=self.l10n.format_value("servers"),
             value="\n".join(servers),
         )
         embed.add_field(
-            name=l10n.format_value("misc_servers"), value="\n".join(misc_servers)
+            name=self.l10n.format_value("misc_servers"), value="\n".join(misc_servers)
         )
 
         await interaction.response.send_message(embed=embed)
