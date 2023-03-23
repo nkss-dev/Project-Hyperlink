@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 
 import config
 import discord
@@ -9,6 +9,7 @@ from discord.ext import commands
 from tabulate import tabulate
 
 from main import ProjectHyperlink
+from models.courses import Course, Specifics
 from utils import checks
 
 
@@ -31,6 +32,61 @@ class Info(commands.Cog):
             assert resp.status == 200
             data = await resp.json()
         self.hostels = {hostel.pop('id'): hostel for hostel in data['data']}
+
+    @app_commands.command()
+    @app_commands.describe(
+        code="The code of the course that you want",
+        only_content="A boolean if you only want to see the content of the course",
+    )
+    async def course(
+        self, interaction: discord.Interaction, code: str, only_content: bool = True
+    ):
+        async with self.bot.session.get(f"{config.api_url}/courses/{code}") as resp:
+            # TODO: Make a global fetcher util
+            if resp.status != 200:
+                raise app_commands.AppCommandError("UnhandledError")
+            data = (await resp.json())["data"]
+
+        specifics = [Specifics(**specific) for specific in data.pop("specifics")]
+        course = Course(**data, specifics=specifics)
+
+        embed = discord.Embed(color=interaction.user.color, title=course.title)
+        if course.prereq:
+            embed.add_field(
+                name="Prerequisites",
+                value=", ".join(
+                    [
+                        f"[{prereq}](https://nksss.live/courses/{prereq})"
+                        for prereq in course.prereq
+                    ]
+                ),
+            )
+        embed.add_field(name="Type", value=course.kind)
+
+        if only_content:
+            for index, unit in enumerate(course.content, start=1):
+                embed.add_field(
+                    name=f"Unit {index}", value="```" + unit + "```", inline=False
+                )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        embed.add_field(
+            name="Objectives", value="• " + "\n• ".join(course.objectives), inline=False
+        )
+        embed.add_field(
+            name="Outcomes", value="• " + "\n• ".join(course.outcomes), inline=False
+        )
+        embed.add_field(
+            name="Reference Books",
+            value="• " + "\n• ".join(course.book_names),
+            inline=False,
+        )
+        content_embed = discord.Embed(
+            color=interaction.user.color,
+            title="Content",
+        )
+        await interaction.response.send_message(embeds=[embed, content_embed])
 
     async def get_profile_embed(self, guild: bool, member) -> discord.Embed:
         """Return the details of the given user in an embed"""
