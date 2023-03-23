@@ -10,6 +10,7 @@ from discord.ext import commands
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
 from api.main import app
+from cogs.verification.ui import VerificationView
 from utils.logger import ErrorHandler, Logger
 
 initial_extensions = [
@@ -115,6 +116,9 @@ class ProjectHyperlink(commands.Bot):
                 await self.load_extension(extension)
             except Exception:
                 self.logger.exception(f"Failed to load extension `{extension}`")
+
+        l10n = await self.get_l10n(0)
+        self.add_view(VerificationView(l10n.format_value("verify-button-label")))
 
         # Launch the API
         app["bot"] = self

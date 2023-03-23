@@ -11,7 +11,6 @@ else:
     ProjectHyperlink = discord.ext.commands.Bot
 
 
-# TODO: Make view persistent
 class VerificationView(discord.ui.View):
     def __init__(self, label: str):
         super().__init__(timeout=None)
