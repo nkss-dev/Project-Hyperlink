@@ -1,7 +1,7 @@
 import logging
 import time
 import re
-from datetime import timedelta
+from typing import Literal
 
 import discord
 from discord import app_commands
@@ -236,99 +236,98 @@ class Events(commands.Cog):
         if await self.assign_user_roles(member):
             return
 
-    @staticmethod
-    async def leave_handler(events, guild, member, l10n):
-        time = discord.utils.utcnow()
-        action = 'leave'
+    async def on_remove_event(
+        self,
+        action: Literal["ban", "kick", "leave"],
+        attacker: str | None,
+        defender: int | str,
+        guild_id: int,
+        reason: str | None = None,
+    ):
+        response = await self.bot.pool.fetchrow(
+            """
+            SELECT
+                channel_id,
+                message
+            FROM
+                guild_event
+            WHERE
+                guild_id = $1
+                AND event_type = $2
+            """,
+            guild_id,
+            action,
+        )
+        if response is not None:
+            channel_id, message = response
+        else:
+            return
 
-        if guild.me.guild_permissions.view_audit_log:
-            # Checking the audit log entries to check for a kick or a ban
-            async for entry in guild.audit_logs():
-                check = str(entry.target) == str(member)
-                if check and (time - entry.created_at) < timedelta(seconds=1):
-                    if entry.action is discord.AuditLogAction.kick:
-                        action = 'kick'
-                        break
-                    if entry.action is discord.AuditLogAction.ban:
-                        action = 'ban'
-                        break
-
-        channel = guild.get_channel(events[action][0])
-        if action != 'leave' and channel:
-            mentions = {
-                '{$user}': member.mention, '{$member}': entry.user.mention
-            }
-            message = re.sub(
-                r'({\$\w+})', lambda x: mentions[x.group(0)],
-                events[action][1]
+        channel = self.bot.get_channel(channel_id)
+        if channel is not None:
+            assert isinstance(channel, discord.TextChannel)
+        else:
+            self.bot.logger.warning(
+                f"Channel id `{channel_id}` not found for guild `{guild_id}` in table `guild_event`"
             )
+            return
 
-            message += l10n.format_value(
-                'leave-reason', {'reason': entry.reason or 'None'})
+        mentions = {
+            "attacker": attacker,
+            "defender": defender,
+        }
+        l10n = await self.bot.get_l10n(guild_id)
+        if message is None:
+            # TODO: Add a set of Among Us style leave messages chosen from randomly
+            message = l10n.format_value(f"{action.title()}Event", mentions)
+        else:
+            message = re.sub(r"({\$\w+})", lambda x: mentions[x.group(0)], message)
 
-            embed = discord.Embed(
-                description=message,
-                color=discord.Color.blurple()
+        colours = {
+            "ban": discord.Color.red(),
+            "kick": discord.Color.orange(),
+            "leave": discord.Color.blurple(),
+        }
+        embed = discord.Embed(
+            color=colours[action],
+            description=message,
+            timestamp=discord.utils.utcnow(),
+        )
+        if reason is not None:
+            embed.set_footer(
+                text=l10n.format_value("RemoveReason", {"reason": reason}),
             )
-            await channel.send(embed=embed)
-            channel = None
+        await channel.send(embed=embed)
 
-        return channel
+    @commands.Cog.listener()
+    async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
+        """Handle kick and ban entries"""
+        if entry.action is discord.AuditLogAction.kick:
+            action = "kick"
+        elif entry.action is discord.AuditLogAction.ban:
+            action = "ban"
+        else:
+            return
 
-    @staticmethod
-    async def send_leave_message(channel, member, message):
-        if channel:
-            message = message.replace('{$user}', member.mention)
-            embed = discord.Embed(
-                description=message,
-                color=discord.Color.blurple()
-            )
-            await channel.send(embed=embed)
+        assert isinstance(entry.user, discord.Member | discord.User)
+        assert isinstance(entry.target, discord.User | discord.Object)
+
+        if isinstance(entry.target, discord.User):
+            defender = entry.target.mention
+        else:
+            defender = entry.target.id
+        await self.on_remove_event(
+            action,
+            entry.user.mention,
+            defender,
+            entry.guild.id,
+            entry.reason,
+        )
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        """Called when a member leaves a guild"""
-        guild = member.guild
-        l10n = await self.bot.get_l10n(guild.id)
-
-        events = await self.bot.pool.fetchrow(
-            '''
-            SELECT
-                leave_channel,
-                leave_message,
-                kick_channel,
-                kick_message,
-                ban_channel,
-                ban_message
-            FROM
-                event
-            WHERE guild_id = $1
-            ''', guild.id
-        )
-        if events:
-            events = {
-                'leave': (events['leave_channel'], events['leave_message']),
-                'kick': (events['kick_channel'], events['kick_message']),
-                'ban': (events['ban_channel'], events['ban_message']),
-            }
-            channel = await self.leave_handler(events, guild, member, l10n)
-
-        verified = await self.bot.pool.fetch(
-            'SELECT verified FROM student WHERE discord_uid = $1', member.id
-        )
-        if not verified:
-            if events:
-                await self.send_leave_message(channel, member, events['leave'][1])
-            return
-
-        if not verified[0]['verified']:
-            await self.bot.pool.execute(
-                'UPDATE student SET discord_uid = NULL WHERE discord_uid = $1',
-                member.id
-            )
-
-        if events:
-            await self.send_leave_message(channel, member, events['leave'][1])
+        # TODO: Add conditional to check if it was self-leave or not
+        await self.on_remove_event("leave", None, member.mention, member.guild.id)
 
 
 async def setup(bot):
