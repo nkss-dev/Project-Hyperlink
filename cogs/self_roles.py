@@ -190,6 +190,11 @@ class ButtonRoles(commands.Cog):
         for view in views:
             self.views[view[1]] = RoleView()
             channel = self.bot.get_channel(view[0])
+            if not channel:
+                self.bot.logger.warning(
+                    f"Channel id `{view[0]}` not found in table `view`"
+                )
+                continue
             l10n = await self.bot.get_l10n(channel.guild.id if channel.guild else 0)
 
             buttons = self.c.execute(
