@@ -1,10 +1,14 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import discord
 from discord.app_commands import AppCommandError
 
 from cogs.verification.utils import verify
-from main import ProjectHyperlink
+
+if TYPE_CHECKING:
+    from main import ProjectHyperlink
+else:
+    ProjectHyperlink = discord.ext.commands.Bot
 
 
 # TODO: Make view persistent

@@ -2,14 +2,19 @@ import asyncio
 import re
 import smtplib
 from email.message import EmailMessage
+from typing import TYPE_CHECKING
 
 import asyncpg
 import config
 import discord
 from fluent.runtime import FluentLocalization
 
-from main import ProjectHyperlink
 from utils.utils import generateID
+
+if TYPE_CHECKING:
+    from main import ProjectHyperlink
+else:
+    ProjectHyperlink = discord.ext.commands.Bot
 
 GUILD_IDS = {
     904633974306005033: 0,
