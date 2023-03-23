@@ -1,10 +1,10 @@
+import asyncio
 import logging
 import time
 import re
 from typing import Literal
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from main import ProjectHyperlink
@@ -324,10 +324,25 @@ class Events(commands.Cog):
             entry.reason,
         )
 
+        # WARNING: Hacky code ahead. Alter with caution
+        await asyncio.sleep(1.0)
+        self.bot.dispatch("member_kick_ban", entry.target.id)
+
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        # TODO: Add conditional to check if it was self-leave or not
-        await self.on_remove_event("leave", None, member.mention, member.guild.id)
+        try:
+            await self.bot.wait_for(
+                "member_kick_ban",
+                check=lambda member_id: member_id == member.id,
+                timeout=4.0,
+            )
+        except asyncio.TimeoutError:
+            await self.on_remove_event(
+                "leave",
+                None,
+                member.mention,
+                member.guild.id,
+            )
 
 
 async def setup(bot):
