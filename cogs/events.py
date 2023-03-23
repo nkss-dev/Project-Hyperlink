@@ -20,49 +20,46 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """Called when a message is sent"""
-        if not re.fullmatch(f'<@!?{self.bot.user.id}>', message.content):
+        if not re.fullmatch(f"<@!?{self.bot.user.id}>", message.content):
             return
 
         l10n = await self.bot.get_l10n(message.guild.id if message.guild else 0)
 
         embed = discord.Embed(
-            title=l10n.format_value('details-title'),
-            color=discord.Color.blurple()
+            title=l10n.format_value("details-title"),
+            color=discord.Color.blurple(),
         )
 
         prefixes = await self.bot.get_prefix(message)
-        p_list = [f'{i+1}. {prefix}' for i, prefix in enumerate(prefixes)]
+        p_list = [f"{i+1}. {prefix}" for i, prefix in enumerate(prefixes)]
         embed.add_field(
-            name=l10n.format_value('prefix'),
-            value='\n'.join(p_list),
-            inline=False
+            name=l10n.format_value("prefix"),
+            value="\n".join(p_list),
+            inline=False,
         )
 
-        delta_uptime = discord.utils.utcnow() - self.bot.launch_time
-        hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
-        minutes, seconds = divmod(remainder, 60)
-        days, hours = divmod(hours, 24)
         embed.add_field(
-            name=l10n.format_value('uptime'),
-            value=f'{days}d, {hours}h, {minutes}m, {seconds}s',
-            inline=False
+            name=l10n.format_value("uptime"),
+            value=discord.utils.format_dt(self.bot.launch_time, "R"),
+            inline=False,
         )
 
-        ping = await message.channel.send(l10n.format_value('ping-initiate'))
+        ping = await message.channel.send(l10n.format_value("ping-initiate"))
         start = time.perf_counter()
-        await ping.edit(content=l10n.format_value('ping-calc'))
-        response_latency = (time.perf_counter() - start)
+        await ping.edit(content=l10n.format_value("ping-calc"))
+        response_latency = time.perf_counter() - start
 
         embed.add_field(
-            name=l10n.format_value('ping-r-latency'),
-            value=f'```{int(response_latency*1000)}ms```'
+            name=l10n.format_value("ping-r-latency"),
+            value=f"```{int(response_latency*1000)}ms```",
         )
         embed.add_field(
-            name=l10n.format_value('ping-w-latency'),
-            value=f'```{int(self.bot.latency*1000)}ms```'
+            name=l10n.format_value("ping-w-latency"),
+            value=f"```{int(self.bot.latency*1000)}ms```",
         )
 
-        await ping.edit(content=None, embed=embed)
+        await message.channel.send(embed=embed)
+        await ping.delete()
 
     async def join_handler(self, events, member: discord.Member):
         # Send a welcome message to a guild channel and/or the member
