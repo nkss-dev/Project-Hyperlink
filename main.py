@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 from aiohttp import ClientSession, web
-from datetime import datetime
 
 import asyncpg
 import config
@@ -130,19 +129,23 @@ class ProjectHyperlink(commands.Bot):
 
 async def main():
     logger = Logger()
+    discord.utils.setup_logging(level=logging.INFO, root=False)
 
-    async with ClientSession() as client, asyncpg.create_pool(
+    pool = asyncpg.create_pool(
         dsn=config.dsn, command_timeout=60, max_inactive_connection_lifetime=0
-    ) as pool:
-        async with ProjectHyperlink(
-            db_pool=pool,
-            logger=logger,
-            web_client=client,
-        ) as bot:
-            logger.addHandler(ErrorHandler(bot, 1086928165303234680))
-            discord.utils.setup_logging(level=logging.INFO, root=False)
+    )
+    session = ClientSession()
+    bot = ProjectHyperlink(
+        db_pool=pool,
+        logger=logger,
+        web_client=session,
+    )
 
-            await bot.start(config.bot_token)
+    LOGGING_CHANNEL_ID: int = 1086928165303234680
+    logger.addHandler(ErrorHandler(bot, LOGGING_CHANNEL_ID))
+
+    async with session, pool, bot:
+        await bot.start(config.bot_token)
 
 
 if __name__ == "__main__":
