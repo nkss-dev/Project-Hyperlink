@@ -13,11 +13,10 @@ else:
 
 # TODO: Make view persistent
 class VerificationView(discord.ui.View):
-    def __init__(self, label: str, bot: ProjectHyperlink):
+    def __init__(self, label: str):
         super().__init__(timeout=None)
-        self.bot = bot
 
-        button = VerificationButton(label, bot)
+        button = VerificationButton(label, custom_id="VerificationButton")
         self.add_item(button)
 
     async def on_error(
@@ -27,33 +26,32 @@ class VerificationView(discord.ui.View):
         _: discord.ui.Item[Any],
     ) -> None:
         if isinstance(error, AppCommandError):
-            await self.bot.tree.on_error(interaction, error)
+            await interaction.client.tree.on_error(interaction, error)
         else:
-            await self.bot.tree.on_error(
+            await interaction.client.tree.on_error(
                 interaction,
                 AppCommandError("UnhandledError"),
             )
 
 
 class VerificationButton(discord.ui.Button):
-    def __init__(self, label, bot: ProjectHyperlink, **kwargs):
+    def __init__(self, label, **kwargs):
         super().__init__(label=label, style=discord.ButtonStyle.green, **kwargs)
-        self.bot = bot
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction[ProjectHyperlink]):
         assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
         # TODO: Change this to use the check
         for role in interaction.user.roles:
             if role.name == "verified":
-                self.bot.logger.info(
+                interaction.client.logger.info(
                     f"Verified user attempted to verify in `{interaction.guild.name}` using the verification button",
                     extra={"user": interaction.user},
                 )
                 raise discord.app_commands.CheckFailure("UserAlreadyVerified")
 
-        await interaction.response.send_modal(VerificationModal(self.bot))
+        await interaction.response.send_modal(VerificationModal(interaction.client))
 
 
 class VerificationModal(discord.ui.Modal, title="Verification"):
