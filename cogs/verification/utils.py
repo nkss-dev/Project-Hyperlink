@@ -2,9 +2,10 @@ import asyncio
 import re
 import smtplib
 from email.message import EmailMessage
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import asyncpg
+from cogs.errors.app import IncorrectGuildBatch, OTPTimeout, RollNotFound
 import config
 import discord
 from fluent.runtime import FluentLocalization
@@ -76,12 +77,10 @@ async def authenticate(
             )
         except asyncio.TimeoutError:
             bot.logger.warning(
-                "Verification timed out in `{member.guild.name}`",
+                f"Verification timed out in `{member.guild.name}`",
                 extra={"user": member},
             )
-            raise discord.app_commands.CheckFailure(
-                "TimeoutError-otp", {"author": member.mention}
-            )
+            raise OTPTimeout(member=member)
         else:
             await message.delete()
 
@@ -172,7 +171,7 @@ async def verify(
 
     l10n = await bot.get_l10n(interaction.guild.id if interaction.guild else 0)
 
-    student: dict[str, str] = await bot.pool.fetchrow(
+    student: dict[str, Any] = await bot.pool.fetchrow(
         f"""
         SELECT
             roll_number,
@@ -189,19 +188,16 @@ async def verify(
         roll,
     )
     if not student:
-        raise discord.app_commands.CheckFailure("NotFound-roll", {"roll": roll})
+        raise RollNotFound(roll_number=roll)
 
     if (
         GUILD_IDS[member.guild.id] != 0
         and GUILD_IDS[member.guild.id] != student["batch"]
     ):
-        raise discord.app_commands.CheckFailure(
-            "BadRequest-restricted-guild",
-            {
-                "roll": student["roll_number"],
-                "server_batch": GUILD_IDS[member.guild.id],
-                "student_batch": student["batch"],
-            },
+        raise IncorrectGuildBatch(
+            roll_number=student["roll_number"],
+            server_batch=GUILD_IDS[member.guild.id],
+            student_batch=student["batch"],
         )
 
     verified = await authenticate(

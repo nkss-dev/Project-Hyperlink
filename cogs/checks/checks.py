@@ -1,8 +1,9 @@
 import config
 
-from discord import app_commands, Interaction
+from discord import Interaction
 from discord.ext import commands
 
+from cogs.errors import app
 from main import ProjectHyperlink
 
 
@@ -11,43 +12,42 @@ async def _is_verified(
     suppress: bool = False,
 ):
     author, bot, error = (
-        (instance.author, instance.bot, commands.CheckFailure)
+        (instance.author, instance.bot, commands.CheckFailure("UserNotVerified"))
         if isinstance(instance, commands.Context)
-        else (instance.user, instance.client, app_commands.CheckFailure)
+        else (instance.user, instance.client, app.UserNotVerified)
     )
 
+    verified = False
     async with bot.session.get(
-        f"{config.api_url}/status/student/discord", params={"id": author.id}
+        f"{config.api_url}/status/student/discord", params=dict(id=author.id)
     ) as resp:
-        if resp.status == 404:
-            if suppress:
-                return False
-            else:
-                raise error("AccountNotLinked")
-        if (await resp.json())["data"] is False:
-            if suppress:
-                return False
-            else:
-                raise error("UserNotVerified")
-    return True
+        if resp.status in range(500, 600):
+            bot.logger.exception("API returned an error")
+            raise app.UnhandledError
+        elif resp.status == 200:
+            verified = (await resp.json())["data"]
+
+    if not verified and not suppress:
+        raise error
+    return verified
 
 
 async def _is_owner(
     instance: commands.Context[ProjectHyperlink] | Interaction[ProjectHyperlink],
+    *,
+    message: str | None = None,
     suppress: bool = False,
 ):
     author, bot, error = (
         (instance.author, instance.bot, commands.NotOwner)
         if isinstance(instance, commands.Context)
-        else (
-            instance.user,
-            instance.client,
-            app_commands.CheckFailure("Unauthorised-NotOwner"),
-        )
+        else (instance.user, instance.client, app.NotOwner)
     )
 
     if not await bot.is_owner(author):
         if suppress:
             return False
-        raise error
+        if message is None:
+            raise error
+        raise error(message)
     return True

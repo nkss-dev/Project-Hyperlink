@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
 from cogs.verification.utils import post_verification_handler, verify
 from main import ProjectHyperlink
@@ -50,7 +51,7 @@ class Verification(commands.Cog):
                     f"Verified user attempted to verify in `{interaction.guild.name}` using the slash command",
                     extra={"user": interaction.user},
                 )
-                raise discord.app_commands.CheckFailure("UserAlreadyVerified")
+                raise UserAlreadyVerified
 
         await verify(self.bot, interaction, roll)
 
@@ -96,7 +97,7 @@ class Verification(commands.Cog):
             if GUILD_IDS[guild.id] != 0 and GUILD_IDS[guild.id] != student["batch"]:
                 await member.send(
                     self.l10n.format_value(
-                        "BadRequest-restricted-guild",
+                        "IncorrectGuildBatch",
                         {
                             "roll": student["roll_number"],
                             "server_batch": GUILD_IDS[guild.id],

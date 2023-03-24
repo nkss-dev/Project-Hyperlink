@@ -9,6 +9,7 @@ from discord.ext import commands
 from tabulate import tabulate
 
 import cogs.checks as checks
+from cogs.errors.app import BatchNotFound, NotForBot, UnhandledError, UserNotFound
 from main import ProjectHyperlink
 from models.courses import Course, Specifics
 
@@ -50,7 +51,7 @@ class Info(commands.Cog):
         async with self.bot.session.get(f"{config.api_url}/courses/{code}") as resp:
             # TODO: Make a global fetcher util
             if resp.status != 200:
-                raise app_commands.AppCommandError("UnhandledError")
+                raise UnhandledError
             data = (await resp.json())["data"]
 
         specifics = [Specifics(**specific) for specific in data.pop("specifics")]
@@ -195,22 +196,14 @@ class Info(commands.Cog):
             member defaults to the author of the command.
         """
         if member.bot:
-            raise app_commands.CheckFailure("NotForBot")
+            raise NotForBot
 
         if member != interaction.user:
-            auth = await checks._is_owner(interaction, True)
-            if auth is False:
-                await interaction.response.send_message(
-                    self.l10n.format_value("Unauthorised-profile"),
-                    ephemeral=True,
-                )
-                return
+            await checks._is_owner(interaction, message="Unauthorised-profile")
 
         embed = await self.get_profile_embed(bool(interaction.guild), member)
         if not embed:
-            raise app_commands.CheckFailure(
-                "RecordNotFound", {"member": member.mention}
-            )
+            raise UserNotFound(member=member)
         else:
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -257,8 +250,7 @@ class Info(commands.Cog):
         )
 
         if not name:
-            # ctx.author = member
-            raise commands.CheckFailure("RecordNotFound")
+            raise UserNotFound(member=member)
 
         old_nick = member.nick
         first_name = name.split(" ", 1)[0]
@@ -310,10 +302,7 @@ class Info(commands.Cog):
             batch,
         )
         if not data:
-            await interaction.response.send_message(
-                self.l10n.format_value("NotFound-batch"), ephemeral=True
-            )
-            return
+            raise BatchNotFound(batch=batch)
 
         sections, counts = [], []
         for row in data:

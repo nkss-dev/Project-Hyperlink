@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from . import app
 from main import ProjectHyperlink
 
 
@@ -113,7 +114,10 @@ class Errors(commands.Cog):
         error_text: str = error.__class__.__name__
         error_variables: dict[str, Any] = {}
 
-        if isinstance(error, app_commands.CommandInvokeError):
+        if isinstance(error, app.UnhandledError):
+            caught = True
+
+        elif isinstance(error, app_commands.CommandInvokeError):
             wrapped_error = error.__cause__
 
             if isinstance(wrapped_error, commands.ExtensionError):
@@ -123,6 +127,7 @@ class Errors(commands.Cog):
 
         elif isinstance(error, app_commands.CheckFailure):
             caught = True
+            error_variables = error.__dict__
 
             if isinstance(error, app_commands.MissingPermissions):
                 # TODO: Don't do this since it does not provide l10n

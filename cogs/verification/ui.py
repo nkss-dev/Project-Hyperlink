@@ -3,6 +3,7 @@ from typing import Any, TYPE_CHECKING
 import discord
 from discord.app_commands import AppCommandError
 
+from cogs.errors.app import UnhandledError, UserAlreadyVerified
 from cogs.verification.utils import verify
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ class VerificationView(discord.ui.View):
         else:
             await interaction.client.tree.on_error(
                 interaction,
-                AppCommandError("UnhandledError"),
+                UnhandledError(),
             )
 
 
@@ -48,7 +49,7 @@ class VerificationButton(discord.ui.Button):
                     f"Verified user attempted to verify in `{interaction.guild.name}` using the verification button",
                     extra={"user": interaction.user},
                 )
-                raise discord.app_commands.CheckFailure("UserAlreadyVerified")
+                raise UserAlreadyVerified
 
         await interaction.response.send_modal(VerificationModal(interaction.client))
 
