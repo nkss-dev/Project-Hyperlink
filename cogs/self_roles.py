@@ -5,7 +5,6 @@ from asyncio import TimeoutError
 import discord
 from discord.ext import commands
 
-from utils import checks
 from utils.utils import generateID
 
 
@@ -57,7 +56,8 @@ class ButtonRoles(commands.Cog):
     async def cog_check(self, ctx) -> bool:
         l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
         self.fmv = l10n.format_value
-        return await checks.is_mod().predicate(ctx)
+        # TODO: Add `is_mod`
+        return super().cog_check(ctx)
 
     @commands.group(name='button_role', aliases=['br'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -181,6 +181,7 @@ class ButtonRoles(commands.Cog):
         await ctx.reply(self.fmv('remove-success', {'id': ID}))
 
     async def load_views(self):
+        # TODO: Fix code
         await self.bot.wait_until_ready()
 
         views = self.c.execute(
@@ -287,7 +288,8 @@ class ReactionRoles(commands.Cog):
     async def cog_check(self, ctx) -> bool:
         l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
         self.fmv = l10n.format_value
-        return await checks.is_mod().predicate(ctx)
+        # TODO: Add `is_mod`
+        return super().cog_check(ctx)
 
     @commands.group(name='reaction_role', aliases=['rr'], invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)

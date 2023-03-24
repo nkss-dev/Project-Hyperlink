@@ -3,7 +3,7 @@ import re
 from discord import utils, AllowedMentions
 from discord.ext import commands
 
-from utils import checks
+import cogs.checks as checks
 from utils.utils import getWebhook
 
 
@@ -38,13 +38,13 @@ class Tag(commands.Cog):
         """
         webhook = await getWebhook(ctx.channel, ctx.guild.me)
 
-        section, batch = await self.bot.conn.fetchrow(
+        section, batch = await self.bot.pool.fetchrow(
             'SELECT section, batch FROM student WHERE discord_uid = $1',
             ctx.author.id
         )
 
         # Store roles that the user is allowed to tag
-        section, *sub_secs = await self.bot.conn.fetchrow(
+        section, *sub_secs = await self.bot.pool.fetchrow(
             '''
             SELECT
                 section,

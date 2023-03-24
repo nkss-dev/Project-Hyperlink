@@ -4,7 +4,8 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from utils import checks
+import cogs.checks as checks
+from main import ProjectHyperlink
 from utils.l10n import get_l10n
 
 
@@ -38,9 +39,10 @@ class IGN(commands.Cog):
             await ctx.reply(content)
         return result
 
-    async def cog_check(self, ctx) -> bool:
-        self.l10n = get_l10n(ctx.guild.id if ctx.guild else 0, 'ign')
-        return await checks.is_verified().predicate(ctx)
+    async def cog_check(self, ctx: commands.Context[ProjectHyperlink]) -> bool:
+        l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
+        self.fmv = l10n.format_value
+        return await checks._is_verified(ctx)
 
     @commands.group()
     async def ign(self, ctx):

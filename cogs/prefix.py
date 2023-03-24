@@ -1,6 +1,7 @@
 from discord.ext import commands
 
-from utils import checks
+import cogs.checks as checks
+from main import ProjectHyperlink
 
 
 class Prefix(commands.Cog):
@@ -9,10 +10,10 @@ class Prefix(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx: commands.Context[ProjectHyperlink]):
         l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
         self.fmv = l10n.format_value
-        return await checks.is_verified().predicate(ctx)
+        return await checks._is_verified(ctx)
 
     async def fetch_prefix(self, id: int) -> map:
         return map(

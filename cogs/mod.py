@@ -8,8 +8,6 @@ import discord
 from discord.ext import commands
 from discord.utils import sleep_until
 
-from utils import checks
-
 
 class Mod(commands.Cog):
     """Moderator-only commands"""
@@ -26,7 +24,7 @@ class Mod(commands.Cog):
         if not ctx.guild:
             raise commands.NoPrivateMessage
         self.l10n = await self.bot.get_l10n(ctx.guild.id)
-        return await checks.is_mod().predicate(ctx)
+        return super().cog_check(ctx)
 
     @commands.command(aliases=['m'])
     async def mute(self, ctx, item: Union[discord.Member, discord.Role], duration: str, channel: discord.TextChannel = None):

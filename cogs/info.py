@@ -8,9 +8,9 @@ from discord import app_commands
 from discord.ext import commands
 from tabulate import tabulate
 
+import cogs.checks as checks
 from main import ProjectHyperlink
 from models.courses import Course, Specifics
-from utils import checks
 
 
 class Info(commands.Cog):
@@ -178,9 +178,11 @@ class Info(commands.Cog):
 
         return embed
 
-    @checks.is_exists()
+    @checks.is_verified()
     async def profile(
-        self, interaction: discord.Interaction, member: discord.Member | discord.User
+        self,
+        interaction: discord.Interaction[ProjectHyperlink],
+        member: discord.Member | discord.User,
     ):
         """View your or someone else's personal profile card."""
         """
@@ -196,10 +198,10 @@ class Info(commands.Cog):
             raise app_commands.CheckFailure("NotForBot")
 
         if member != interaction.user:
-            auth = await checks.is_authorised().predicate(interaction)
+            auth = await checks._is_owner(interaction, True)
             if auth is False:
                 await interaction.response.send_message(
-                    self.l10n.format_value("MissingAuthorisation-profile"),
+                    self.l10n.format_value("Unauthorised-profile"),
                     ephemeral=True,
                 )
                 return
