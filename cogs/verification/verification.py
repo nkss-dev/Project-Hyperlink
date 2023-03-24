@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands
 
@@ -112,14 +114,23 @@ class Verification(commands.Cog):
             )
             return
 
-        # TODO: Somehow delete this message once the user verifies
-        await channel.send(
+        prompt = await channel.send(
             self.l10n.format_value("verification-prompt", {"member": member.mention}),
         )
         self.bot.logger.info(
             f"Verification prompt sent to new user in `{guild.name}`",
             extra={"user": member},
         )
+
+        try:
+            await self.bot.wait_for(
+                "user_verify",
+                check=lambda user: user.id == member.id,
+                timeout=1200.0,
+            )
+        except asyncio.TimeoutError:
+            pass
+        await prompt.delete()
 
 
 async def setup(bot):
