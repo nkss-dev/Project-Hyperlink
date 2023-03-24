@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+import cogs.checks as checks
 from . import GUILD_IDS
 from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
@@ -20,16 +21,24 @@ class Verification(commands.Cog):
         self.fmv = l10n.format_value
         return True
 
-    @discord.app_commands.command()
-    @discord.app_commands.guilds(*GUILD_IDS.keys())
-    async def verification(self, interaction: discord.Interaction):
+    @commands.command(hidden=True)
+    @checks.is_owner()
+    @commands.guild_only()
+    async def verification(self, ctx: commands.Context[ProjectHyperlink]):
         """Send a verification button"""
-        view = VerificationView(self.fmv("verify-button-label"))
+        assert ctx.guild is not None
 
-        await interaction.response.send_message(
-            self.fmv("verification-message"),
+        if ctx.guild.id not in GUILD_IDS:
+            return
+
+        l10n = await self.bot.get_l10n(ctx.guild.id)
+        view = VerificationView(l10n.format_value("verify-button-label"))
+
+        await ctx.send(
+            l10n.format_value("verification-message"),
             view=view,
         )
+        await ctx.message.delete()
 
     @discord.app_commands.command(name="verify")
     @discord.app_commands.guild_only()
