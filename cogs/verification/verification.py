@@ -1,16 +1,11 @@
 import discord
 from discord.ext import commands
 
+from . import GUILD_IDS
 from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
 from cogs.verification.utils import post_verification_handler, verify
 from main import ProjectHyperlink
-
-GUILD_IDS = {
-    904633974306005033: 0,
-    783215699707166760: 2024,
-    915517972594982942: 2025,
-}
 
 
 class Verification(commands.Cog):
