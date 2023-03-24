@@ -9,30 +9,10 @@ import discord
 from discord.ext import commands
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
+import cogs
 from api.main import app
 from cogs.verification.ui import VerificationView
 from utils.logger import ErrorHandler, Logger
-
-initial_extensions = [
-    "cogs.verification.verification",
-    "cogs.drive",
-    "cogs.errors",
-    "cogs.events",
-    "cogs.help",
-    "cogs.ign",
-    "cogs.info",
-    "cogs.logger",
-    "cogs.mod",
-    "cogs.owner",
-    "cogs.prefix",
-    "cogs.self_roles",
-    "cogs.tag",
-    "cogs.verification",
-    "cogs.VoiceChat",
-    "cogs.voltorb",
-]
-
-loader = FluentResourceLoader("l10n/{locale}")
 
 
 class ProjectHyperlink(commands.Bot):
@@ -64,10 +44,10 @@ class ProjectHyperlink(commands.Bot):
             owner_ids=config.owner_ids,
         )
         self._l10n: dict[str, FluentLocalization] = {}
+        self._loader = FluentResourceLoader("l10n/{locale}")
         self._guild_locales = {0: "en-GB"}
 
         self.pool = db_pool
-        self.initial_extensions = initial_extensions
         self.launch_time = discord.utils.utcnow()
         self.logger = logger
         self.session = web_client
@@ -101,9 +81,9 @@ class ProjectHyperlink(commands.Bot):
         locale = self._guild_locales[guild_id]
 
         if self._l10n.get(locale) is None:
-            # TODO: `files` must not depend on `initial_extensions`
-            files = [f"{file.split('.')[-1]}.ftl" for file in initial_extensions]
-            self._l10n[locale] = FluentLocalization([locale], files, loader)
+            # TODO: `files` must not depend on `INITIAL_EXTENSIONS`
+            files = [f"{file.split('.')[-1]}.ftl" for file in cogs.INITIAL_EXTENSIONS]
+            self._l10n[locale] = FluentLocalization([locale], files, self._loader)
 
         return self._l10n[locale]
 
@@ -111,7 +91,7 @@ class ProjectHyperlink(commands.Bot):
         self.logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def setup_hook(self) -> None:
-        for extension in initial_extensions:
+        for extension in cogs.INITIAL_EXTENSIONS:
             try:
                 await self.load_extension(extension)
             except Exception:

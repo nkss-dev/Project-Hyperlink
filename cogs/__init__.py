@@ -1,0 +1,17 @@
+INITIAL_EXTENSIONS = [
+    "cogs.verification.verification",
+    "cogs.drive",
+    "cogs.errors",
+    "cogs.events",
+    "cogs.help",
+    "cogs.ign",
+    "cogs.info",
+    "cogs.logger",
+    "cogs.mod",
+    "cogs.owner",
+    "cogs.prefix",
+    "cogs.self_roles",
+    "cogs.tag",
+    "cogs.VoiceChat",
+    "cogs.voltorb",
+]
