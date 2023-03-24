@@ -1,3 +1,4 @@
+from typing import Any
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -47,7 +48,7 @@ class Errors(commands.Cog):
 
         elif isinstance(error, commands.CheckFailure):
             if isinstance(error, commands.NotOwner):
-                await ctx.reply(l10n.format_value("CheckFailure-NotOwner"))
+                await ctx.reply(l10n.format_value("Unauthorised-NotOwner"))
 
             elif isinstance(error, commands.MissingPermissions):
                 await ctx.reply(str(error))
@@ -108,41 +109,36 @@ class Errors(commands.Cog):
         id = interaction.guild.id if interaction.guild else 0
         l10n = await self.bot.get_l10n(id)
 
-        if interaction.response.is_done():
-            send_callback = interaction.followup.send
-        else:
-            send_callback = interaction.response.send_message
-
-        if error.args[0] == "UnhandledError":
-            await send_callback(l10n.format_value(error.args[0]), ephemeral=True)
-            self.bot.logger.critical(
-                "Unhandled Error",
-                exc_info=True,
-                extra={"user": interaction.user},
-            )
-            return
-
-        error_text = error.args[0]
-        error_variables = error.args[1] if len(error.args) > 1 else {}
+        caught: bool = False
+        error_text: str = error.__class__.__name__
+        error_variables: dict[str, Any] = {}
 
         if isinstance(error, app_commands.CommandInvokeError):
             wrapped_error = error.__cause__
 
             if isinstance(wrapped_error, commands.ExtensionError):
-                await send_callback(str(error.__cause__), ephemeral=True)
-                return
+                caught = True
+                # TODO: Don't do this since it does not provide l10n
+                error_text = str(wrapped_error)
 
         elif isinstance(error, app_commands.CheckFailure):
-            if isinstance(error, app_commands.MissingPermissions):
-                await send_callback(str(error), ephemeral=True)
-                return
+            caught = True
 
-            await send_callback(
+            if isinstance(error, app_commands.MissingPermissions):
+                # TODO: Don't do this since it does not provide l10n
+                error_text = str(error)
+
+        if not caught:
+            self.bot.logger.exception(error, extra={"user": interaction.user})
+
+        if interaction.response.is_done():
+            await interaction.followup.send(
                 l10n.format_value(error_text, error_variables), ephemeral=True
             )
-            return
-
-        self.bot.logger.exception(error)
+        else:
+            await interaction.response.send_message(
+                l10n.format_value(error_text, error_variables), ephemeral=True
+            )
 
 
 async def setup(bot: ProjectHyperlink):
