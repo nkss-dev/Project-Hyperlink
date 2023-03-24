@@ -1,10 +1,15 @@
 import config
+from typing import TYPE_CHECKING
 
 from discord import Interaction
 from discord.ext import commands
 
 from cogs.errors import app
-from main import ProjectHyperlink
+
+if TYPE_CHECKING:
+    from main import ProjectHyperlink
+else:
+    ProjectHyperlink = commands.Bot
 
 
 async def _is_verified(
