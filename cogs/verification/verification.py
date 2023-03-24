@@ -3,7 +3,6 @@ from discord.ext import commands
 
 import cogs.checks as checks
 from . import GUILD_IDS
-from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
 from cogs.verification.utils import post_verification_handler, verify
 from main import ProjectHyperlink
@@ -48,14 +47,7 @@ class Verification(commands.Cog):
         assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
-        # TODO: Change this to use the check
-        for role in interaction.user.roles:
-            if role.name == "verified":
-                self.bot.logger.info(
-                    f"Verified user attempted to verify in `{interaction.guild.name}` using the slash command",
-                    extra={"user": interaction.user},
-                )
-                raise UserAlreadyVerified
+        await checks._is_verified(interaction)
 
         await verify(self.bot, interaction, roll)
 

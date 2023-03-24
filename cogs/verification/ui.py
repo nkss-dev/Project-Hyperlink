@@ -3,7 +3,8 @@ from typing import Any, TYPE_CHECKING
 import discord
 from discord.app_commands import AppCommandError
 
-from cogs.errors.app import UnhandledError, UserAlreadyVerified
+import cogs.checks as checks
+from cogs.errors.app import UnhandledError
 from cogs.verification.utils import verify
 
 if TYPE_CHECKING:
@@ -42,14 +43,7 @@ class VerificationButton(discord.ui.Button):
         assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
-        # TODO: Change this to use the check
-        for role in interaction.user.roles:
-            if role.name == "verified":
-                interaction.client.logger.info(
-                    f"Verified user attempted to verify in `{interaction.guild.name}` using the verification button",
-                    extra={"user": interaction.user},
-                )
-                raise UserAlreadyVerified
+        await checks._is_verified(interaction)
 
         await interaction.response.send_modal(VerificationModal(interaction.client))
 
