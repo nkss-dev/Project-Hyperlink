@@ -104,7 +104,7 @@ class Verification(commands.Cog):
                 self.bot.logger.info(message)
                 return
 
-            self.bot.dispatch("user_verify", student)
+            self.bot.dispatch("user_verify", student, member.guild.id)
             self.bot.logger.info(
                 f"{member.mention} was provided direct access to `{guild.name}`"
             )
@@ -127,6 +127,75 @@ class Verification(commands.Cog):
         except asyncio.TimeoutError:
             pass
         await prompt.delete()
+
+    @commands.Cog.listener()
+    async def on_user_verify(
+        self, student: Student, current_guild_id: int | None = None
+    ):
+        role_names = (
+            student.section[:2],
+            student.section[:4],
+            student.section[:3] + student.section[4:].zfill(2),
+            student.batch,
+            student.hostel_id,
+            *student.clubs.keys(),
+            "verified",
+        )
+
+        async def edit_member(guild_id: int):
+            guild = self.bot.get_guild(guild_id)
+            assert guild is not None
+
+            assert student.discord_id is not None
+            member = guild.get_member(student.discord_id)
+            if member is None:
+                return
+
+            roles = []
+            for role_name in role_names:
+                if role := discord.utils.get(member.guild.roles, name=str(role_name)):
+                    roles.append(role)
+            await member.add_roles(*roles)
+
+            if member.display_name != student.name:
+                first_name = student.name.split(" ", 1)[0]
+                try:
+                    await member.edit(nick=first_name)
+                except discord.Forbidden:
+                    pass
+
+        if current_guild_id is not None:
+            await edit_member(current_guild_id)
+            return
+
+        clubs = await self.bot.pool.fetch(
+            """
+            SELECT
+                guild_id
+            FROM
+                club_discord
+            WHERE
+                club_name = ANY(
+                    SELECT
+                        club.name
+                    FROM
+                        club
+                    WHERE
+                        club.name = ANY($1)
+                        OR club.alias = ANY($1)
+                    )
+            """,
+            student.clubs.keys(),
+        )
+        club_guild_ids = [club["guild_id"] for club in clubs]
+
+        # TODO: Loop through all guilds and perform role remove also
+        for guild_id in GUILD_IDS:
+            if GUILD_IDS[guild_id] == 0 or GUILD_IDS[guild_id] == student.batch:
+                await edit_member(guild_id)
+
+        for guild_id in club_guild_ids:
+            await edit_member(guild_id)
 
 
 async def setup(bot):
