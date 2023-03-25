@@ -8,7 +8,7 @@ import cogs.checks as checks
 from . import GUILD_IDS
 from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
-from cogs.verification.utils import verify
+from cogs.verification.utils import assign_student_roles, verify
 from main import ProjectHyperlink
 from models.student import Student, parse_student
 
@@ -104,7 +104,7 @@ class Verification(commands.Cog):
                 self.bot.logger.info(message)
                 return
 
-            self.bot.dispatch("user_verify", student, member.guild.id)
+            await assign_student_roles(student, member.guild)
             self.bot.logger.info(
                 f"{member.mention} was provided direct access to `{guild.name}`"
             )
@@ -129,45 +129,7 @@ class Verification(commands.Cog):
         await prompt.delete()
 
     @commands.Cog.listener()
-    async def on_user_verify(
-        self, student: Student, current_guild_id: int | None = None
-    ):
-        role_names = (
-            student.section[:2],
-            student.section[:4],
-            student.section[:3] + student.section[4:].zfill(2),
-            student.batch,
-            student.hostel_id,
-            *student.clubs.keys(),
-            "verified",
-        )
-
-        async def edit_member(guild_id: int):
-            guild = self.bot.get_guild(guild_id)
-            assert guild is not None
-
-            assert student.discord_id is not None
-            member = guild.get_member(student.discord_id)
-            if member is None:
-                return
-
-            roles = []
-            for role_name in role_names:
-                if role := discord.utils.get(member.guild.roles, name=str(role_name)):
-                    roles.append(role)
-            await member.add_roles(*roles)
-
-            if member.display_name != student.name:
-                first_name = student.name.split(" ", 1)[0]
-                try:
-                    await member.edit(nick=first_name)
-                except discord.Forbidden:
-                    pass
-
-        if current_guild_id is not None:
-            await edit_member(current_guild_id)
-            return
-
+    async def on_user_verify(self, student: Student):
         clubs = await self.bot.pool.fetch(
             """
             SELECT
@@ -191,11 +153,17 @@ class Verification(commands.Cog):
 
         # TODO: Loop through all guilds and perform role remove also
         for guild_id in GUILD_IDS:
+            guild = self.bot.get_guild(guild_id)
+            assert guild is not None
+
             if GUILD_IDS[guild_id] == 0 or GUILD_IDS[guild_id] == student.batch:
-                await edit_member(guild_id)
+                await assign_student_roles(student, guild)
 
         for guild_id in club_guild_ids:
-            await edit_member(guild_id)
+            guild = self.bot.get_guild(guild_id)
+            assert guild is not None
+
+            await assign_student_roles(student, guild)
 
 
 async def setup(bot):

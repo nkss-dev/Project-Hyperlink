@@ -10,13 +10,43 @@ from fluent.runtime import FluentLocalization
 
 from . import GUILD_IDS
 from cogs.errors.app import IncorrectGuildBatch, OTPTimeout, RollNotFound
-from models.student import parse_student
+from models.student import Student, parse_student
 from utils.utils import generateID
 
 if TYPE_CHECKING:
     from main import ProjectHyperlink
 else:
     ProjectHyperlink = discord.ext.commands.Bot
+
+
+async def assign_student_roles(student: Student, guild: discord.Guild):
+    role_names = (
+        student.section[:2],
+        student.section[:4],
+        student.section[:3] + student.section[4:].zfill(2),
+        student.batch,
+        student.hostel_id,
+        *student.clubs.keys(),
+        "verified",
+    )
+
+    assert student.discord_id is not None
+    member = guild.get_member(student.discord_id)
+    if member is None:
+        return
+
+    roles = []
+    for role_name in role_names:
+        if role := discord.utils.get(member.guild.roles, name=str(role_name)):
+            roles.append(role)
+    await member.add_roles(*roles)
+
+    if member.display_name != student.name:
+        first_name = student.name.split(" ", 1)[0]
+        try:
+            await member.edit(nick=first_name)
+        except discord.Forbidden:
+            pass
 
 
 async def authenticate(
