@@ -2,15 +2,15 @@ import asyncio
 import re
 import smtplib
 from email.message import EmailMessage
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-import asyncpg
-from cogs.errors.app import IncorrectGuildBatch, OTPTimeout, RollNotFound
 import config
 import discord
 from fluent.runtime import FluentLocalization
 
 from . import GUILD_IDS
+from cogs.errors.app import IncorrectGuildBatch, OTPTimeout, RollNotFound
+from models.student import parse_student
 from utils.utils import generateID
 
 if TYPE_CHECKING:
@@ -95,65 +95,6 @@ async def authenticate(
     return True
 
 
-async def post_verification_handler(
-    member: discord.Member, student: dict[str, str], pool: asyncpg.Pool
-):
-    """Do post successful verification stuff"""
-    old_user_id = await pool.fetchval(
-        "SELECT discord_id FROM student WHERE roll_number = $1",
-        student["roll_number"],
-    )
-
-    await pool.execute(
-        """
-        UPDATE
-            student
-        SET
-            discord_id = $1,
-            is_verified = true
-        WHERE
-            roll_number = $2
-        """,
-        member.id,
-        student["roll_number"],
-    )
-
-    # TODO: Kick `old_user_id` from affiliated servers
-
-    groups = await pool.fetch(
-        """
-        SELECT
-            COALESCE(club.alias, club.name) AS short_name
-        FROM
-            club
-        WHERE
-            club.name = ANY(SELECT club_name FROM club_member WHERE roll_number = $1)
-        """,
-        student["roll_number"],
-    )
-
-    role_names = (
-        student["section"][:2],
-        student["section"][:4],
-        student["section"][:3] + student["section"][4:].zfill(2),
-        student["batch"],
-        student["hostel_id"],
-        *[group["short_name"] for group in groups],
-        "verified",
-    )
-    roles = []
-    for role_name in role_names:
-        if role := discord.utils.get(member.guild.roles, name=str(role_name)):
-            roles.append(role)
-    await member.add_roles(*roles)
-
-    if member.display_name != student["name"]:
-        first_name = student["name"].split(" ", 1)[0]
-        await member.edit(nick=first_name)
-
-    # TODO: Allow access to the user in all other affiliated guilds
-
-
 async def verify(
     bot: ProjectHyperlink,
     interaction: discord.Interaction[ProjectHyperlink],
@@ -166,37 +107,26 @@ async def verify(
 
     l10n = await bot.get_l10n(interaction.guild.id if interaction.guild else 0)
 
-    student: dict[str, Any] = await bot.pool.fetchrow(
-        f"""
-        SELECT
-            roll_number,
-            section,
-            name,
-            email,
-            batch,
-            hostel_id
-        FROM
-            student
-        WHERE
-            roll_number = $1
-        """,
-        roll,
-    )
-    if not student:
-        raise RollNotFound(roll_number=roll)
+    async with bot.session.get(
+        f"{config.api_url}/students/{roll}",
+        headers={"Authorization": f"Bearer {config.api_token}"},
+    ) as resp:
+        if resp.status == 200:
+            student_dict = (await resp.json())["data"]
+        else:
+            raise RollNotFound(roll_number=roll)
 
-    if (
-        GUILD_IDS[member.guild.id] != 0
-        and GUILD_IDS[member.guild.id] != student["batch"]
-    ):
+    student = parse_student(student_dict)
+
+    if GUILD_IDS[member.guild.id] != 0 and GUILD_IDS[member.guild.id] != student.batch:
         raise IncorrectGuildBatch(
-            roll_number=student["roll_number"],
+            roll_number=student.roll_number,
             server_batch=GUILD_IDS[member.guild.id],
-            student_batch=student["batch"],
+            student_batch=student.batch,
         )
 
     verified = await authenticate(
-        student["name"], student["email"], bot, member, interaction, l10n
+        student.name, student.email, bot, member, interaction, l10n
     )
     if verified is False:
         return
@@ -210,4 +140,25 @@ async def verify(
         extra={"user": member},
     )
 
-    await post_verification_handler(member, student, bot.pool)
+    old_user_id = await bot.pool.fetchval(
+        "SELECT discord_id FROM student WHERE roll_number = $1",
+        student.roll_number,
+    )
+    # TODO: Kick `old_user_id` from affiliated servers
+
+    student.discord_id = member.id
+    await bot.pool.execute(
+        """
+        UPDATE
+            student
+        SET
+            discord_id = $1,
+            is_verified = true
+        WHERE
+            roll_number = $2
+        """,
+        student.discord_id,
+        student.roll_number,
+    )
+
+    bot.dispatch("user_verify", student)

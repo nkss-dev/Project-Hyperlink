@@ -1,5 +1,6 @@
 import asyncio
 
+import config
 import discord
 from discord.ext import commands
 
@@ -7,8 +8,9 @@ import cogs.checks as checks
 from . import GUILD_IDS
 from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
-from cogs.verification.utils import post_verification_handler, verify
+from cogs.verification.utils import verify
 from main import ProjectHyperlink
+from models.student import Student, parse_student
 
 
 class Verification(commands.Cog):
@@ -74,35 +76,26 @@ class Verification(commands.Cog):
             )
             return
 
-        # TODO: Fetch to breadboard instead
-        student: dict[str, str] = await self.bot.pool.fetchrow(
-            """
-            SELECT
-                roll_number,
-                section,
-                name,
-                email,
-                batch,
-                hostel_id,
-                is_verified
-            FROM
-                student
-            WHERE
-                discord_id = $1
-            """,
-            member.id,
-        )
+        async with self.bot.session.get(
+            f"{config.api_url}/discord/users/{member.id}",
+            headers={"Authorization": f"Bearer {config.api_token}"},
+        ) as resp:
+            if resp.status == 200:
+                student_dict = (await resp.json())["data"]
+            else:
+                student_dict = {}
 
-        # TODO: Remove `is_verified` column from the database
-        if student and student["is_verified"]:
-            if GUILD_IDS[guild.id] != 0 and GUILD_IDS[guild.id] != student["batch"]:
+        if student_dict and student_dict["is_verified"]:
+            student = parse_student(student_dict)
+
+            if GUILD_IDS[guild.id] != 0 and GUILD_IDS[guild.id] != student.batch:
                 await member.send(
                     self.l10n.format_value(
                         "IncorrectGuildBatch",
                         {
-                            "roll": student["roll_number"],
+                            "roll": student.roll_number,
                             "server_batch": GUILD_IDS[guild.id],
-                            "student_batch": student["batch"],
+                            "student_batch": student.batch,
                         },
                     )
                 )
@@ -111,7 +104,7 @@ class Verification(commands.Cog):
                 self.bot.logger.info(message)
                 return
 
-            await post_verification_handler(member, student, self.bot.pool)
+            self.bot.dispatch("user_verify", student)
             self.bot.logger.info(
                 f"{member.mention} was provided direct access to `{guild.name}`"
             )
@@ -128,7 +121,7 @@ class Verification(commands.Cog):
         try:
             await self.bot.wait_for(
                 "user_verify",
-                check=lambda user: user.id == member.id,
+                check=lambda user: user.discord_id == member.id,
                 timeout=1200.0,
             )
         except asyncio.TimeoutError:
