@@ -1,5 +1,6 @@
 INITIAL_EXTENSIONS = [
     "cogs.verification.verification",
+    "cogs.verification.clubs",
     "cogs.drive",
     "cogs.errors",
     "cogs.events",
