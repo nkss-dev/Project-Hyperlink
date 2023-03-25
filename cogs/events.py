@@ -105,38 +105,6 @@ class Events(commands.Cog):
                 'DELETE FROM join_role WHERE role_id = ANY($1)', broken_ids
             )
 
-    async def join_club_or_society(self, member) -> bool:
-        batch = await self.bot.pool.fetchval(
-            'SELECT batch FROM student WHERE discord_id = $1',
-            member.id
-        )
-
-        roles = await get_group_roles(self.bot.pool, batch, member.guild)
-        # Exit if server isn't of a club/society
-        if roles is None:
-            return False
-
-        is_member = await self.bot.pool.fetchval(
-            '''
-            SELECT
-                EXISTS (
-                    SELECT
-                        *
-                    FROM
-                        club_discord_user
-                    WHERE
-                        guild_id = $1
-                        AND discord_id = $2
-                )
-            ''', member.guild.id, member.id
-        )
-
-        # Assign year role if the user is a member, else assign guest role
-        role_id = roles[0] if is_member else roles[1]
-        if role := member.guild.get_role(role_id):
-            await member.add_roles(role)
-        return True
-
     async def assign_user_roles(self, member: discord.Member) -> bool:
         fields = await self.bot.pool.fetch(
             '''
@@ -226,10 +194,6 @@ class Events(commands.Cog):
         )
         if event:
             await self.join_handler(event, member)
-
-        # Handle special events for club and society servers
-        if await self.join_club_or_society(member):
-            return
 
         # Handle special events for NITKKR servers
         # which assign roles based on student details

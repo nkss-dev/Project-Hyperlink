@@ -19,7 +19,13 @@ else:
     ProjectHyperlink = discord.ext.commands.Bot
 
 
-async def assign_student_roles(student: Student, guild: discord.Guild):
+async def assign_student_roles(
+    student: Student,
+    guild: discord.Guild,
+    extra_roles: list[discord.Role] | None = None,
+    *,
+    truncate: bool = False,
+):
     role_names = (
         student.section[:2],
         student.section[:4],
@@ -39,7 +45,13 @@ async def assign_student_roles(student: Student, guild: discord.Guild):
     for role_name in role_names:
         if role := discord.utils.get(member.guild.roles, name=str(role_name)):
             roles.append(role)
-    await member.add_roles(*roles)
+    if extra_roles is not None:
+        roles.extend(extra_roles)
+
+    if truncate:
+        await member.edit(roles=roles)
+    else:
+        await member.add_roles(*roles)
 
     if member.display_name != student.name:
         first_name = student.name.split(" ", 1)[0]

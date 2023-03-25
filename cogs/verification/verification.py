@@ -19,6 +19,19 @@ class Verification(commands.Cog):
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
 
+    async def cog_load(self) -> None:
+        club_guild_ids: list[dict[str, int]] = await self.bot.pool.fetch(
+            """
+            SELECT
+                guild_id
+            FROM
+                club_discord
+            """
+        )
+        self.club_guild_ids: list[int] = [
+            club_guild_id["guild_id"] for club_guild_id in club_guild_ids
+        ]
+
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         guild = interaction.guild
         l10n = await self.bot.get_l10n(guild.id if guild else 0)
@@ -63,9 +76,26 @@ class Verification(commands.Cog):
         if member.bot:
             return
 
-        if member.guild.id not in GUILD_IDS:
+        async with self.bot.session.get(
+            f"{config.api_url}/discord/users/{member.id}",
+            headers={"Authorization": f"Bearer {config.api_token}"},
+        ) as resp:
+            if resp.status == 200:
+                student_dict = (await resp.json())["data"]
+            else:
+                student_dict = {}
+
+        student = parse_student(student_dict) if student_dict else None
+
+        if member.guild.id in GUILD_IDS:
+            self.bot.dispatch("member_join_nit", member, student)
             return
 
+        if member.guild.id in self.club_guild_ids:
+            self.bot.dispatch("member_join_club", member, student)
+
+    @commands.Cog.listener()
+    async def on_member_join_nit(self, member: discord.Member, student: Student | None):
         guild = member.guild
         self.l10n = await self.bot.get_l10n(guild.id)
 
@@ -76,18 +106,7 @@ class Verification(commands.Cog):
             )
             return
 
-        async with self.bot.session.get(
-            f"{config.api_url}/discord/users/{member.id}",
-            headers={"Authorization": f"Bearer {config.api_token}"},
-        ) as resp:
-            if resp.status == 200:
-                student_dict = (await resp.json())["data"]
-            else:
-                student_dict = {}
-
-        if student_dict and student_dict["is_verified"]:
-            student = parse_student(student_dict)
-
+        if student and student.is_verified:
             if GUILD_IDS[guild.id] != 0 and GUILD_IDS[guild.id] != student.batch:
                 await member.send(
                     self.l10n.format_value(
@@ -130,27 +149,6 @@ class Verification(commands.Cog):
 
     @commands.Cog.listener()
     async def on_user_verify(self, student: Student):
-        clubs = await self.bot.pool.fetch(
-            """
-            SELECT
-                guild_id
-            FROM
-                club_discord
-            WHERE
-                club_name = ANY(
-                    SELECT
-                        club.name
-                    FROM
-                        club
-                    WHERE
-                        club.name = ANY($1)
-                        OR club.alias = ANY($1)
-                    )
-            """,
-            student.clubs.keys(),
-        )
-        club_guild_ids = [club["guild_id"] for club in clubs]
-
         # TODO: Loop through all guilds and perform role remove also
         for guild_id in GUILD_IDS:
             guild = self.bot.get_guild(guild_id)
@@ -159,11 +157,8 @@ class Verification(commands.Cog):
             if GUILD_IDS[guild_id] == 0 or GUILD_IDS[guild_id] == student.batch:
                 await assign_student_roles(student, guild)
 
-        for guild_id in club_guild_ids:
-            guild = self.bot.get_guild(guild_id)
-            assert guild is not None
-
-            await assign_student_roles(student, guild)
+        if student.clubs:
+            self.bot.dispatch("club_member_change", student)
 
 
 async def setup(bot):
