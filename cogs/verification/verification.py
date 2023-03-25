@@ -149,13 +149,32 @@ class Verification(commands.Cog):
 
     @commands.Cog.listener()
     async def on_user_verify(self, student: Student):
-        # TODO: Loop through all guilds and perform role remove also
         for guild_id in GUILD_IDS:
             guild = self.bot.get_guild(guild_id)
             assert guild is not None
 
             if GUILD_IDS[guild_id] == 0 or GUILD_IDS[guild_id] == student.batch:
                 await assign_student_roles(student, guild)
+                continue
+
+            assert student.discord_id is not None
+            member = guild.get_member(student.discord_id)
+            if member is None:
+                continue
+
+            await member.send(
+                self.l10n.format_value(
+                    "IncorrectGuildBatch",
+                    {
+                        "roll": student.roll_number,
+                        "server_batch": GUILD_IDS[guild.id],
+                        "student_batch": student.batch,
+                    },
+                )
+            )
+            message = f"{member.mention} was kicked from `{guild.name}` due to incorrect guild"
+            await member.kick(reason=message)
+            self.bot.logger.info(message)
 
         if student.clubs:
             self.bot.dispatch("club_member_change", student)
