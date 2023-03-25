@@ -4,7 +4,7 @@ import discord
 from discord.app_commands import AppCommandError
 
 import cogs.checks as checks
-from cogs.errors.app import UnhandledError
+from cogs.errors.app import UnhandledError, UserAlreadyVerified
 from cogs.verification.utils import verify
 
 if TYPE_CHECKING:
@@ -43,7 +43,9 @@ class VerificationButton(discord.ui.Button):
         assert interaction.guild is not None
         assert isinstance(interaction.user, discord.Member)
 
-        await checks._is_verified(interaction)
+        verified = await checks._is_verified(interaction, True)
+        if verified:
+            raise UserAlreadyVerified
 
         await interaction.response.send_modal(VerificationModal(interaction.client))
 
