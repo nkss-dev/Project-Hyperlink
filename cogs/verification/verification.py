@@ -62,9 +62,6 @@ class Verification(commands.Cog):
     async def verify_command(
         self, interaction: discord.Interaction[ProjectHyperlink], roll: str
     ):
-        assert interaction.guild is not None
-        assert isinstance(interaction.user, discord.Member)
-
         verified = await checks._is_verified(interaction, True)
         if verified:
             raise UserAlreadyVerified

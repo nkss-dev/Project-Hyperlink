@@ -142,12 +142,12 @@ async def verify(
     interaction: discord.Interaction[ProjectHyperlink],
     roll: str,
 ):
+    assert interaction.guild_id is not None
     assert interaction.channel_id is not None
     assert isinstance(interaction.user, discord.Member)
 
     member = interaction.user
-
-    l10n = await bot.get_l10n(interaction.guild.id if interaction.guild else 0)
+    l10n = await bot.get_l10n(interaction.guild_id)
 
     async with bot.session.get(
         f"{config.api_url}/students/{roll}",
