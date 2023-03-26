@@ -7,7 +7,9 @@ from models.clubs import ClubDiscord, parse_club_discord
 from models.student import Student
 
 
-class Club(commands.Cog):
+class ClubVerification(commands.Cog):
+    """The Great Wall of club servers"""
+
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
 
@@ -121,4 +123,4 @@ class Club(commands.Cog):
 
 
 async def setup(bot: ProjectHyperlink):
-    await bot.add_cog(Club(bot))
+    await bot.add_cog(ClubVerification(bot))
