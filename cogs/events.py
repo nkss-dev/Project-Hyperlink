@@ -216,7 +216,7 @@ class Events(commands.Cog):
         assert isinstance(entry.target, discord.User | discord.Object)
 
         if isinstance(entry.target, discord.User):
-            defender = entry.target.mention
+            defender = str(entry.target)
         else:
             defender = entry.target.id
         await self.on_remove_event(
@@ -243,7 +243,7 @@ class Events(commands.Cog):
             await self.on_remove_event(
                 "leave",
                 None,
-                member.mention,
+                str(member),
                 member.guild.id,
             )
 
