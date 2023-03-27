@@ -22,54 +22,50 @@ class GoogleDrive:
     """[deprecated] Drive API functions"""
 
     def __init__(self):
-        self.root = '1U2taK5kEhOiUJi70ZkU2aBWY83uVuMmD'
-        self.past_papers = '13dMpIfa1FPiAdNThWdkSXfhXLK3BL-kn'
+        self.root = "1U2taK5kEhOiUJi70ZkU2aBWY83uVuMmD"
+        self.past_papers = "13dMpIfa1FPiAdNThWdkSXfhXLK3BL-kn"
 
-        SCOPES = ['https://www.googleapis.com/auth/drive']
+        SCOPES = ["https://www.googleapis.com/auth/drive"]
         creds = None
-        if os.path.exists('db/token.json'):
-            creds = Credentials.from_authorized_user_file(
-                'db/token.json', SCOPES
-            )
+        if os.path.exists("db/token.json"):
+            creds = Credentials.from_authorized_user_file("db/token.json", SCOPES)
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    'db/credentials.json', SCOPES)
+                    "db/credentials.json", SCOPES
+                )
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
-            with open('db/token.json', 'w') as token:
+            with open("db/token.json", "w") as token:
                 token.write(creds.to_json())
 
-        self.service = build('drive', 'v3', credentials=creds)
+        self.service = build("drive", "v3", credentials=creds)
 
     def createFolder(self, meta_data: dict[str, str]) -> dict[str, str]:
         """Create a folder on the Drive"""
-        meta_data['mimeType'] = 'application/vnd.google-apps.folder'
-        payload = self.service.files().create(
-            body=meta_data,
-            fields='id, name, webViewLink'
-        ).execute()
+        meta_data["mimeType"] = "application/vnd.google-apps.folder"
+        payload = (
+            self.service.files()
+            .create(body=meta_data, fields="id, name, webViewLink")
+            .execute()
+        )
         return payload
 
     def uploadFile(self, name: str, parent_id: str = None) -> dict[str, str]:
         """Upload specified file to the given folder"""
-        meta_data = {'name': name.split('/', 1)[-1]}
+        meta_data = {"name": name.split("/", 1)[-1]}
         if parent_id:
-            meta_data['parents'] = [parent_id]
+            meta_data["parents"] = [parent_id]
 
         media = MediaFileUpload(
-            name,
-            mimetype=mimetypes.guess_type(name)[0],
-            resumable=True
+            name, mimetype=mimetypes.guess_type(name)[0], resumable=True
         )
 
         request = self.service.files().create(
-            body=meta_data,
-            media_body=media,
-            fields='id, name, webViewLink'
+            body=meta_data, media_body=media, fields="id, name, webViewLink"
         )
 
         response = None
@@ -81,36 +77,45 @@ class GoogleDrive:
     def getItem(self, id: str) -> dict[str, str]:
         """Return item details corresponding to a given ID"""
         payload = {
-            'id': id,
-            **self.service.files().get(fileId=id, fields='name, webViewLink').execute()
+            "id": id,
+            **self.service.files().get(fileId=id, fields="name, webViewLink").execute(),
         }
         return payload
 
     def listItems(self, query: str) -> dict[str, str]:
         """Return all items matching the given query"""
         try:
-            response = self.service.files().list(
-                q=query,
-                fields='nextPageToken, files(id, name, parents, mimeType, webViewLink)'
-            ).execute()
+            response = (
+                self.service.files()
+                .list(
+                    q=query,
+                    fields="nextPageToken, files(id, name, parents, mimeType, webViewLink)",
+                )
+                .execute()
+            )
         except errors.HttpError:
             return []
-        files = response.get('files', [])
-        nextPageToken = response.get('nextPageToken')
+        files = response.get("files", [])
+        nextPageToken = response.get("nextPageToken")
 
         while nextPageToken:
             try:
-                response = self.service.files().list(
-                    q=query,
-                    fields='nextPageToken, files(id, name, parents, mimeType, webViewLink)',
-                    pageToken=nextPageToken
-                ).execute()
+                response = (
+                    self.service.files()
+                    .list(
+                        q=query,
+                        fields="nextPageToken, files(id, name, parents, mimeType, webViewLink)",
+                        pageToken=nextPageToken,
+                    )
+                    .execute()
+                )
             except errors.HttpError:
                 return []
-            files.extend(response.get('files', []))
-            nextPageToken = response.get('nextPageToken')
+            files.extend(response.get("files", []))
+            nextPageToken = response.get("nextPageToken")
 
         return files
+
 
 class Drive(commands.Cog):
     """Access notes and other material"""
@@ -119,25 +124,25 @@ class Drive(commands.Cog):
         self.bot = bot
         self.drive = GoogleDrive()
 
-        with open('db/emojis.json') as f:
-            self.emojis = json.load(f)['utility']
+        with open("db/emojis.json") as f:
+            self.emojis = json.load(f)["utility"]
 
     @staticmethod
-    def get_query_str(args: tuple, mode: str = 'default') -> tuple[str, list]:
+    def get_query_str(args: tuple, mode: str = "default") -> tuple[str, list]:
         """Return a compatible search query for the Drive API"""
         query_args = []
         ignored_args = []
-        query = ''
+        query = ""
 
-        if mode == 'default':
+        if mode == "default":
             for arg in args:
-                if re.match(r'(.)\1{2}', arg):
-                    ignored_args.append(f'`{arg}`')
+                if re.match(r"(.)\1{2}", arg):
+                    ignored_args.append(f"`{arg}`")
                 elif len(arg) not in range(3, 21):
-                    ignored_args.append(f'`{arg}`')
+                    ignored_args.append(f"`{arg}`")
                 else:
                     query_args.append(f"name contains '{arg}'")
-            query = ' or '.join(query_args)
+            query = " or ".join(query_args)
 
         return query, ignored_args
 
@@ -165,7 +170,7 @@ class Drive(commands.Cog):
             Each keyword must be space separated and any multi-word keyword \
             must be enclosed inside "double quotes".
         """
-        await ctx.message.add_reaction(self.emojis['loading'])
+        await ctx.message.add_reaction(self.emojis["loading"])
 
         search_query, ignored_args = self.get_query_str(query)
         if search_query:
@@ -177,60 +182,60 @@ class Drive(commands.Cog):
         file_links = {}
         folder_links = {}
         for file in files:
-            if not (parent := file.get('parents')):
+            if not (parent := file.get("parents")):
                 continue
             parent = parent[0]
-            if file['mimeType'] == 'application/vnd.google-apps.folder':
+            if file["mimeType"] == "application/vnd.google-apps.folder":
                 if parent not in folder_links:
                     folder_links[parent] = []
-                folder_links[parent].append(f'[{file['name']}]({file['webViewLink']})')
+                folder_links[parent].append(f"[{file['name']}]({file['webViewLink']})")
             else:
                 if parent not in file_links:
                     file_links[parent] = []
-                download = f'https://docs.google.com/uc?export=download&id={file['id']}'
+                download = f"https://docs.google.com/uc?export=download&id={file['id']}"
                 file_links[parent].append(
-                    f'[[Download]]({download}) [{file['name']}]({file['webViewLink']})'
+                    f"[[Download]]({download}) [{file['name']}]({file['webViewLink']})"
                 )
 
         # Add an info embed mentioning any keywords that were ignored during the search
         embeds = []
         if ignored_args:
             ignored_embed = discord.Embed(
-                description=self.l10n.format_value('ignored', {'args': ', '.join(ignored_args)}),
-                color=discord.Color.blurple()
+                description=self.l10n.format_value(
+                    "ignored", {"args": ", ".join(ignored_args)}
+                ),
+                color=discord.Color.blurple(),
             )
-            ignored_embed.set_footer(text=self.l10n.format_value('ignored-reason'))
+            ignored_embed.set_footer(text=self.l10n.format_value("ignored-reason"))
 
             if len(ignored_args) == len(query):
                 await ctx.reply(embed=ignored_embed)
-                await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+                await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
                 return
 
         # Exit if no results were found for the given query
         if not files:
-            await ctx.reply(self.l10n.format_value('result-notfound'))
-            await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+            await ctx.reply(self.l10n.format_value("result-notfound"))
+            await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
             return
 
         # Add the links to the final embed(s)
         bundle = (
-            (self.l10n.format_value('folders'), self.l10n.format_value('files')),
-            (folder_links, file_links)
+            (self.l10n.format_value("folders"), self.l10n.format_value("files")),
+            (folder_links, file_links),
         )
         for name, links in zip(*bundle):
-            desc = ''
+            desc = ""
             for parent in links:
                 parent_data = self.drive.getItem(parent)
                 parent_link = f"[{parent_data['name']}]({parent_data['webViewLink']})"
-                desc += f'\n**{parent_link}**:\n'
+                desc += f"\n**{parent_link}**:\n"
                 for link in links[parent]:
-                    desc += f'{link}\n'
+                    desc += f"{link}\n"
 
             if desc:
                 embed = discord.Embed(
-                    title=name,
-                    description=desc,
-                    color=discord.Color.blurple()
+                    title=name, description=desc, color=discord.Color.blurple()
                 )
                 embeds.append(embed)
 
@@ -240,9 +245,9 @@ class Drive(commands.Cog):
         try:
             await ctx.send(embeds=embeds)
         except discord.errors.HTTPException:
-            await ctx.reply(self.l10n.format_value('body-too-long'))
+            await ctx.reply(self.l10n.format_value("body-too-long"))
 
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+        await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
 
     @commands.group()
     async def driveAdmin(self, ctx):
@@ -251,7 +256,7 @@ class Drive(commands.Cog):
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
 
-    @driveAdmin.command(name='upload')
+    @driveAdmin.command(name="upload")
     async def uploadAttachment(self, ctx, option: str, *, file_path: str):
         """Upload message attachment to the Google Drive.
 
@@ -278,19 +283,19 @@ class Drive(commands.Cog):
             file extension needs to be specified.
         """
         if not ctx.message.attachments:
-            await ctx.reply(self.l10n.format_value('attachment-notfound'))
+            await ctx.reply(self.l10n.format_value("attachment-notfound"))
             return
 
         try:
-            await ctx.message.add_reaction(self.emojis['loading'])
+            await ctx.message.add_reaction(self.emojis["loading"])
         except discord.Forbidden:
             pass
 
         # Create parent folder list
         # The last folder in this list will be where the attachment is uploaded
         parents = [self.drive.getItem(self.drive.root)]
-        if option == 'default':
-            *file_path, filename = file_path.split('/')
+        if option == "default":
+            *file_path, filename = file_path.split("/")
 
             # Loop through each folder and append them to the parent folder list
             for folder in file_path:
@@ -302,28 +307,30 @@ class Drive(commands.Cog):
                 # Ask the user if they wish to create a new folder
                 if not folder_details:
                     message = await ctx.reply(
-                        self.l10n.format_value('folder-notfound', {'folder': folder})
+                        self.l10n.format_value("folder-notfound", {"folder": folder})
                     )
                     if await yesOrNo(ctx, message):
-                        meta_data = {'name': folder, 'parents': [parents[-1]['id']]}
+                        meta_data = {"name": folder, "parents": [parents[-1]["id"]]}
                         parents.append(self.drive.createFolder(meta_data))
                     else:
-                        await ctx.send('upload-cancelled')
-                        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+                        await ctx.send("upload-cancelled")
+                        await ctx.message.remove_reaction(
+                            self.emojis["loading"], self.bot.user
+                        )
                         return
                 else:
                     parents.append(folder_details[0])
 
             # Default to the attachment name if file name is not specified
             if not filename:
-                filename = ctx.message.attachments[0].filename.replace('_', ' ')
+                filename = ctx.message.attachments[0].filename.replace("_", " ")
 
-        elif option == 'pp':
-            folder, filename = file_path.split('/', 1)
+        elif option == "pp":
+            folder, filename = file_path.split("/", 1)
 
             # Default to the attachment name if file name is not specified
             if not filename:
-                filename = ctx.message.attachments[0].filename.replace('_', ' ')
+                filename = ctx.message.attachments[0].filename.replace("_", " ")
 
             # Get main course folder
             parents.append(self.drive.getItem(self.drive.past_papers))
@@ -333,32 +340,30 @@ class Drive(commands.Cog):
             course_folder = self.drive.listItems(query)
 
             if not course_folder:
-                question = await ctx.reply(self.l10n.format_value('enter-folder-name'))
+                question = await ctx.reply(self.l10n.format_value("enter-folder-name"))
 
                 def check(message: discord.Message) -> bool:
                     """Check if the message sent is by the command author in the right channel"""
-                    return message.author == ctx.author and message.channel == ctx.channel
+                    return (
+                        message.author == ctx.author and message.channel == ctx.channel
+                    )
 
                 # Wait for the user to give a name for the course folder
-                message = await self.bot.wait_for('message', check=check)
-                if message.content.lower() == 'cancel':
-                    await ctx.send('upload-cancelled')
-                    await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+                message = await self.bot.wait_for("message", check=check)
+                if message.content.lower() == "cancel":
+                    await ctx.send("upload-cancelled")
+                    await ctx.message.remove_reaction(
+                        self.emojis["loading"], self.bot.user
+                    )
                     return
                 await question.delete()
                 if ctx.guild and ctx.guild.me.guild_permissions.manage_messages:
                     await message.delete()
 
                 # Create the course folder and the subsequent child folder
-                meta_data = {
-                    'name': message.content,
-                    'parents': [parents[-1]['id']]
-                }
+                meta_data = {"name": message.content, "parents": [parents[-1]["id"]]}
                 parents.append(self.drive.createFolder(meta_data))
-                meta_data = {
-                    'name': folder,
-                    'parents': [parents[-1]['id']]
-                }
+                meta_data = {"name": folder, "parents": [parents[-1]["id"]]}
                 parents.append(self.drive.createFolder(meta_data))
 
             else:
@@ -370,56 +375,53 @@ class Drive(commands.Cog):
 
                 # Create the child folder
                 if not parent:
-                    meta_data = {
-                        'name': folder,
-                        'parents': [course_folder[0]['id']]
-                    }
+                    meta_data = {"name": folder, "parents": [course_folder[0]["id"]]}
                     parents.append(self.drive.createFolder(meta_data))
                 else:
                     parents.append(parent[0])
         else:
             vars = {
-                'option': option,
-                'prefix': ctx.clean_prefix,
-                'command': ctx.command.qualified_name
+                "option": option,
+                "prefix": ctx.clean_prefix,
+                "command": ctx.command.qualified_name,
             }
-            await ctx.reply(self.l10n.format_value('invalid-option', vars))
-            await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+            await ctx.reply(self.l10n.format_value("invalid-option", vars))
+            await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
             return
 
         # Download the attachment
         try:
-            os.mkdir('temp')
+            os.mkdir("temp")
         except FileExistsError:
             pass
-        await ctx.message.attachments[0].save(f'temp/{filename}')
+        await ctx.message.attachments[0].save(f"temp/{filename}")
 
         # Check for other files with the same name
-        files = self.drive.listItems(f'parents = '{parents[-1]['id']}'')
-        files = list(filter(lambda x: x['name'] == filename, files))
+        files = self.drive.listItems(f"parents = '{parents[-1]['id']}'")
+        files = list(filter(lambda x: x["name"] == filename, files))
         if files:
-            await ctx.reply(self.l10n.format_value('file-already-exists'))
+            await ctx.reply(self.l10n.format_value("file-already-exists"))
             return
 
         # Upload the attachment
-        file = self.drive.uploadFile(f'temp/{filename}', parents[-1]['id'])
+        file = self.drive.uploadFile(f"temp/{filename}", parents[-1]["id"])
 
         # Create directory tree string
-        tree = ''
+        tree = ""
         for i, parent in enumerate(parents):
             tree += f"[{parent['name']}]({parent['webViewLink']})\n{'​ '*i*6}╰> "
         tree += f"[{file['name']}]({file['webViewLink']})"
 
         embed = discord.Embed(
-            title=self.l10n.format_value('upload-successful'),
+            title=self.l10n.format_value("upload-successful"),
             description=tree,
-            color=discord.Color.blurple()
+            color=discord.Color.blurple(),
         )
         await ctx.reply(embed=embed)
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
+        await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
 
         # Cleanup
-        os.remove(f'temp/{filename}')
+        os.remove(f"temp/{filename}")
 
 
 async def setup(bot):
