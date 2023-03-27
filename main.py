@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import pathlib
 import os
 from aiohttp import ClientSession, web
 
@@ -43,8 +44,9 @@ class ProjectHyperlink(commands.Bot):
             intents=intents,
             owner_ids=config.owner_ids,
         )
+        self._l10n_path = "l10n/{locale}"
         self._l10n: dict[str, FluentLocalization] = {}
-        self._loader = FluentResourceLoader("l10n/{locale}")
+        self._loader = FluentResourceLoader(self._l10n_path)
         self._guild_locales = {0: "en-GB"}
 
         self.pool = db_pool
@@ -81,13 +83,14 @@ class ProjectHyperlink(commands.Bot):
         locale = self._guild_locales[guild_id]
 
         if self._l10n.get(locale) is None:
-            # TODO: `files` must not depend on `INITIAL_EXTENSIONS`
-            files = [f"{file.split('.')[-1]}.ftl" for file in cogs.INITIAL_EXTENSIONS]
+            path = pathlib.Path(self._loader.localize_path(self._l10n_path, locale))
+            files = [f.name for f in path.iterdir() if f.is_file()]
             self._l10n[locale] = FluentLocalization([locale], files, self._loader)
 
         return self._l10n[locale]
 
     async def on_ready(self):
+        assert self.user is not None
         self.logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def setup_hook(self) -> None:
