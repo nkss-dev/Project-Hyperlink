@@ -5,12 +5,6 @@ import traceback
 import discord
 
 
-class Logger(logging.Logger):
-    def __init__(self):
-        super().__init__("discord", logging.DEBUG)
-        self.addHandler(InfoHandler())
-
-
 class InfoHandler(logging.Handler):
     def __init__(self):
         super().__init__(logging.INFO)
@@ -19,6 +13,7 @@ class InfoHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         if record.levelno <= self.max_level:
+            # TODO: Take care of `record.extra`
             print(self.format(record))
 
 

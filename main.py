@@ -13,7 +13,7 @@ from fluent.runtime import FluentLocalization, FluentResourceLoader
 import cogs
 from api.main import app
 from cogs.verification.ui import VerificationView
-from utils.logger import ErrorHandler, Logger
+from utils.logger import ErrorHandler, InfoHandler
 
 
 class ProjectHyperlink(commands.Bot):
@@ -115,7 +115,10 @@ class ProjectHyperlink(commands.Bot):
 
 
 async def main():
-    logger = Logger()
+    logger = logging.getLogger("ProjectHyperlink")
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(InfoHandler())
+
     discord.utils.setup_logging(level=logging.INFO, root=False)
 
     pool = asyncpg.create_pool(
