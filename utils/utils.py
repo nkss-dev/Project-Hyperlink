@@ -63,45 +63,6 @@ async def getWebhook(channel, member) -> discord.Webhook | None:
         return webhook
 
 
-async def get_group_roles(conn, batch, guild) -> tuple[discord.Role, discord.Role] | None:
-    names = {
-        1: 'freshman',
-        2: 'sophomore',
-        3: 'junior',
-        4: 'senior'
-    }
-
-    if batch:
-        # Calculate which year the student is in
-        passing_date = datetime(year=batch, month=6, day=1)
-        time = passing_date - datetime.utcnow()
-        remaining_years = time.days // 365
-        year = names[4 - remaining_years]
-    else:
-        # Assigning temporary year for non-verified user
-        year = names[1]
-
-    # Fetch roles to be assigned
-    roles = await conn.fetchrow(
-        f'''
-        SELECT
-            {year}_role,
-            guest_role
-        FROM
-            club_discord
-        WHERE
-            guild_id = $1
-        ''', guild.id
-    )
-    if not roles:
-        return None
-
-    return (
-        guild.get_role(roles[f'{year}_role']),
-        guild.get_role(roles['guest_role'])
-    )
-
-
 async def is_alone(channel, author, bot) -> bool:
     alone = True
     if isinstance(channel, discord.DMChannel):
