@@ -8,7 +8,7 @@ import cogs.checks as checks
 from . import GUILD_IDS
 from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
-from cogs.verification.utils import assign_student_roles, verify
+from cogs.verification.utils import assign_student_roles, kick_old, verify
 from main import ProjectHyperlink
 from models.student import Student, parse_student
 
@@ -110,7 +110,7 @@ class Verification(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join_nit(self, member: discord.Member, student: Student | None):
         guild = member.guild
-        self.l10n = await self.bot.get_l10n(guild.id)
+        l10n = await self.bot.get_l10n(guild.id)
 
         channel = discord.utils.get(guild.text_channels, name="verify-here")
         if channel is None:
@@ -122,7 +122,7 @@ class Verification(commands.Cog):
         if student and student.is_verified:
             if GUILD_IDS[guild.id] != 0 and GUILD_IDS[guild.id] != student.batch:
                 await member.send(
-                    self.l10n.format_value(
+                    l10n.format_value(
                         "IncorrectGuildBatch",
                         {
                             "roll": student.roll_number,
@@ -143,7 +143,7 @@ class Verification(commands.Cog):
             return
 
         prompt = await channel.send(
-            self.l10n.format_value("verification-prompt", {"member": member.mention}),
+            l10n.format_value("verification-prompt", {"member": member.mention}),
         )
         self.bot.logger.info(
             f"Verification prompt sent to new user in `{guild.name}`",
@@ -161,10 +161,13 @@ class Verification(commands.Cog):
         await prompt.delete()
 
     @commands.Cog.listener()
-    async def on_user_verify(self, student: Student):
+    async def on_user_verify(self, student: Student, old_user_id: int | None):
         for guild_id in GUILD_IDS:
             guild = self.bot.get_guild(guild_id)
             assert guild is not None
+
+            l10n = await self.bot.get_l10n(guild.id)
+            await kick_old(guild, old_user_id, l10n)
 
             if GUILD_IDS[guild_id] == 0 or GUILD_IDS[guild_id] == student.batch:
                 await assign_student_roles(student, guild)
@@ -176,7 +179,7 @@ class Verification(commands.Cog):
                 continue
 
             await member.send(
-                self.l10n.format_value(
+                l10n.format_value(
                     "IncorrectGuildBatch",
                     {
                         "roll": student.roll_number,
@@ -190,9 +193,9 @@ class Verification(commands.Cog):
             self.bot.logger.info(message)
 
         if student.clubs:
-            self.bot.dispatch("club_member_change", student)
+            self.bot.dispatch("club_member_change", student, old_user_id)
 
-        self.bot.dispatch("affiliate_member_change", student)
+        self.bot.dispatch("affiliate_member_change", student, old_user_id)
 
 
 async def setup(bot):

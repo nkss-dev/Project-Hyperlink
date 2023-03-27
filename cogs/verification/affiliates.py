@@ -3,6 +3,7 @@ from collections.abc import Iterable
 import discord
 from discord.ext import commands
 
+from cogs.verification.utils import kick_old
 from main import ProjectHyperlink
 from models.student import Student
 
@@ -77,13 +78,20 @@ class AffiliateVerification(commands.Cog):
                 await member.add_roles(*roles)
 
     @commands.Cog.listener()
-    async def on_affiliate_member_change(self, student: Student):
+    async def on_affiliate_member_change(
+        self,
+        student: Student,
+        old_user_id: int | None,
+    ):
         """Triggered when a student verifies"""
         assert student.discord_id is not None
 
         for affiliate_guild_id in self.affiliate_guild_ids:
             guild = self.bot.get_guild(affiliate_guild_id)
             assert guild is not None
+
+            l10n = await self.bot.get_l10n(guild.id)
+            await kick_old(guild, old_user_id, l10n)
 
             member = guild.get_member(student.discord_id)
             if member is None:

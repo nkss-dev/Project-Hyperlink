@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from main import ProjectHyperlink
-from cogs.verification.utils import assign_student_roles
+from cogs.verification.utils import assign_student_roles, kick_old
 from models.clubs import ClubDiscord, parse_club_discord
 from models.student import Student
 
@@ -107,13 +107,16 @@ class ClubVerification(commands.Cog):
         await assign_student_roles(student, member.guild, roles, truncate=True)
 
     @commands.Cog.listener()
-    async def on_club_member_change(self, student: Student):
+    async def on_club_member_change(self, student: Student, old_user_id: int | None):
         """Triggered when a student in one or more clubs verifies"""
         assert student.discord_id is not None
 
         for club_guild in self.club_guilds:
             guild = self.bot.get_guild(club_guild.guild_id)
             assert guild is not None
+
+            l10n = await self.bot.get_l10n(guild.id)
+            await kick_old(guild, old_user_id, l10n)
 
             member = guild.get_member(student.discord_id)
             if member is None:

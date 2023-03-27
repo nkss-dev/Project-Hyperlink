@@ -137,6 +137,21 @@ async def authenticate(
     return True
 
 
+async def kick_old(
+    guild: discord.Guild,
+    user_id: int | None,
+    l10n: FluentLocalization,
+):
+    """Post verification, kicks the old account if any"""
+    if user_id is None:
+        return
+
+    old_member = guild.get_member(user_id)
+    if old_member is not None:
+        message = l10n.format_value("old-member-kick")
+        await old_member.kick(reason=message)
+
+
 async def verify(
     bot: ProjectHyperlink,
     interaction: discord.Interaction[ProjectHyperlink],
@@ -186,7 +201,6 @@ async def verify(
         "SELECT discord_id FROM student WHERE roll_number = $1",
         student.roll_number,
     )
-    # TODO: Kick `old_user_id` from affiliated servers
 
     student.discord_id = member.id
     await bot.pool.execute(
@@ -203,4 +217,4 @@ async def verify(
         student.roll_number,
     )
 
-    bot.dispatch("user_verify", student)
+    bot.dispatch("user_verify", student, old_user_id)
