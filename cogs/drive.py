@@ -394,6 +394,13 @@ class Drive(commands.Cog):
             pass
         await ctx.message.attachments[0].save(f'temp/{filename}')
 
+        # Check for other files with the same name
+        files = self.drive.listItems(f'parents = '{parents[-1]['id']}'')
+        files = list(filter(lambda x: x['name'] == filename, files))
+        if files:
+            await ctx.reply(self.l10n.format_value('file-already-exists'))
+            return
+
         # Upload the attachment
         file = self.drive.uploadFile(f'temp/{filename}', parents[-1]['id'])
 
