@@ -32,6 +32,19 @@ class Verification(commands.Cog):
             club_guild_id["guild_id"] for club_guild_id in club_guild_ids
         ]
 
+        affiliate_guild_ids: list[dict[str, int]] = await self.bot.pool.fetch(
+            """
+            SELECT
+                DISTINCT guild_id
+            FROM
+                guild_role
+            """
+        )
+        self.affiliate_guild_ids: list[int] = [
+            affiliate_guild_id["guild_id"] for affiliate_guild_id in affiliate_guild_ids
+        ]
+        await super().cog_load()
+
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         guild = interaction.guild
         l10n = await self.bot.get_l10n(guild.id if guild else 0)
@@ -88,8 +101,11 @@ class Verification(commands.Cog):
             self.bot.dispatch("member_join_nit", member, student)
             return
 
-        if member.guild.id in self.club_guild_ids:
+        elif member.guild.id in self.club_guild_ids:
             self.bot.dispatch("member_join_club", member, student)
+
+        elif member.guild.id in self.affiliate_guild_ids:
+            self.bot.dispatch("member_join_affiliate", member, student)
 
     @commands.Cog.listener()
     async def on_member_join_nit(self, member: discord.Member, student: Student | None):
@@ -175,6 +191,8 @@ class Verification(commands.Cog):
 
         if student.clubs:
             self.bot.dispatch("club_member_change", student)
+
+        self.bot.dispatch("affiliate_member_change", student)
 
 
 async def setup(bot):

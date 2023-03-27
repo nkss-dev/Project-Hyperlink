@@ -8,7 +8,6 @@ import discord
 from discord.ext import commands
 
 from main import ProjectHyperlink
-from utils.utils import get_group_roles
 
 
 class Events(commands.Cog):
@@ -105,61 +104,6 @@ class Events(commands.Cog):
                 'DELETE FROM join_role WHERE role_id = ANY($1)', broken_ids
             )
 
-    async def assign_user_roles(self, member: discord.Member) -> bool:
-        fields = await self.bot.pool.fetch(
-            '''
-            SELECT
-                field,
-                value,
-                role_ids
-            FROM
-                guild_role
-            WHERE
-                guild_id = $1
-            ''', member.guild.id
-        )
-        if not fields:
-            return False
-
-        details = await self.bot.pool.fetchrow(
-            '''
-            SELECT
-                roll_number,
-                section,
-                batch,
-                hostel_id,
-                is_verified
-            FROM
-                student
-            WHERE
-                discord_id = $1
-            ''', member.id
-        )
-        if not details:
-            if role_id := fields['field'].get('!exists'):
-                role = member.guild.get_role(role_id)
-                if role:
-                    await member.add_roles(role)
-                else:
-                    # Placeholder for error logging system
-                    pass
-            return True
-
-        roles: list[discord.Role] = []
-        for field in fields:
-            if value := details.get(field['field']):
-                if str(value) != field['value']:
-                    continue
-                for role_id in field['role_ids']:
-                    if role := member.guild.get_role(role_id):
-                        roles.append(role)
-                    else:
-                        # Placeholder for error logging system
-                        pass
-
-        await member.add_roles(*roles)
-        return True
-
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Called when a member joins a guild"""
@@ -194,11 +138,6 @@ class Events(commands.Cog):
         )
         if event:
             await self.join_handler(event, member)
-
-        # Handle special events for NITKKR servers
-        # which assign roles based on student details
-        if await self.assign_user_roles(member):
-            return
 
     async def on_remove_event(
         self,
