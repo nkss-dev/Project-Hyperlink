@@ -177,15 +177,20 @@ class Drive(commands.Cog):
         file_links = {}
         folder_links = {}
         for file in files:
-            parent = file['parents'][0]
+            if not (parent := file.get('parents')):
+                continue
+            parent = parent[0]
             if file['mimeType'] == 'application/vnd.google-apps.folder':
                 if parent not in folder_links:
                     folder_links[parent] = []
-                folder_links[parent].append(f"[{file['name']}]({file['webViewLink']})")
+                folder_links[parent].append(f'[{file['name']}]({file['webViewLink']})')
             else:
                 if parent not in file_links:
                     file_links[parent] = []
-                file_links[parent].append(f"[{file['name']}]({file['webViewLink']})")
+                download = f'https://docs.google.com/uc?export=download&id={file['id']}'
+                file_links[parent].append(
+                    f'[[Download]]({download}) [{file['name']}]({file['webViewLink']})'
+                )
 
         # Add an info embed mentioning any keywords that were ignored during the search
         embeds = []
