@@ -14,11 +14,12 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
 import cogs.checks as checks
+from main import ProjectHyperlink
 from utils.utils import yesOrNo
 
 
 class GoogleDrive:
-    """[depreciated] Drive API functions"""
+    """[deprecated] Drive API functions"""
 
     def __init__(self):
         self.root = '1U2taK5kEhOiUJi70ZkU2aBWY83uVuMmD'
@@ -140,9 +141,9 @@ class Drive(commands.Cog):
 
         return query, ignored_args
 
-    async def cog_check(self, ctx) -> bool:
+    async def cog_check(self, ctx: commands.Context[ProjectHyperlink]) -> bool:
         self.l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
-        return await checks.is_verified().predicate(ctx)
+        return await checks._is_verified(ctx)
 
     @commands.group(invoke_without_command=True)
     async def drive(self, ctx):
