@@ -3,7 +3,7 @@ INITIAL_EXTENSIONS = [
     "cogs.verification.verification",
     "cogs.verification.clubs",
     "cogs.drive",
-    "cogs.errors",
+    "cogs.errors.handler",
     "cogs.events",
     "cogs.help",
     "cogs.ign",
