@@ -1,29 +1,34 @@
-import json
 import os
 from typing import Literal, Optional
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
+import cogs.checks as checks
+from main import ProjectHyperlink
 from utils.utils import is_alone, yesOrNo
 
 
+# TODO: Make these dev guild only
 class OwnerOnly(commands.Cog):
     """Bot owner commands"""
 
     def __init__(self, bot):
         self.bot = bot
 
-        with open('db/emojis.json') as f:
-            self.emojis = json.load(f)['utility']
+    async def interaction_check(
+        self, interaction: discord.Interaction[ProjectHyperlink]
+    ) -> bool:
+        await checks._is_owner(interaction)
 
-    async def cog_check(self, ctx) -> bool:
-        l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
+        l10n = await self.bot.get_l10n(interaction.guild_id or 0)
         self.fmv = l10n.format_value
-        return await commands.is_owner().predicate(ctx)
 
-    @commands.command()
-    async def load(self, ctx, extension: str):
+        return super().interaction_check(interaction)
+
+    @app_commands.command()
+    async def load(self, interaction: discord.Interaction, extension: str):
         """Load an extension.
 
         Loads extension present in the `/cogs` directory
@@ -33,16 +38,13 @@ class OwnerOnly(commands.Cog):
         `extension`: <class 'str'>
             The extension to load. Does not need to contain `.py` at the end.
         """
-        await ctx.message.add_reaction(self.emojis['loading'])
+        await self.bot.load_extension(f"cogs.{extension}")
+        await interaction.response.send_message(
+            self.fmv("load-successful", {"ext": extension}), ephemeral=True
+        )
 
-        await self.bot.load_extension(f'cogs.{extension}')
-
-        await ctx.send(self.fmv('load-successful', {'ext': extension}))
-
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
-
-    @commands.command()
-    async def unload(self, ctx, extension: str):
+    @app_commands.command()
+    async def unload(self, interaction: discord.Interaction, extension: str):
         """Unload an extension.
 
         Paramters
@@ -50,16 +52,13 @@ class OwnerOnly(commands.Cog):
         extension: <class 'str'>
             The extension to unload.
         """
-        await ctx.message.add_reaction(self.emojis['loading'])
+        await self.bot.unload_extension(f"cogs.{extension}")
+        await interaction.response.send_message(
+            self.fmv("unload-successful", {"ext": extension}), ephemeral=True
+        )
 
-        await self.bot.unload_extension(f'cogs.{extension}')
-
-        await ctx.send(self.fmv('unload-successful', {'ext': extension}))
-
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
-
-    @commands.command()
-    async def reload(self, ctx, extension: str):
+    @app_commands.command()
+    async def reload(self, interaction: discord.Interaction, extension: str):
         """Reload an extension.
 
         Paramters
@@ -67,14 +66,14 @@ class OwnerOnly(commands.Cog):
         extension: <class 'str'>
             The extension to reload.
         """
-        await ctx.message.add_reaction(self.emojis['loading'])
+        await self.bot.unload_extension(f"cogs.{extension}")
+        await self.bot.load_extension(f"cogs.{extension}")
 
-        await self.bot.unload_extension(f'cogs.{extension}')
-        await self.bot.load_extension(f'cogs.{extension}')
+        await interaction.response.send_message(
+            self.fmv("reload-successful", {"ext": extension}), ephemeral=True
+        )
 
-        await ctx.send(self.fmv('reload-successful', {'ext': extension}))
 
-        await ctx.message.remove_reaction(self.emojis['loading'], self.bot.user)
 
     @commands.group(aliases=['db'], invoke_without_command=True)
     async def database(self, ctx):
