@@ -153,7 +153,7 @@ class Verification(commands.Cog):
         try:
             await self.bot.wait_for(
                 "user_verify",
-                check=lambda user: user.discord_id == member.id,
+                check=lambda user, _: user.discord_id == member.id,
                 timeout=1200.0,
             )
         except asyncio.TimeoutError:
