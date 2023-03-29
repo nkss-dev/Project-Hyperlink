@@ -197,10 +197,13 @@ async def verify(
         extra={"user": member},
     )
 
-    old_user_id = await bot.pool.fetchval(
+    old_user_id: int | None = await bot.pool.fetchval(
         "SELECT discord_id FROM student WHERE roll_number = $1",
         student.roll_number,
     )
+    # TODO: Remove this once `is_verified` column is ditched
+    if old_user_id == member.id:
+        old_user_id = None
 
     student.discord_id = member.id
     await bot.pool.execute(
