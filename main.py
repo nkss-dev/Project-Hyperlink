@@ -94,11 +94,13 @@ class ProjectHyperlink(commands.Bot):
         self.logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def setup_hook(self) -> None:
-        for extension in cogs.INITIAL_EXTENSIONS:
-            try:
-                await self.load_extension(extension)
-            except Exception:
-                self.logger.exception(f"Failed to load extension `{extension}`")
+        results = await asyncio.gather(
+            *(self.load_extension(ext) for ext in cogs.INITIAL_EXTENSIONS),
+            return_exceptions=True,
+        )
+        for ext, result in zip(cogs.INITIAL_EXTENSIONS, results):
+            if isinstance(result, Exception):
+                self.logger.error(f"Failed to load extension `{ext}`: {result}")
 
         l10n = await self.get_l10n(0)
         self.add_view(VerificationView(l10n.format_value("verify-button-label")))
