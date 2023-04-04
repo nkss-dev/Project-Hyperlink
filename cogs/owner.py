@@ -38,8 +38,9 @@ class OwnerOnly(commands.Cog):
         `extension`: <class 'str'>
             The extension to load. Does not need to contain `.py` at the end.
         """
+        await interaction.response.defer(ephemeral=True, thinking=True)
         await self.bot.load_extension(f"cogs.{extension}")
-        await interaction.response.send_message(
+        await interaction.followup.send(
             self.fmv("load-successful", {"ext": extension}), ephemeral=True
         )
 
@@ -66,10 +67,9 @@ class OwnerOnly(commands.Cog):
         extension: <class 'str'>
             The extension to reload.
         """
-        await self.bot.unload_extension(f"cogs.{extension}")
-        await self.bot.load_extension(f"cogs.{extension}")
-
-        await interaction.response.send_message(
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        await self.bot.reload_extension(f"cogs.{extension}")
+        await interaction.followup.send(
             self.fmv("reload-successful", {"ext": extension}), ephemeral=True
         )
 
