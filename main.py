@@ -2,6 +2,7 @@ import asyncio
 import logging
 import pathlib
 import os
+from typing import Any, Type
 from aiohttp import ClientSession, web
 
 import asyncpg
@@ -12,6 +13,7 @@ from fluent.runtime import FluentLocalization, FluentResourceLoader
 
 import cogs
 from api.main import app
+from base.context import HyperlinkContext
 from cogs.verification.ui import VerificationView
 from utils.logger import ErrorHandler, InfoHandler
 
@@ -55,22 +57,28 @@ class ProjectHyperlink(commands.Bot):
         self.session = web_client
 
     @staticmethod
-    async def _prefix_callable(bot, msg: discord.Message) -> list:
+    async def _prefix_callable(bot, message: discord.Message) -> list:
         """Return the bot's prefix for a guild or a DM"""
         await bot.wait_until_ready()
-        base = []
-        if not msg.guild:
-            base.append("%")
+
+        if config.dev is True:
+            DEFAULT_PREFIX = "!"
         else:
-            prefixes = await bot.pool.fetch(
-                "SELECT prefix FROM bot_prefix WHERE guild_id = $1", msg.guild.id
-            )
-            if prefixes:
-                prefixes = [prefix["prefix"] for prefix in prefixes]
-            else:
-                prefixes = ["%"]
-            base.extend(prefixes)
-        return base
+            DEFAULT_PREFIX = "%"
+
+        prefixes = [DEFAULT_PREFIX]
+
+        if message.guild is None:
+            return prefixes
+
+        saved_prefixes = await bot.pool.fetch(
+            "SELECT prefix FROM bot_prefix WHERE guild_id = $1",
+            message.guild.id,
+        )
+        if saved_prefixes:
+            prefixes = [prefix["prefix"] for prefix in saved_prefixes]
+
+        return prefixes
 
     async def get_context(
         self,
