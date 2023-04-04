@@ -62,6 +62,5 @@ class VoiceChat(commands.Cog):
         with open('db/VCs.json', 'w') as f:
             json.dump(self.VCs, f)
 
-def setup(bot):
-    """invoked when this file is attempted to be loaded as an extension"""
-    bot.add_cog(VoiceChat(bot))
+async def setup(bot):
+    await bot.add_cog(VoiceChat(bot))
