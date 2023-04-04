@@ -50,7 +50,10 @@ class AffiliateVerification(commands.Cog):
 
         for guild_role in guild_roles:
             try:
-                value = student.__getattribute__(guild_role["field"])
+                if student is None and guild_role["field"] == "is_verified":
+                    value = False
+                else:
+                    value = student.__getattribute__(guild_role["field"])
             except AttributeError:
                 self.bot.logger.warning(
                     f"Field `{guild_role['field']}` not found in table `guild_role` for guild `{member.guild.name}`"
