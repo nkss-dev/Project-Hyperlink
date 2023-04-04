@@ -12,6 +12,4 @@ INITIAL_EXTENSIONS = [
     "cogs.self_roles",
     "cogs.tag",
     "cogs.verification",
-    "cogs.VoiceChat",
-    "cogs.voltorb",
 ]
