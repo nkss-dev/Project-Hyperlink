@@ -1,18 +1,15 @@
 from discord.ext import commands
 
+from base.cog import HyperlinkCog
+from base.context import HyperlinkContext
 import cogs.checks as checks
 from main import ProjectHyperlink
 
 
-class Prefix(commands.Cog):
+class Prefix(HyperlinkCog):
     """Bot prefix management"""
 
-    def __init__(self, bot):
-        self.bot = bot
-
     async def cog_check(self, ctx: commands.Context[ProjectHyperlink]):
-        l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
-        self.fmv = l10n.format_value
         return await checks._is_verified(ctx)
 
     async def fetch_prefix(self, id: int) -> map:
@@ -27,7 +24,7 @@ class Prefix(commands.Cog):
     @commands.bot_has_permissions(manage_guild=True)
     @commands.has_permissions(manage_guild=True)
     @commands.guild_only()
-    async def prefix(self, ctx):
+    async def prefix(self, ctx: HyperlinkContext):
         """Command group for bot prefix functionality"""
         await ctx.send_help(ctx.command)
 
@@ -43,17 +40,17 @@ class Prefix(commands.Cog):
         prefixes = await self.fetch_prefix(ctx.guild.id)
 
         if prefix in prefixes:
-            await ctx.reply(self.fmv("exists-true", {"prefix": prefix}))
+            await ctx.reply("exists-true", l10n_context=dict(prefix=prefix))
             return
 
         await self.bot.pool.execute(
             "INSERT INTO bot_prefix VALUES ($1, $2)", ctx.guild.id, prefix
         )
 
-        await ctx.reply(self.fmv("add-success", {"prefix": prefix}))
+        await ctx.reply("add-success", l10n_context=dict(prefix=prefix))
 
     @prefix.command()
-    async def remove(self, ctx, prefix: str):
+    async def remove(self, ctx: HyperlinkContext, prefix: str):
         """Remove a prefix for the server."""
         """
         Paramters
@@ -64,7 +61,7 @@ class Prefix(commands.Cog):
         prefixes = await self.fetch_prefix(ctx.guild.id)
 
         if prefix not in prefixes:
-            await ctx.reply(self.fmv("exists-false", {"prefix": prefix}))
+            await ctx.reply("exists-false", l10n_context=dict(prefix=prefix))
             return
 
         await self.bot.pool.execute(
@@ -73,10 +70,10 @@ class Prefix(commands.Cog):
             prefix,
         )
 
-        await ctx.reply(self.fmv("remove-success", {"prefix": prefix}))
+        await ctx.reply("remove-success", l10n_context=dict(prefix=prefix))
 
     @prefix.command()
-    async def set(self, ctx, prefix: str):
+    async def set(self, ctx: HyperlinkContext, prefix: str):
         """Remove all prefixes and set to the specified prefix.
 
         Paramters
@@ -91,7 +88,7 @@ class Prefix(commands.Cog):
             "INSERT INTO prefix VALUES ($1, $2)", ctx.guild.id, prefix
         )
 
-        await ctx.reply(self.fmv("guild-prefix", {"prefix": prefix}))
+        await ctx.reply("guild-prefix", l10n_context=dict(prefix=prefix))
 
 
 async def setup(bot):

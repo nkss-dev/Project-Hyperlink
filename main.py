@@ -72,6 +72,15 @@ class ProjectHyperlink(commands.Bot):
             base.extend(prefixes)
         return base
 
+    async def get_context(
+        self,
+        origin: discord.Message | discord.Interaction,
+        /,
+        *,
+        cls: Type = None,
+    ) -> Any:
+        return await super().get_context(origin, cls=cls or HyperlinkContext)
+
     async def get_l10n(self, guild_id: int = 0) -> FluentLocalization:
         if self._guild_locales.get(guild_id) is None:
             self._guild_locales[guild_id] = (
