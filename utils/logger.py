@@ -2,7 +2,11 @@ import asyncio
 import logging
 import traceback
 
+import config
 import discord
+
+# TODO: Add handler for debug which posts into a file.
+# Ref: https://github.com/Rapptz/discord.py/blob/master/examples/advanced_startup.py#L67-L72
 
 
 class InfoHandler(logging.Handler):
@@ -12,7 +16,7 @@ class InfoHandler(logging.Handler):
         self.setFormatter(discord.utils._ColourFormatter())
 
     def emit(self, record: logging.LogRecord) -> None:
-        if record.levelno <= self.max_level:
+        if record.levelno <= self.max_level or config.dev is True:
             # TODO: Take care of `record.extra`
             print(self.format(record))
 

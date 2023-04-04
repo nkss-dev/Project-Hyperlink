@@ -133,11 +133,15 @@ async def main():
         web_client=session,
     )
 
-    LOGGING_CHANNEL_ID: int = 1086928165303234680
-    logger.addHandler(ErrorHandler(bot, LOGGING_CHANNEL_ID))
+    if config.dev is False:
+        LOGGING_CHANNEL_ID: int = 1086928165303234680
+        logger.addHandler(ErrorHandler(bot, LOGGING_CHANNEL_ID))
 
     async with session, pool, bot:
-        await bot.start(config.bot_token)
+        if config.dev is True:
+            await bot.start(config.dev_bot_token)
+        else:
+            await bot.start(config.bot_token)
 
 
 if __name__ == "__main__":
