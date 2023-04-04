@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
 import discord
 from discord.ext import commands
 
@@ -9,9 +5,6 @@ from base.cog import HyperlinkCog
 from cogs.verification.utils import assign_student_roles, kick_old
 from models.clubs import ClubDiscord, parse_club_discord
 from models.student import Student
-
-if TYPE_CHECKING:
-    from main import ProjectHyperlink
 
 
 class ClubVerification(HyperlinkCog):

@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -10,8 +7,6 @@ from base.cog import HyperlinkCog
 from cogs.verification.utils import kick_old
 from models.student import Student
 
-if TYPE_CHECKING:
-    from main import ProjectHyperlink
 
 # TODO: Add command support to add field checks
 class AffiliateVerification(HyperlinkCog):
