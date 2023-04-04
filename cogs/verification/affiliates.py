@@ -1,19 +1,21 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
 
+from base.cog import HyperlinkCog
 from cogs.verification.utils import kick_old
-from main import ProjectHyperlink
 from models.student import Student
 
+if TYPE_CHECKING:
+    from main import ProjectHyperlink
 
 # TODO: Add command support to add field checks
-class AffiliateVerification(commands.Cog):
+class AffiliateVerification(HyperlinkCog):
     """The Great Wall of affiliate servers"""
-
-    def __init__(self, bot: ProjectHyperlink):
-        self.bot = bot
 
     async def cog_load(self) -> None:
         affiliate_guild_ids: list[dict[str, int]] = await self.bot.pool.fetch(
@@ -101,7 +103,3 @@ class AffiliateVerification(commands.Cog):
                 continue
 
             self.bot.dispatch("member_join_affiliate", member, student)
-
-
-async def setup(bot: ProjectHyperlink):
-    await bot.add_cog(AffiliateVerification(bot))

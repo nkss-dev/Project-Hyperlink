@@ -1,7 +1,4 @@
 INITIAL_EXTENSIONS = [
-    "cogs.verification.affiliates",
-    "cogs.verification.verification",
-    "cogs.verification.clubs",
     "cogs.drive",
     "cogs.errors.handler",
     "cogs.events",
@@ -14,6 +11,7 @@ INITIAL_EXTENSIONS = [
     "cogs.prefix",
     "cogs.self_roles",
     "cogs.tag",
+    "cogs.verification",
     "cogs.VoiceChat",
     "cogs.voltorb",
 ]

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import re
 import smtplib
@@ -8,15 +10,18 @@ import config
 import discord
 from fluent.runtime import FluentLocalization
 
-from . import GUILD_IDS
 from cogs.errors.app import IncorrectGuildBatch, OTPTimeout, RollNotFound
 from models.student import Student, parse_student
 from utils.utils import generateID
 
 if TYPE_CHECKING:
     from main import ProjectHyperlink
-else:
-    ProjectHyperlink = discord.ext.commands.Bot
+
+GUILD_IDS = {
+    904633974306005033: 0,
+    783215699707166760: 2024,
+    915517972594982942: 2025,
+}
 
 
 async def assign_student_roles(

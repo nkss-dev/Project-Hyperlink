@@ -1,17 +1,21 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discord
 from discord.ext import commands
 
-from main import ProjectHyperlink
+from base.cog import HyperlinkCog
 from cogs.verification.utils import assign_student_roles, kick_old
 from models.clubs import ClubDiscord, parse_club_discord
 from models.student import Student
 
+if TYPE_CHECKING:
+    from main import ProjectHyperlink
 
-class ClubVerification(commands.Cog):
+
+class ClubVerification(HyperlinkCog):
     """The Great Wall of club servers"""
-
-    def __init__(self, bot: ProjectHyperlink):
-        self.bot = bot
 
     async def cog_load(self) -> None:
         club_guild_dicts = await self.bot.pool.fetch(
@@ -123,7 +127,3 @@ class ClubVerification(commands.Cog):
                 continue
 
             self.bot.dispatch("member_join_club", member, student)
-
-
-async def setup(bot: ProjectHyperlink):
-    await bot.add_cog(ClubVerification(bot))

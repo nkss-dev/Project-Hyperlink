@@ -1,23 +1,31 @@
+from __future__ import annotations
+
 import asyncio
+from typing import TYPE_CHECKING
 
 import config
 import discord
 from discord.ext import commands
 
 import cogs.checks as checks
-from . import GUILD_IDS
+from base.cog import HyperlinkCog
 from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
 from cogs.verification.utils import assign_student_roles, kick_old, verify
-from main import ProjectHyperlink
 from models.student import Student, parse_student
 
+if TYPE_CHECKING:
+    from main import ProjectHyperlink
 
-class Verification(commands.Cog):
-    """The Great Wall of NITKKR"""
+GUILD_IDS = {
+    904633974306005033: 0,
+    783215699707166760: 2024,
+    915517972594982942: 2025,
+}
 
-    def __init__(self, bot: ProjectHyperlink):
-        self.bot = bot
+
+class EntryPoint(HyperlinkCog):
+    """Verification entry point"""
 
     async def cog_load(self) -> None:
         club_guild_ids: list[dict[str, int]] = await self.bot.pool.fetch(
@@ -196,7 +204,3 @@ class Verification(commands.Cog):
             self.bot.dispatch("club_member_change", student, old_user_id)
 
         self.bot.dispatch("affiliate_member_change", student, old_user_id)
-
-
-async def setup(bot):
-    await bot.add_cog(Verification(bot))
