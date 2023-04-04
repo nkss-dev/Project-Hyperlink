@@ -5,17 +5,15 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from base.cog import HyperlinkCog
 import cogs.checks as checks
 from main import ProjectHyperlink
 from utils.utils import is_alone, yesOrNo
 
 
 # TODO: Make these dev guild only
-class OwnerOnly(commands.Cog):
+class OwnerOnly(HyperlinkCog):
     """Bot owner commands"""
-
-    def __init__(self, bot):
-        self.bot = bot
 
     async def interaction_check(
         self, interaction: discord.Interaction[ProjectHyperlink]

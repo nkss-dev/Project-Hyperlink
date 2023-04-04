@@ -1,23 +1,26 @@
 from typing import Any
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from . import app
+from base.cog import HyperlinkCog
+from base.context import HyperlinkContext
 from main import ProjectHyperlink
 
 
-class Errors(commands.Cog):
+class Errors(HyperlinkCog):
     """Global Error Handler"""
 
     def __init__(self, bot: ProjectHyperlink):
-        self.bot = bot
+        super().__init__(bot)
         self.bot.tree.on_error = self.on_app_command_error
 
     @commands.Cog.listener()
     async def on_command_error(
         self,
-        ctx: commands.Context[ProjectHyperlink],
+        ctx: HyperlinkContext,
         error: commands.CommandError,
     ):
         l10n = await self.bot.get_l10n(ctx.guild.id if ctx.guild else 0)
@@ -25,10 +28,8 @@ class Errors(commands.Cog):
         if isinstance(error, commands.UserInputError):
             if isinstance(error, commands.MissingRequiredArgument):
                 await ctx.reply(
-                    l10n.format_value(
-                        "UserInputError-MissingRequiredArgument",
-                        {"arg": error.param.name},
-                    )
+                    "UserInputError-MissingRequiredArgument",
+                    l10n_context=dict(arg=error.param.name),
                 )
 
             elif isinstance(error, commands.BadArgument):
@@ -49,7 +50,7 @@ class Errors(commands.Cog):
 
         elif isinstance(error, commands.CheckFailure):
             if isinstance(error, commands.NotOwner):
-                await ctx.reply(l10n.format_value("Unauthorised-NotOwner"))
+                await ctx.reply("Unauthorised-NotOwner")
 
             elif isinstance(error, commands.MissingPermissions):
                 await ctx.reply(str(error))
@@ -67,11 +68,12 @@ class Errors(commands.Cog):
                         missing_roles.append(role.mention)
                         continue
 
-                    self.bot.logger.warning(
+                    self.logger.warning(
                         "Role id `{role_id}` not found in `{ctx.guild.name}`",
                         exc_info=True,
                     )
 
+                # TODO: Ditch l10n
                 embed = discord.Embed(
                     description=l10n.format_value(
                         "CheckFailure-MissingAnyRole",
@@ -85,11 +87,11 @@ class Errors(commands.Cog):
                 prefix = ctx.clean_prefix
                 help_str = prefix + self.bot.help_command.command_attrs["name"]
                 variables = {"cmd": help_str, "member": f"`{ctx.author}`"}
-                await ctx.reply(l10n.format_value(str(error), variables))
+                await ctx.reply(str(error), l10n_context=variables)
 
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, discord.errors.Forbidden):
-                await ctx.reply(l10n.format_value("CommandInvokeError-Forbidden"))
+                await ctx.reply("CommandInvokeError-Forbidden")
             else:
                 raise error
 
@@ -97,10 +99,10 @@ class Errors(commands.Cog):
             await ctx.reply(str(error))
 
         elif isinstance(error, commands.MaxConcurrencyReached):
-            await ctx.reply(l10n.format_value(type(error).__name__))
+            await ctx.reply(type(error).__name__)
 
         else:
-            self.bot.logger.exception(error)
+            self.logger.exception(error)
 
     async def on_app_command_error(
         self,
@@ -134,7 +136,7 @@ class Errors(commands.Cog):
                 error_text = str(error)
 
         if not caught:
-            self.bot.logger.exception(error, extra={"user": interaction.user})
+            self.logger.exception(error, extra={"user": interaction.user})
 
         if interaction.response.is_done():
             await interaction.followup.send(

@@ -8,17 +8,19 @@ from discord import app_commands
 from discord.ext import commands
 from tabulate import tabulate
 
+from base.cog import HyperlinkCog
 import cogs.checks as checks
 from cogs.errors.app import BatchNotFound, NotForBot, UnhandledError, UserNotFound
 from main import ProjectHyperlink
 from models.courses import Course, Specifics
 
 
-class Info(commands.Cog):
+class Info(HyperlinkCog):
     """Information commands"""
 
     def __init__(self, bot: ProjectHyperlink):
-        self.bot = bot
+        super().__init__(bot)
+
         self.ctx_menu = app_commands.ContextMenu(
             name="Profile",
             callback=self.profile,

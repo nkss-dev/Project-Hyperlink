@@ -8,12 +8,14 @@ import discord
 from discord.ext import commands
 from discord.utils import sleep_until
 
+from base.cog import HyperlinkCog
 
-class Mod(commands.Cog):
+
+class Mod(HyperlinkCog):
     """Moderator-only commands"""
 
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
 
         with open('db/muted.json') as muted:
             self.muted = json.load(muted)

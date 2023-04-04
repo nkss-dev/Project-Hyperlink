@@ -5,6 +5,7 @@ from asyncio import TimeoutError
 import discord
 from discord.ext import commands
 
+from base.cog import HyperlinkCog
 from utils.utils import generateID
 
 
@@ -38,11 +39,11 @@ class RoleView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-class ButtonRoles(commands.Cog):
+class ButtonRoles(HyperlinkCog):
     """Self role management"""
 
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
         self.views = {}
 
         with open('db/emojis.json') as f:
@@ -221,11 +222,11 @@ class ButtonRoles(commands.Cog):
             message = await channel.fetch_message(view[1])
             await message.edit(view=self.views[view[1]])
 
-class ReactionRoles(commands.Cog):
+class ReactionRoles(HyperlinkCog):
     """Reaction role management"""
 
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
 
         with open('db/self_roles.json') as f:
             self.reactions = json.load(f)

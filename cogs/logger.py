@@ -1,12 +1,14 @@
 import discord
 from discord.ext import commands
 
+from base.cog import HyperlinkCog
 
-class Logger(commands.Cog):
+
+class Logger(HyperlinkCog):
     """Logs edited and deleted messages"""
 
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
         self.channel_ids: dict[int, tuple[int, int]] = {}
 
     async def cog_load(self):

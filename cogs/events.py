@@ -7,14 +7,11 @@ from typing import Literal
 import discord
 from discord.ext import commands
 
-from main import ProjectHyperlink
+from base.cog import HyperlinkCog
 
 
-class Events(commands.Cog):
+class Events(HyperlinkCog):
     """Handle events"""
-
-    def __init__(self, bot: ProjectHyperlink):
-        self.bot = bot
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -64,17 +61,16 @@ class Events(commands.Cog):
         # Send a welcome message to a guild channel and/or the member
         guild = member.guild
         for event in events:
-            types = event['event_types']
-            if message := event['message']:
-                message = message.replace('{$user}', member.mention)
-                message = message.replace('{$guild}', guild.name)
+            event_type = event["event_type"]
+            if message := event["message"]:
+                message = message.replace("{$user}", member.mention)
+                message = message.replace("{$guild}", guild.name)
             else:
                 message = self.l10n.format_value(
-                    'welcome-message',
-                    {'user': member.mention}
+                    "welcome-message", {"user": member.mention}
                 )
 
-            channel_id = event['channel_id']
+            channel_id = event["channel_id"]
             if not (channel := guild.get_channel(channel_id)):
                 logging.warning(f"(table: event) -> Channel ID {channel_id} not found")
                 # The only event possible without a channel ID, is a DM; for
@@ -82,18 +78,18 @@ class Events(commands.Cog):
                 if not message:
                     continue
 
-            if 'join' in types and channel:
+            if event_type == "join" and channel:
                 await channel.send(message)
-            if 'welcome' in types and message:
+            if event_type == "welcome" and message:
                 await member.send(message)
 
         role_ids = await self.bot.pool.fetch(
-            'SELECT role_id FROM join_role WHERE guild_id = $1', guild.id
+            "SELECT role_id FROM join_role WHERE guild_id = $1", guild.id
         )
         valid_roles: list[discord.Role] = []
         broken_ids = []
         for role_id in role_ids:
-            if role := guild.get_role(role_id['role']):
+            if role := guild.get_role(role_id["role"]):
                 valid_roles.append(role)
             else:
                 broken_ids.append(role)
@@ -101,7 +97,7 @@ class Events(commands.Cog):
             await member.add_roles(*valid_roles)
         if broken_ids:
             await self.bot.pool.execute(
-                'DELETE FROM join_role WHERE role_id = ANY($1)', broken_ids
+                "DELETE FROM join_role WHERE role_id = ANY($1)", broken_ids
             )
 
     @commands.Cog.listener()
@@ -113,7 +109,7 @@ class Events(commands.Cog):
         # Assign the bot role if any
         if member.bot:
             bot_role_id = await self.bot.pool.fetchval(
-                'SELECT bot_role FROM guild WHERE id = $1', guild.id
+                "SELECT bot_role FROM guild WHERE id = $1", guild.id
             )
             if bot_role := guild.get_role(bot_role_id):
                 await member.add_roles(bot_role)
@@ -121,20 +117,18 @@ class Events(commands.Cog):
 
         # Handle all generic events
         event = await self.bot.pool.fetch(
-            '''
+            """
             SELECT
-                event_types,
+                event_type,
                 channel_id,
                 message
             FROM
-                event
+                guild_event
             WHERE
                 guild_id = $1
-                AND (
-                    'join' = ANY(event_types)
-                    OR 'weclome' = ANY(event_types)
-                )
-            ''', guild.id
+                AND event_type = ANY(ARRAY['join', 'welcome'])
+            """,
+            guild.id,
         )
         if event:
             await self.join_handler(event, member)
