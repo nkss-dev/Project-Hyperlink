@@ -9,6 +9,7 @@ from discord.ext import commands
 
 import cogs.checks as checks
 from base.cog import HyperlinkCog
+from base.context import HyperlinkContext
 from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
 from cogs.verification.utils import assign_student_roles, kick_old, verify
@@ -62,7 +63,7 @@ class EntryPoint(HyperlinkCog):
     @commands.command(hidden=True)
     @checks.is_owner()
     @commands.guild_only()
-    async def verification(self, ctx: commands.Context[ProjectHyperlink]):
+    async def verification(self, ctx: HyperlinkContext):
         """Send a verification button"""
         assert ctx.guild is not None
 
@@ -72,10 +73,7 @@ class EntryPoint(HyperlinkCog):
         l10n = await self.bot.get_l10n(ctx.guild.id)
         view = VerificationView(l10n.format_value("verify-button-label"))
 
-        await ctx.send(
-            l10n.format_value("verification-message"),
-            view=view,
-        )
+        await ctx.send("verification-message", view=view)
         await ctx.message.delete()
 
     @discord.app_commands.command(name="verify")
