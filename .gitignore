@@ -1,6 +1,9 @@
+# secrets
 /config.py
-
-__pycache__/
-boards/
 db/
-venv/
+
+# cache
+__pycache__/
+
+# venv
+hyperlink-env/
