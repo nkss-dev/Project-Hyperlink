@@ -41,7 +41,3 @@ class Drive(
         # TODO: add tags in the future
     ):
         await interaction.response.defer(ephemeral=True, thinking=True)
-
-
-async def setup(bot: ProjectHyperlink):
-    await bot.add_cog(Drive(bot))
