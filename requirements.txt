@@ -2,8 +2,5 @@ asyncpg
 config
 discord.py
 fluent.runtime
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
 pytz
 tabulate
