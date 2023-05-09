@@ -17,3 +17,7 @@ class HyperlinkCog(commands.Cog):
     @property
     def logger(self):
         return logging.getLogger("ProjectHyperlink")
+
+
+class HyperlinkGroupCog(HyperlinkCog, commands.GroupCog):
+    """The base group cog for all ProjectHyperlink group cogs."""
