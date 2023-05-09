@@ -6,3 +6,5 @@ verification-message = Click the button below to complete your verification proc
 verification-prompt = Hey, {$member}! Please click the above button to complete your verification process!
 
 verify-button-label = Verify
+
+old-member-kick = This user has verified using a newer id. Hence the old id is being kicked

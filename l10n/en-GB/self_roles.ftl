@@ -12,4 +12,3 @@ react-notfound = No self role, with ID `{$id}`, found.
 remove-success = Self role, with ID `{$id}`, removed successfully!
 
 role-action-success = I have {$action} the {"**"}{$role}{"**"} role.
-roles-action-success = I have done the following:{"\u000a"}{$roles}

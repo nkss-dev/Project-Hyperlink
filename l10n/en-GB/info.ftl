@@ -1,7 +1,3 @@
-choice = Please choose whether you want the profile to be visible only to you or to everyone in this channel
-
-incorrect-user = This interaction is not for you
-
 invite = Invites
 
 nick-change-success = {$member}'s nick changed from `{$old}` to `{$new}` successfully.
@@ -20,4 +16,5 @@ bday = Birthday:
 roles = Roles:
 join = Joined on:
 
-footer = To delete this message, click on the emoji below ↓
+servers = Directly Affiliated Servers
+misc_servers = Other NITKKR Servers
