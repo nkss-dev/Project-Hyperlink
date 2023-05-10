@@ -36,22 +36,7 @@ class DriveSearchView(View):
         self.contents = contents
         self.embed = embed
         self.page = 0
-        self.page_display_button = PageDisplayButton(
-            f"{self.page+1}/{len(self.contents)}",
-            row=0,
-        )
-
-        # Remove all children for custom ordering
-        for child in self.children:
-            self.remove_item(child)
-
-        # Add children in custom ordering
-        self.add_item(self.first_page_button)
-        self.add_item(self.previous_page_button)
-        self.add_item(self.page_display_button)
-        self.add_item(self.next_page_button)
-        self.add_item(self.last_page_button)
-        self.add_item(self.stop_button)
+        self.page_display_button.label = f"{self.page+1}/{len(self.contents)}"
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.author:
@@ -85,6 +70,10 @@ class DriveSearchView(View):
 
         self.embed.description = self.contents[self.page]
         await interaction.response.edit_message(embed=self.embed, view=self)
+
+    @button(label="foo", style=ButtonStyle.gray, disabled=True, row=0)
+    async def page_display_button(self, interaction: Interaction, _: Button) -> None:
+        pass
 
     @button(label="Next", style=ButtonStyle.green, row=0)
     async def next_page_button(self, interaction: Interaction, _: Button) -> None:
