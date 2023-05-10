@@ -2,7 +2,7 @@ import discord
 from discord.app_commands import Choice, Group
 
 from base.cog import HyperlinkGroupCog
-from cogs.drive.ui import DriveSearchView
+from cogs.drive.ui import DriveSearchView, DriveSearchResultEmbed
 from main import ProjectHyperlink
 
 
@@ -18,11 +18,18 @@ class Drive(
     async def search(
         self, interaction: discord.Interaction[ProjectHyperlink], query: str
     ):
-        """Search for the given query and send a corresponding embed."""
-        await interaction.response.send_message(
-            "Search Results",
-            view=DriveSearchView(interaction.user, ["foo", "bar", "baz"]),
+        """Search for the given query and send a corresponding UI."""
+
+        contents = ["foo", "bar", "baz", "spam", "egg"]
+        embed = DriveSearchResultEmbed("Results", description=contents[0])
+        view = DriveSearchView(
+            interaction.user,
+            contents,
+            embed,
         )
+        await interaction.response.send_message(embed=embed, view=view)
+        # await view.wait()
+        # await interaction.edit_original_response(view=None)
 
     upload = Group(
         name="upload", description="Upload message attachment to the Google Drive."

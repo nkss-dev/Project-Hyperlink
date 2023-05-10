@@ -2,39 +2,142 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from discord import User, Message
+from discord import User, Embed
+from discord.colour import Colour
+from discord.enums import ButtonStyle
 from discord.interactions import Interaction
-from discord.ui import Select, View
+from discord.ui import button, Button, Select, View
+
 
 if TYPE_CHECKING:
     from main import ProjectHyperlink
 
 
 class DriveSearchView(View):
-    message: Message
-
     def __init__(
         self,
         author: User,
         contents: list[str],
+        embed: Embed,
         *,
         timeout: float | None = 60,
     ):
+        """UI for interacting with the search results
+
+        Args:
+            author: User who invoked the command
+            contents: Paginated list of search results. All results in a page\
+                are assumed to be a joined together to form a single `str`. 
+            embed (Embed): The embed that contains the results
+            timeout (float | None, optional): _description_. Defaults to 60.
+        """
         super().__init__(timeout=timeout)
         self.author = author
-        self.search_result_select = DriveSearchSelect(self, contents)
-        self.add_item(self.search_result_select)
+        self.contents = contents
+        self.embed = embed
+        self.page = 0
+        self.page_display_button = PageDisplayButton(
+            f"{self.page+1}/{len(self.contents)}",
+            row=0,
+        )
 
-    async def finish_search(self, interaction: Interaction) -> None:
-        self.remove_item(self.search_result_select)
-        await interaction.message.edit(content="Interaction Finished", view=self)
-        self.stop()
+        # Remove all children for custom ordering
+        for child in self.children:
+            self.remove_item(child)
+
+        # Add children in custom ordering
+        self.add_item(self.first_page_button)
+        self.add_item(self.previous_page_button)
+        self.add_item(self.page_display_button)
+        self.add_item(self.next_page_button)
+        self.add_item(self.last_page_button)
+        self.add_item(self.stop_button)
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.author:
             return True
-
         return False
+
+    @button(label="<<", style=ButtonStyle.green, disabled=True, row=0)
+    async def first_page_button(self, interaction: Interaction, _: Button) -> None:
+        self.page = 0
+        self.page_display_button.label = f"{self.page+1}/{len(self.contents)}"
+
+        self.first_page_button.disabled = True
+        self.previous_page_button.disabled = True
+        self.next_page_button.disabled = False
+        self.last_page_button.disabled = False
+
+        self.embed.description = self.contents[self.page]
+        await interaction.response.edit_message(embed=self.embed, view=self)
+
+    @button(label="Previous", style=ButtonStyle.green, disabled=True, row=0)
+    async def previous_page_button(self, interaction: Interaction, _: Button) -> None:
+        self.page = max(self.page - 1, 0)
+        self.page_display_button.label = f"{self.page+1}/{len(self.contents)}"
+
+        if self.page == 0:
+            self.previous_page_button.disabled = True
+            self.first_page_button.disabled = True
+        else:
+            self.next_page_button.disabled = False
+            self.last_page_button.disabled = False
+
+        self.embed.description = self.contents[self.page]
+        await interaction.response.edit_message(embed=self.embed, view=self)
+
+    @button(label="Next", style=ButtonStyle.green, row=0)
+    async def next_page_button(self, interaction: Interaction, _: Button) -> None:
+        self.page = min(self.page + 1, len(self.contents) - 1)
+        self.page_display_button.label = f"{self.page+1}/{len(self.contents)}"
+
+        if self.page == (len(self.contents) - 1):
+            self.next_page_button.disabled = True
+            self.last_page_button.disabled = True
+        else:
+            self.previous_page_button.disabled = False
+            self.first_page_button.disabled = False
+
+        self.embed.description = self.contents[self.page]
+        await interaction.response.edit_message(embed=self.embed, view=self)
+
+    @button(label=">>", style=ButtonStyle.green, row=0)
+    async def last_page_button(self, interaction: Interaction, _: Button) -> None:
+        self.page = len(self.contents) - 1
+        self.page_display_button.label = f"{self.page+1}/{len(self.contents)}"
+
+        self.previous_page_button.disabled = False
+        self.first_page_button.disabled = False
+        self.next_page_button.disabled = True
+        self.last_page_button.disabled = True
+
+        self.embed.description = self.contents[self.page]
+        await interaction.response.edit_message(embed=self.embed, view=self)
+
+    @button(label="STOP", style=ButtonStyle.danger)
+    async def stop_button(self, interaction: Interaction, _: Button) -> None:
+        await interaction.response.defer()
+        self.stop()
+
+
+class PageDisplayButton(Button):
+    """Button to hold the page number"""
+
+    def __init__(self, label: str, *, row: int | None = 0):
+        super().__init__(label=label, row=row, style=ButtonStyle.gray, disabled=True)
+
+
+class DriveSearchResultEmbed(Embed):
+    """Embed that displays search results"""
+
+    def __init__(
+        self,
+        title: str,
+        description: str,
+        color: int | Colour | None = Colour.blurple(),
+        **kwargs,
+    ):
+        super().__init__(title=title, description=description, color=color, **kwargs)
 
 
 class DriveSearchSelect(Select):
