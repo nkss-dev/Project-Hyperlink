@@ -53,7 +53,6 @@ class DriveSearchView(discord.ui.View):
         # TODO: somehow delete this once embed is edited. if not possible, don't send this
         await interaction.response.defer(ephemeral=True, thinking=True)
 
-        page = page if page != -1 else len(self.pages) - 1
         self.current_page = page
         try:
             self.pages[page]
@@ -101,7 +100,7 @@ class DriveSearchView(discord.ui.View):
     async def last_page_button(
         self, interaction: discord.Interaction[ProjectHyperlink], _: discord.ui.Button
     ) -> None:
-        await self.on_page_change(interaction, -1)
+        await self.on_page_change(interaction, len(self.pages) - 1)
 
 
 class ResultEmbed(discord.Embed):
