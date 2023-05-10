@@ -50,6 +50,9 @@ class DriveSearchView(discord.ui.View):
     async def on_page_change(
         self, interaction: discord.Interaction[ProjectHyperlink], page: int
     ) -> None:
+        if self.current_page == page:
+            return
+
         # TODO: somehow delete this once embed is edited. if not possible, don't send this
         await interaction.response.defer(ephemeral=True, thinking=True)
 
