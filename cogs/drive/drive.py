@@ -8,11 +8,11 @@ from cogs.drive.ui import DriveSearchView
 from main import ProjectHyperlink
 
 
-class ExamChoice(Enum):
-    MID_SEM_1 = 1
-    MID_SEM_2 = 2
-    MID_SEM_3 = 3
-    END_SEM = 4
+class Exam(Enum):
+    MID_SEM_1 = 'Mid Sem - 1'
+    MID_SEM_2 = 'Mid Sem - 2'
+    MID_SEM_3 = 'Mid Sem - 3'
+    END_SEM = 'End Sem'
 
 
 class Drive(
@@ -39,19 +39,19 @@ class Drive(
 
     @discord.app_commands.command(description="Upload a past paper.")
     @discord.app_commands.choices(
-        exam=[  # TODO: probably use an enum for the choices
-            Choice(name="Mid Sem - 1", value=ExamChoice.MID_SEM_1.value),
-            Choice(name="Mid Sem - 2", value=ExamChoice.MID_SEM_2.value),
-            Choice(name="Mid Sem - 3", value=ExamChoice.MID_SEM_3.value),
-            Choice(name="End Sem", value=ExamChoice.END_SEM.value),
+        exam=[
+            Choice(name=Exam.MID_SEM_1.value, value=Exam.MID_SEM_1.value),
+            Choice(name=Exam.MID_SEM_2.value, value=Exam.MID_SEM_2.value),
+            Choice(name=Exam.MID_SEM_3.value, value=Exam.MID_SEM_3.value),
+            Choice(name=Exam.END_SEM.value, value=Exam.END_SEM.value),
         ]
     )
     async def past_paper(
         self,
         interaction: discord.Interaction[ProjectHyperlink],
-        exam: Choice[int],
+        exam: Exam,
         file: discord.Attachment,
         # TODO: add tags in the future
     ):
-        self.logger.info("Choice selected is %s", ExamChoice(exam).name)
+        self.logger.info("Choice selected is %s", exam)
         await interaction.response.defer(ephemeral=True, thinking=True)
