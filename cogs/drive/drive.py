@@ -9,10 +9,10 @@ from main import ProjectHyperlink
 
 
 class Exam(Enum):
-    MID_SEM_1 = 'Mid Sem - 1'
-    MID_SEM_2 = 'Mid Sem - 2'
-    MID_SEM_3 = 'Mid Sem - 3'
-    END_SEM = 'End Sem'
+    MID_SEM_1 = "Mid Sem - 1"
+    MID_SEM_2 = "Mid Sem - 2"
+    MID_SEM_3 = "Mid Sem - 3"
+    END_SEM = "End Sem"
 
 
 class Drive(
@@ -39,12 +39,7 @@ class Drive(
 
     @discord.app_commands.command(description="Upload a past paper.")
     @discord.app_commands.choices(
-        exam=[
-            Choice(name=Exam.MID_SEM_1.value, value=Exam.MID_SEM_1.value),
-            Choice(name=Exam.MID_SEM_2.value, value=Exam.MID_SEM_2.value),
-            Choice(name=Exam.MID_SEM_3.value, value=Exam.MID_SEM_3.value),
-            Choice(name=Exam.END_SEM.value, value=Exam.END_SEM.value),
-        ]
+        exam=[Choice(name=i.value, value=i.value) for i in Exam]
     )
     async def past_paper(
         self,
