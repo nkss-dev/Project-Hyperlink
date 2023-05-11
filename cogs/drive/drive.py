@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Any
 
 import discord
 from discord.app_commands import Choice, Group
@@ -20,6 +21,15 @@ class Drive(
     group_name="drive",
     group_description="All the commands related to NKSS-Drive",
 ):
+    def __init__(self, bot: ProjectHyperlink, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
+        # TODO - call the api to load courses
+        self.courses_dict = {
+            "ecpc33": "Random Variables",
+            "cspc20": "Operating Systems",
+            "itpc20": "Operating Systems",
+        }
+
     @discord.app_commands.command()
     @discord.app_commands.describe(
         query="The search query for fetching relevant results"
@@ -37,16 +47,30 @@ class Drive(
         name="upload", description="Upload message attachment to the Google Drive."
     )
 
+    async def course_name_autocomplete(
+        self, interaction: discord.Interaction[ProjectHyperlink], current: str
+    ) -> list[Choice[str]]:
+        return [
+            Choice(name=name + " - " + code.upper(), value=code)
+            for code, name in self.courses_dict.items()
+            if current.lower() in name.lower()
+        ]
+
     @discord.app_commands.command(description="Upload a past paper.")
     @discord.app_commands.choices(
         exam=[Choice(name=i.value, value=i.value) for i in Exam]
     )
+    @discord.app_commands.autocomplete(course_name=course_name_autocomplete)
     async def past_paper(
         self,
         interaction: discord.Interaction[ProjectHyperlink],
         exam: Exam,
+        course_name: Choice,
         file: discord.Attachment,
         # TODO: add tags in the future
     ):
         self.logger.info("Choice selected is %s", exam)
-        await interaction.response.defer(ephemeral=True, thinking=True)
+        await interaction.response.send_message(
+            content=f"Your exam is : {exam.name} and course is: {course_name.name}, code is: {course_name.value}"
+        )
+        # await interaction.response.defer(thinking=True)
