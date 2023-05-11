@@ -1,4 +1,6 @@
-INITIAL_EXTENSIONS = [
+import config
+
+ALL_EXTENSIONS = [
     "cogs.drive",
     "cogs.errors.handler",
     "cogs.events",
@@ -13,3 +15,11 @@ INITIAL_EXTENSIONS = [
     "cogs.tag",
     "cogs.verification",
 ]
+
+if config.dev is True:
+    INITIAL_EXTENSIONS = [
+        "cogs.owner",
+        # "cogs.",
+    ]
+else:
+    INITIAL_EXTENSIONS = ALL_EXTENSIONS
