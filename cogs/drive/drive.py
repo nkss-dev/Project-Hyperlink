@@ -51,9 +51,9 @@ class Drive(
         self, interaction: discord.Interaction[ProjectHyperlink], current: str
     ) -> list[Choice[str]]:
         return [
-            Choice(name=name + " - " + code.upper(), value=code)
-            for code, name in self.courses_dict.items()
-            if current.lower() in name.lower()
+            Choice(name=course_name + " - " + course_code.upper(), value=course_code)
+            for course_code, course_name in self.courses_dict.items()
+            if current.lower() in course_name.lower()
         ]
 
     @discord.app_commands.command(description="Upload a past paper.")
@@ -65,12 +65,12 @@ class Drive(
         self,
         interaction: discord.Interaction[ProjectHyperlink],
         exam: Exam,
-        course_name: Choice,
+        course_name: str,
         file: discord.Attachment,
         # TODO: add tags in the future
     ):
-        self.logger.info("Choice selected is %s", exam)
+        # self.logger.info("Choice selected is %s", exam)
         await interaction.response.send_message(
-            content=f"Your exam is : {exam.name} and course is: {course_name.name}, code is: {course_name.value}"
+            content=f"Your exam is : {exam.name} and course is: {self.courses_dict[course_name]}, code is: {course_name}"
         )
         # await interaction.response.defer(thinking=True)
