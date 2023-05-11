@@ -6,6 +6,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from base.cog import HyperlinkCog
+from cogs import ALL_EXTENSIONS
 import cogs.checks as checks
 from main import ProjectHyperlink
 from utils.utils import is_alone, yesOrNo
@@ -25,7 +26,23 @@ class OwnerOnly(HyperlinkCog):
 
         return super().interaction_check(interaction)
 
+    async def load_autocomplete(self, _: discord.Interaction, current: str):
+        return [
+            app_commands.Choice(name=extension[5:], value=extension)
+            for extension in ALL_EXTENSIONS
+            if extension not in self.bot.extensions
+            and current.lower() in extension.lower()
+        ]
+
+    async def unload_autocomplete(self, _: discord.Interaction, current: str):
+        return [
+            app_commands.Choice(name=extension[5:], value=extension)
+            for extension in self.bot.extensions
+            if current.lower() in extension.lower()
+        ]
+
     @app_commands.command()
+    @app_commands.autocomplete(extension=load_autocomplete)
     async def load(self, interaction: discord.Interaction, extension: str):
         """Load an extension.
 
@@ -37,12 +54,13 @@ class OwnerOnly(HyperlinkCog):
             The extension to load. Does not need to contain `.py` at the end.
         """
         await interaction.response.defer(ephemeral=True, thinking=True)
-        await self.bot.load_extension(f"cogs.{extension}")
+        await self.bot.load_extension(f"{extension}")
         await interaction.followup.send(
             self.fmv("load-successful", {"ext": extension}), ephemeral=True
         )
 
     @app_commands.command()
+    @app_commands.autocomplete(extension=unload_autocomplete)
     async def unload(self, interaction: discord.Interaction, extension: str):
         """Unload an extension.
 
@@ -51,12 +69,13 @@ class OwnerOnly(HyperlinkCog):
         extension: <class 'str'>
             The extension to unload.
         """
-        await self.bot.unload_extension(f"cogs.{extension}")
+        await self.bot.unload_extension(f"{extension}")
         await interaction.response.send_message(
             self.fmv("unload-successful", {"ext": extension}), ephemeral=True
         )
 
     @app_commands.command()
+    @app_commands.autocomplete(extension=unload_autocomplete)
     async def reload(self, interaction: discord.Interaction, extension: str):
         """Reload an extension.
 
@@ -66,7 +85,7 @@ class OwnerOnly(HyperlinkCog):
             The extension to reload.
         """
         await interaction.response.defer(ephemeral=True, thinking=True)
-        await self.bot.reload_extension(f"cogs.{extension}")
+        await self.bot.reload_extension(f"{extension}")
         await interaction.followup.send(
             self.fmv("reload-successful", {"ext": extension}), ephemeral=True
         )
