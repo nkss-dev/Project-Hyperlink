@@ -45,6 +45,7 @@ class DriveSearchView(discord.ui.View):
     ) -> bool:
         if interaction.user == self.author:
             return True
+        await interaction.response.defer()
         return False
 
     async def on_page_change(
