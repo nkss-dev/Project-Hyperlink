@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Any
 
+import config
 import discord
 from discord.app_commands import Choice, Group
 
@@ -24,14 +24,15 @@ class Drive(
     group_name="drive",
     group_description="All the commands related to NKSS-Drive",
 ):
-    def __init__(self, bot: ProjectHyperlink, *args: Any, **kwargs: Any) -> None:
-        super().__init__(bot, *args, **kwargs)
-        # TODO - call the api to load courses
-        self.courses_dict = {
-            "ecpc33": "Random Variables",
-            "cspc20": "Operating Systems",
-            "itpc20": "Operating Systems",
-        }
+    async def cog_load(self) -> None:
+        async with self.bot.session.get(f"{config.api_url}/courses") as resp:
+            if resp.status == 200:
+                courses = (await resp.json())["data"]
+                self.courses = {course["code"]: course["title"] for course in courses}
+            else:
+                self.logger.exception("Courses data could not be loaded")
+
+        return await super().cog_load()
 
     @discord.app_commands.command()
     @discord.app_commands.describe(
@@ -54,9 +55,10 @@ class Drive(
         self, interaction: discord.Interaction[ProjectHyperlink], current: str
     ) -> list[Choice[str]]:
         return [
-            Choice(name=course_name + " - " + course_code.upper(), value=course_code)
-            for course_code, course_name in self.courses_dict.items()
+            Choice(name=course_code, value=course_code)
+            for course_code, course_name in self.courses.items()
             if current.lower() in course_name.lower()
+            or current.lower() in course_code.lower()
         ]
 
     @discord.app_commands.command(description="Upload a past paper.")
@@ -71,6 +73,6 @@ class Drive(
     ):
         # self.logger.info("Choice selected is %s", exam)
         await interaction.response.send_message(
-            content=f"Your exam is : {exam.name} and course is: {self.courses_dict[course_name]}, code is: {course_name}"
+            content=f"Your exam is : {exam.name} and course is: {self.courses[course_name]}, code is: {course_name}"
         )
         # await interaction.response.defer(thinking=True)
