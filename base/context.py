@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from main import ProjectHyperlink
 
 
-class HyperlinkContext(Context[ProjectHyperlink]):
+class HyperlinkContext(Context['ProjectHyperlink']):
     async def translate(
         self,
         content: str | None,
