@@ -24,8 +24,4 @@ Nevertheless, here are the installation steps:
 
 4. **Install the dependencies:** `pip install -U -r requirements.txt`
 
-5. **Setup configuration:**<br>
-   Rename the `config-sample.py` file in the root directory to `config.py` and populate it with the corresponding values.
-
-6. **For [drive.py](cogs/drive.py 'Queries a linked Google Drive'):**<br>
-   Follow the instructions given [here](https://developers.google.com/drive/api/v3/quickstart/python 'Setup instructions for the Google Drive API in Python') and store the resultant `.json` file in the `db` folder (generated automatically after the bot is run at least once) and rename it to `credentials.json`
+5. **Setup configuration:** Rename the `config-sample.py` file in the root directory to `config.py` and populate it with the corresponding values.
