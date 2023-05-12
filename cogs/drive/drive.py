@@ -48,7 +48,7 @@ class Drive(
         view.message = await interaction.original_response()
 
     upload = Group(
-        name="upload", description="Upload message attachment to the Google Drive."
+        name="upload", description="Upload message attachment to the NKSSS Drive."
     )
 
     async def course_name_autocomplete(
@@ -61,7 +61,7 @@ class Drive(
             or current.lower() in course_code.lower()
         ]
 
-    @discord.app_commands.command(description="Upload a past paper.")
+    @upload.command(description="Upload a past paper.")
     @discord.app_commands.autocomplete(course_name=course_name_autocomplete)
     async def past_paper(
         self,
