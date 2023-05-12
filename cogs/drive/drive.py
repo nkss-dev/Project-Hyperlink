@@ -15,6 +15,9 @@ class Exam(Enum):
     MID_SEM_3 = "Mid Sem - 3"
     END_SEM = "End Sem"
 
+    def __init__(self, *args, **kwargs) -> None:
+        self._name_ = self._value_
+
 
 class Drive(
     HyperlinkGroupCog,
@@ -57,9 +60,6 @@ class Drive(
         ]
 
     @discord.app_commands.command(description="Upload a past paper.")
-    @discord.app_commands.choices(
-        exam=[Choice(name=i.value, value=i.value) for i in Exam]
-    )
     @discord.app_commands.autocomplete(course_name=course_name_autocomplete)
     async def past_paper(
         self,
