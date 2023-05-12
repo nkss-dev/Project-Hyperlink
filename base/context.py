@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Sequence
+
 from discord import Embed, Message
-from discord.ext import commands
+from discord.ext.commands import Context
 
 if TYPE_CHECKING:
     from main import ProjectHyperlink
-else:
-    ProjectHyperlink = commands.Bot
 
 
-class HyperlinkContext(commands.Context[ProjectHyperlink]):
+class HyperlinkContext(Context['ProjectHyperlink']):
     async def translate(
         self,
         content: str | None,
@@ -35,7 +36,7 @@ class HyperlinkContext(commands.Context[ProjectHyperlink]):
                     assert field.name is not None
                     field.name = l10n.format_value(field.name)
 
-        return dict(content=content, embed=embed, embeds=embeds)
+        return dict(content=content, embeds=embeds)
 
     async def send(
         self,

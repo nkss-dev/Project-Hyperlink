@@ -1,6 +1,6 @@
-load-successful = 'cogs.{$ext}' loaded successfully!
-unload-successful = 'cogs.{$ext}' unloaded successfully!
-reload-successful = 'cogs.{$ext}' reloaded successfully!
+load-successful = '{$ext}' loaded successfully!
+unload-successful = '{$ext}' unloaded successfully!
+reload-successful = '{$ext}' reloaded successfully!
 
 archive-cancel = Archive cancelled
 file-notfound = No file was found!
