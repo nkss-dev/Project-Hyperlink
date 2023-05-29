@@ -19,6 +19,8 @@ class IncorrectGuildBatch(CheckFailure):
 class NotForBot(CheckFailure):
     pass
 
+class NotInDevGuild(CheckFailure):
+    pass
 
 class NotOwner(CheckFailure):
     def __init__(self, message: str | None = None) -> None:

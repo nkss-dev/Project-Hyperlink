@@ -56,3 +56,22 @@ async def _is_owner(
             raise error
         raise error(message)
     return True
+
+
+async def _is_dev_guild(
+    instance: commands.Context[ProjectHyperlink] | Interaction[ProjectHyperlink],
+    *,
+    suppress: bool = False,
+):
+    guild_id, bot, error = (
+        (instance.guild.id, instance.bot, app.NotInDevGuild)
+        if isinstance(instance, commands.Context)
+        else (instance.guild.id, instance.client, app.NotInDevGuild)
+    )
+
+    if guild_id not in config.dev_guild_ids:
+        if suppress:
+            return False
+        raise error
+
+    return True

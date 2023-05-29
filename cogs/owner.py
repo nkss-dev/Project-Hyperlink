@@ -43,6 +43,7 @@ class OwnerOnly(HyperlinkCog):
 
     @app_commands.command()
     @app_commands.autocomplete(extension=load_autocomplete)
+    @checks.is_dev_guild()
     async def load(self, interaction: discord.Interaction, extension: str):
         """Load an extension.
 
@@ -61,6 +62,7 @@ class OwnerOnly(HyperlinkCog):
 
     @app_commands.command()
     @app_commands.autocomplete(extension=unload_autocomplete)
+    @checks.is_dev_guild()
     async def unload(self, interaction: discord.Interaction, extension: str):
         """Unload an extension.
 
@@ -76,6 +78,7 @@ class OwnerOnly(HyperlinkCog):
 
     @app_commands.command()
     @app_commands.autocomplete(extension=unload_autocomplete)
+    @checks.is_dev_guild()
     async def reload(self, interaction: discord.Interaction, extension: str):
         """Reload an extension.
 
@@ -93,6 +96,7 @@ class OwnerOnly(HyperlinkCog):
 
 
     @commands.group(aliases=['db'], invoke_without_command=True)
+    @checks.is_dev_guild()
     async def database(self, ctx):
         """Command group for database read/write commands"""
         await ctx.send_help(ctx.command)
@@ -177,6 +181,7 @@ class OwnerOnly(HyperlinkCog):
 
     @commands.command()
     @commands.guild_only()
+    @checks.is_dev_guild()
     async def sync(
         self,
         ctx: commands.Context,

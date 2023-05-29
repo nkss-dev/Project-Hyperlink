@@ -51,7 +51,8 @@ class Errors(HyperlinkCog):
         elif isinstance(error, commands.CheckFailure):
             if isinstance(error, commands.NotOwner):
                 await ctx.reply("Unauthorised-NotOwner")
-
+            elif isinstance(error, app.NotInDevGuild):
+                await ctx.reply("Unauthorised-NotInDevGuild")
             elif isinstance(error, commands.MissingPermissions):
                 await ctx.reply(str(error))
 
