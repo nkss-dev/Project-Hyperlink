@@ -12,19 +12,22 @@ from main import ProjectHyperlink
 from utils.utils import is_alone, yesOrNo
 
 
-# TODO: Make these dev guild only
 class OwnerOnly(HyperlinkCog):
     """Bot owner commands"""
 
     async def interaction_check(
         self, interaction: discord.Interaction[ProjectHyperlink]
     ) -> bool:
+        checks._is_dev_guild(interaction)
         await checks._is_owner(interaction)
 
         l10n = await self.bot.get_l10n(interaction.guild_id or 0)
         self.fmv = l10n.format_value
 
         return super().interaction_check(interaction)
+
+    def cog_check(self, ctx: commands.Context[ProjectHyperlink]) -> bool:
+        return checks._is_dev_guild(ctx)
 
     async def load_autocomplete(self, _: discord.Interaction, current: str):
         return [
@@ -43,7 +46,6 @@ class OwnerOnly(HyperlinkCog):
 
     @app_commands.command()
     @app_commands.autocomplete(extension=load_autocomplete)
-    @checks.is_dev_guild()
     async def load(self, interaction: discord.Interaction, extension: str):
         """Load an extension.
 
@@ -62,7 +64,6 @@ class OwnerOnly(HyperlinkCog):
 
     @app_commands.command()
     @app_commands.autocomplete(extension=unload_autocomplete)
-    @checks.is_dev_guild()
     async def unload(self, interaction: discord.Interaction, extension: str):
         """Unload an extension.
 
@@ -78,7 +79,6 @@ class OwnerOnly(HyperlinkCog):
 
     @app_commands.command()
     @app_commands.autocomplete(extension=unload_autocomplete)
-    @checks.is_dev_guild()
     async def reload(self, interaction: discord.Interaction, extension: str):
         """Reload an extension.
 
@@ -96,7 +96,6 @@ class OwnerOnly(HyperlinkCog):
 
 
     @commands.group(aliases=['db'], invoke_without_command=True)
-    @checks.is_dev_guild()
     async def database(self, ctx):
         """Command group for database read/write commands"""
         await ctx.send_help(ctx.command)
@@ -181,7 +180,6 @@ class OwnerOnly(HyperlinkCog):
 
     @commands.command()
     @commands.guild_only()
-    @checks.is_dev_guild()
     async def sync(
         self,
         ctx: commands.Context,
