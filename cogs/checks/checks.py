@@ -58,7 +58,7 @@ async def _is_owner(
     return True
 
 
-async def _is_dev_guild(
+def _is_dev_guild(
     instance: commands.Context[ProjectHyperlink] | Interaction[ProjectHyperlink],
     *,
     suppress: bool = False,
