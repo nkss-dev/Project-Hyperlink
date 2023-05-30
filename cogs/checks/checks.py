@@ -63,10 +63,10 @@ async def _is_dev_guild(
     *,
     suppress: bool = False,
 ):
-    guild_id, bot, error = (
-        (instance.guild.id, instance.bot, commands.CheckFailure("NotInDevGuild"))
+    guild_id, error = (
+        (instance.guild.id, commands.CheckFailure("NotInDevGuild"))
         if isinstance(instance, commands.Context)
-        else (instance.guild.id, instance.client, app.NotInDevGuild)
+        else (instance.guild.id, app.NotInDevGuild)
     )
 
     if guild_id not in config.dev_guild_ids:
