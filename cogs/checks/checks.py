@@ -64,7 +64,7 @@ async def _is_dev_guild(
     suppress: bool = False,
 ):
     guild_id, bot, error = (
-        (instance.guild.id, instance.bot, app.NotInDevGuild)
+        (instance.guild.id, instance.bot, commands.CheckFailure("NotInDevGuild"))
         if isinstance(instance, commands.Context)
         else (instance.guild.id, instance.client, app.NotInDevGuild)
     )
