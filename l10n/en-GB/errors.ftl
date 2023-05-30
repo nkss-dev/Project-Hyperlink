@@ -23,3 +23,5 @@ CheckFailure-MissingAnyRole = You are missing at least one of the required roles
 CommandInvokeError-Forbidden = I am missing some permissions to execute this command.
 
 MaxConcurrencyReached = Please complete the steps of your previous command first! You cannot use this command more than once simulaneously.
+
+NotInDevGuild = This command can only run in pre-determined development servers.
