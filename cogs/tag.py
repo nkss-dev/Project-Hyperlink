@@ -39,13 +39,12 @@ class Tag(commands.Cog):
         webhook = await getWebhook(ctx.channel, ctx.guild.me)
 
         section, batch = await self.bot.pool.fetchrow(
-            'SELECT section, batch FROM student WHERE discord_uid = $1',
-            ctx.author.id
+            "SELECT section, batch FROM student WHERE discord_uid = $1", ctx.author.id
         )
 
         # Store roles that the user is allowed to tag
         section, *sub_secs = await self.bot.pool.fetchrow(
-            '''
+            """
             SELECT
                 section,
                 ARRAY_AGG(DISTINCT sub_section)
@@ -56,26 +55,28 @@ class Tag(commands.Cog):
                 AND batch = $2
             GROUP BY
                 section
-            ''', section, batch
+            """,
+            section,
+            batch,
         )
         valid_tags = section, *sub_secs
 
-        if result := re.findall('@[CEIMP][CEIST]-0[1-9]', content, flags=re.I):
+        if result := re.findall("@[CEIMP][CEIST]-0[1-9]", content, flags=re.I):
             tags = result
         else:
             tags = []
-        if result := re.findall('@[CEIMP][CEIST]-[ABC]', content, flags=re.I):
+        if result := re.findall("@[CEIMP][CEIST]-[ABC]", content, flags=re.I):
             tags.extend(result)
 
         # Loop through the string roles and mention the allowed and available ones
         for tag in tags:
             if tag[1:].upper() in valid_tags:
-                    role = utils.get(ctx.guild.roles, name=tag[1:].upper())
-                    if role:
-                        content = content.replace(tag, role.mention, 1)
+                role = utils.get(ctx.guild.roles, name=tag[1:].upper())
+                if role:
+                    content = content.replace(tag, role.mention, 1)
 
         # Loop through the mentioned roles and remove the restricted ones
-        for roleID in re.findall('<@&[0-9]{18}>', content):
+        for roleID in re.findall("<@&[0-9]{18}>", content):
             role = ctx.guild.get_role(int(roleID[3:-1]))
 
             if role.name in valid_tags:
@@ -85,7 +86,7 @@ class Tag(commands.Cog):
             if ctx.author.guild_permissions.mention_everyone:
                 continue
 
-            content = content.replace(roleID, f'@{role.name}', 1)
+            content = content.replace(roleID, f"@{role.name}", 1)
 
         if ctx.author.guild_permissions.mention_everyone:
             allowed_mentions = AllowedMentions()
@@ -97,7 +98,7 @@ class Tag(commands.Cog):
             content.strip(),
             username=ctx.author.display_name,
             avatar_url=ctx.author.avatar.url,
-            allowed_mentions=allowed_mentions
+            allowed_mentions=allowed_mentions,
         )
 
 
