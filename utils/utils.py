@@ -2,8 +2,10 @@ import json
 import re
 from math import floor
 from random import random
+from typing import Union
 
 import discord
+from discord.ext.commands import BotMissingPermissions
 
 
 async def deleteOnReaction(ctx, message: discord.Message, emoji: str = "🗑️"):
@@ -52,16 +54,31 @@ def getURLs(text: str) -> list:
     return [url[0] for url in re.findall(regex, text)]
 
 
-async def getWebhook(channel, member) -> discord.Webhook | None:
-    """Return a webhook"""
+async def get_any_webhook(
+    *,
+    channel: Union[
+        discord.ForumChannel,
+        discord.StageChannel,
+        discord.TextChannel,
+        discord.VoiceChannel,
+    ],
+    member: discord.Member,
+    reason: str | None = None,
+) -> discord.Webhook:
+    """Return the first webhook owned by a user for a channel"""
+    if channel.permissions_for(member).manage_webhooks:
+        raise BotMissingPermissions(["manage_webhooks"])
+
     for webhook in await channel.webhooks():
         if webhook.user == member:
             return webhook
-    if channel.permissions_for(member).manage_webhooks:
-        webhook = await channel.create_webhook(
-            name=member.name, avatar=await member.display_avatar.read()
-        )
-        return webhook
+
+    webhook = await channel.create_webhook(
+        name=member.name,
+        avatar=await member.display_avatar.read(),
+        reason=reason,
+    )
+    return webhook
 
 
 async def is_alone(channel, author, bot) -> bool:
@@ -99,11 +116,7 @@ async def yesOrNo(ctx, message: discord.Message) -> bool:
     def check(reaction, member):
         if str(reaction.emoji) not in reactions:
             return False
-        if (
-            member == ctx.bot.user
-            or member != ctx.author
-            or reaction.message != message
-        ):
+        if member == ctx.bot.user or member != ctx.author or reaction.message != message:
             return False
         return True
 

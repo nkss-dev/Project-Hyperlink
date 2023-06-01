@@ -4,7 +4,7 @@ from discord import utils, AllowedMentions
 from discord.ext import commands
 
 import cogs.checks as checks
-from utils.utils import getWebhook
+from utils.utils import get_any_webhook
 
 
 class Tag(commands.Cog):
@@ -36,7 +36,11 @@ class Tag(commands.Cog):
         `Hello, @CE-01!`
         `Hey, @it-b; please help me with this. I'm in @iT-05.`
         """
-        webhook = await getWebhook(ctx.channel, ctx.guild.me)
+        webhook = await get_any_webhook(
+            channel=ctx.channel,
+            member=ctx.guild.me,
+            reason="Send messages that tag section roles",
+        )
 
         section, batch = await self.bot.pool.fetchrow(
             "SELECT section, batch FROM student WHERE discord_uid = $1", ctx.author.id
