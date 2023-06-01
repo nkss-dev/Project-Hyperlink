@@ -111,6 +111,9 @@ class ProjectHyperlink(commands.Bot):
         self.logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def setup_hook(self) -> None:
+        if config.dev is False:
+            self.logger.addHandler(ErrorHandler(self.loop, self.session))
+
         results = await asyncio.gather(
             *(self.load_extension(ext) for ext in cogs.INITIAL_EXTENSIONS),
             return_exceptions=True,
@@ -149,10 +152,6 @@ async def main():
         logger=logger,
         web_client=session,
     )
-
-    if config.dev is False:
-        LOGGING_CHANNEL_ID: int = 1086928165303234680
-        logger.addHandler(ErrorHandler(bot, LOGGING_CHANNEL_ID))
 
     async with session, pool, bot:
         if config.dev is True:

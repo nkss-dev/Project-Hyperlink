@@ -1,3 +1,4 @@
+import aiohttp
 import asyncio
 import logging
 import traceback
@@ -22,10 +23,10 @@ class InfoHandler(logging.Handler):
 
 
 class ErrorHandler(logging.Handler):
-    def __init__(self, bot, channel_id):
+    def __init__(self, loop: asyncio.AbstractEventLoop, session: aiohttp.ClientSession):
         super().__init__(logging.WARNING)
-        self.bot = bot
-        self.channel_id = channel_id
+        self.loop = loop
+        self.webhook = discord.Webhook.from_url(config.log_url, session=session)
         self.setFormatter(discord.utils._ColourFormatter())
 
         self.colors = {
@@ -34,12 +35,12 @@ class ErrorHandler(logging.Handler):
             "CRITICAL": discord.Color.red(),
         }
 
-    def emit(self, record):
-        channel = self.bot.get_channel(self.channel_id)
-        if channel is None:
-            print(self.format(record))
-            return
+        mentions = []
+        for owner_id in config.owner_ids:
+            mentions.append(f"<@{owner_id}>")
+        self.cc = f"cc {', '.join(mentions)}"
 
+    def emit(self, record):
         try:
             embed = discord.Embed(
                 title=record.levelname,
@@ -58,6 +59,14 @@ class ErrorHandler(logging.Handler):
             if user is not None:
                 embed.add_field(name="Invoked by", value=f"{user.mention}: {user.id}")
 
-            asyncio.run_coroutine_threadsafe(channel.send(embed=embed), self.bot.loop)
+            asyncio.run_coroutine_threadsafe(
+                self.webhook.send(
+                    content=self.cc if record.levelno > logging.WARNING else "",
+                    embed=embed,
+                    silent=record.levelno < logging.CRITICAL,
+                    username="Hyperlink Status",
+                ),
+                self.loop,
+            )
         except:
             raise
