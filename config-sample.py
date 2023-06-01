@@ -16,4 +16,15 @@ password_token = ""
 # For help on getting your password token, refer this article:
 # https://support.google.com/mail/answer/185833
 
-dsn = "postgresql://{user}:{password}@{host}:{port}/{database}"
+
+class DB:
+    def __init__(self):
+        self.database = ""
+        self.host = ""
+        self.password = ""
+        self.port = 0
+        self.user = ""
+
+    @property
+    def dsn(self):
+        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"

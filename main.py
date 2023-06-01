@@ -144,7 +144,7 @@ async def main():
     discord.utils.setup_logging(level=logging.INFO, root=False)
 
     pool = asyncpg.create_pool(
-        dsn=config.dsn, command_timeout=60, max_inactive_connection_lifetime=0
+        dsn=config.DB().dsn, command_timeout=60, max_inactive_connection_lifetime=0
     )
     session = ClientSession()
     bot = ProjectHyperlink(
