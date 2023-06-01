@@ -1,4 +1,5 @@
 asyncpg
+black
 config
 discord.py
 fluent.runtime

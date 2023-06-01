@@ -1,0 +1,10 @@
+{
+    "[python]": {
+        "editor.formatOnSave": true,
+    },
+    "python.formatting.provider": "black",
+    "python.formatting.blackPath": "hyperlink-env/bin/black",
+    "python.formatting.blackArgs": [
+        "-l 90"
+    ],
+}
