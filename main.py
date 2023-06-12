@@ -118,9 +118,15 @@ class ProjectHyperlink(commands.Bot):
             *(self.load_extension(ext) for ext in cogs.INITIAL_EXTENSIONS),
             return_exceptions=True,
         )
+        failures = {}
         for ext, result in zip(cogs.INITIAL_EXTENSIONS, results):
             if isinstance(result, Exception):
-                self.logger.error(f"Failed to load extension `{ext}`: {result}")
+                failures[ext] = f"```{result.__cause__ or result}```"
+        if failures:
+            self.logger.critical(
+                f"{len(failures)}/{len(results)} extensions failed to load.",
+                extra={"fields": failures},
+            )
 
         l10n = await self.get_l10n(0)
         self.add_view(VerificationView(l10n.format_value("verify-button-label")))
