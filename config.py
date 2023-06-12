@@ -22,10 +22,10 @@ if not dev:
     assert log_url is not None
 
 # IDs
-owner_ids: tuple = (534651911903772674,)
+owner_ids: tuple = (534651911903772674, 555580364068880414)
 
 # API
-api_url = "https://nkss-backend.up.railway.app"
+api_url = "https://breadboard.up.railway.app"
 api_token = os.getenv("BREADBOARD_API_TOKEN")
 
 # Email
