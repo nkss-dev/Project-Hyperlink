@@ -1,5 +1,5 @@
 # secrets
-/config.py
+config.py
 db/
 
 # cache
