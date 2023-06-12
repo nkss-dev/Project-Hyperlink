@@ -53,7 +53,9 @@ Nevertheless, here are the installation steps:
    PGUSER=""
    ```
 
-   Note: Some of these are optional, but may break the bot's functionality. Refer [config.py](/config.py) for descriptions.
+   Additionally, there are some non-secret configuration options in [config.py](/config.py), you may want to look at those too.
+
+   Note: Some of these are optional, but may break the bot's functionality, if left empty.
 
 6. **For [drive.py](cogs/drive.py 'Queries a linked Google Drive'):**<br>
    Follow the instructions given [here](https://developers.google.com/drive/api/v3/quickstart/python 'Setup instructions for the Google Drive API in Python') and store the resultant `.json` file in the `db` folder (generated automatically after the bot is run at least once) and rename it to `credentials.json`
