@@ -24,8 +24,34 @@ Nevertheless, here are the installation steps:
 
 4. **Install the dependencies:** `pip install -U -r requirements.txt`
 
-5. **Setup configuration:**<br>
-   Rename the `config-sample.py` file in the root directory to `config.py` and populate it with the corresponding values.
+5. **Configuration:**
+
+   Following are the environment variables needed for this project. You can paste these into an `.env` file and it will auto-load.
+   ```properties
+   # Token
+   BOT_TOKEN=""
+
+   # Developer options
+   DEV=1
+   DEV_BOT_TOKEN=""
+   LOG_URL="https://discord.com/api/webhooks/.../..."
+
+   # API
+   BREADBOARD_API_TOKEN=""
+
+   # Email
+   EMAIL_ADDRESS="foo@bar.com"
+   EMAIL_PASSWORD=""
+
+   # PostgreSQL
+   PGDATABASE=""
+   PGHOST=""
+   PGPASSWORD=""
+   PGPORT=""
+   PGUSER=""
+   ```
+
+   Note: Some of these are optional, but may break the bot's functionality. Refer [config.py](/config.py) for descriptions.
 
 6. **For [drive.py](cogs/drive.py 'Queries a linked Google Drive'):**<br>
    Follow the instructions given [here](https://developers.google.com/drive/api/v3/quickstart/python 'Setup instructions for the Google Drive API in Python') and store the resultant `.json` file in the `db` folder (generated automatically after the bot is run at least once) and rename it to `credentials.json`
