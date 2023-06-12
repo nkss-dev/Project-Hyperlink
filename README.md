@@ -10,7 +10,7 @@ Nevertheless, here are the installation steps:
 
 1. **Ensure that you have Python 3.10 or higher.**
 
-2. **Clone the repository:** `git clone https://www.github.com/GetPsyched/Project-Hyperlink`
+2. **Clone the repository:** `git clone git@github.com:NIT-KKR-Student-Support-System/Project-Hyperlink.git`
 
 3. **Set up the virtual environment:** `python3 -m venv hyperlink-env`
 
