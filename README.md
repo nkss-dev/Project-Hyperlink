@@ -14,13 +14,15 @@ Nevertheless, here are the installation steps:
 
 3. **Set up the virtual environment:** `python3 -m venv hyperlink-env`
 
-   Activate it using one of the following:
+   <details>
+      <summary>Activation Instructions</summary>
 
-   - On Unix or MacOS, using the bash shell: `source hyperlink-env/bin/activate`
-   - On Unix or MacOS, using the csh shell: `source hyperlink-env/bin/activate.csh`
-   - On Unix or MacOS, using the fish shell: `source hyperlink-env/bin/activate.fish`
-   - On Windows using the Command Prompt: `path\to\hyperlink-env\Scripts\activate.bat`
-   - On Windows using PowerShell: `path\to\hyperlink-env\Scripts\Activate.ps1`
+      - On Unix or MacOS, using the bash shell: `source hyperlink-env/bin/activate`
+      - On Unix or MacOS, using the csh shell: `source hyperlink-env/bin/activate.csh`
+      - On Unix or MacOS, using the fish shell: `source hyperlink-env/bin/activate.fish`
+      - On Windows using the Command Prompt: `hyperlink-env\Scripts\activate.bat`
+      - On Windows using PowerShell: `hyperlink-env\Scripts\Activate.ps1`
+   </details>
 
 4. **Install the dependencies:** `pip install -U -r requirements.txt`
 
