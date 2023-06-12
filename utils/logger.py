@@ -48,6 +48,11 @@ class ErrorHandler(logging.Handler):
                 color=self.colors[record.levelname],
             )
 
+            fields: dict[str, str] | None = record.__dict__.get("fields")
+            if fields:
+                for name, value in fields.items():
+                    embed.add_field(name=name, value=value, inline=False)
+
             if record.exc_info:
                 exc_type, exc_value, exc_traceback = record.exc_info
                 tb = "".join(
