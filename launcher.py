@@ -11,7 +11,6 @@ except FileExistsError:
 
 # jsons
 jsons = {
-    "muted": [],
     "self_roles": {},
 }
 
