@@ -17,7 +17,7 @@ class InfoHandler(logging.Handler):
         self.setFormatter(discord.utils._ColourFormatter())
 
     def emit(self, record: logging.LogRecord) -> None:
-        if record.levelno <= self.max_level or config.dev is True:
+        if record.levelno <= self.max_level or config.TESTING_MODE is True:
             # TODO: Take care of `record.extra`
             print(self.format(record))
 
@@ -26,8 +26,10 @@ class ErrorHandler(logging.Handler):
     def __init__(self, loop: asyncio.AbstractEventLoop, session: aiohttp.ClientSession):
         super().__init__(logging.WARNING)
         self.loop = loop
-        self.webhook = discord.Webhook.from_url(config.log_url, session=session)
         self.setFormatter(discord.utils._ColourFormatter())
+
+        assert config.LOG_URL is not None
+        self.webhook = discord.Webhook.from_url(config.LOG_URL, session=session)
 
         self.colors = {
             "WARNING": discord.Color.orange(),
@@ -36,7 +38,7 @@ class ErrorHandler(logging.Handler):
         }
 
         mentions = []
-        for owner_id in config.owner_ids:
+        for owner_id in config.OWNER_IDS:
             mentions.append(f"<@{owner_id}>")
         self.cc = f"cc {', '.join(mentions)}"
 

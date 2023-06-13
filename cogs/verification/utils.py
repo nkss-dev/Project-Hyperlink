@@ -85,7 +85,7 @@ async def authenticate(
     # Creating the email
     msg = EmailMessage()
     msg["Subject"] = f"Verification of {member} in {member.guild}"
-    msg["From"] = config.email
+    msg["From"] = config.EMAIL
     msg["To"] = email
 
     variables = {
@@ -104,7 +104,9 @@ async def authenticate(
 
     # Sending the email
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(config.email, config.password_token)
+        assert config.EMAIL is not None
+        assert config.EMAIL_TOKEN is not None
+        smtp.login(config.EMAIL, config.EMAIL_TOKEN)
         smtp.send_message(msg)
 
     bot.logger.info(f"Verification email sent to `{email}`", extra={"user": member})
@@ -170,8 +172,8 @@ async def verify(
     l10n = await bot.get_l10n(interaction.guild_id)
 
     async with bot.session.get(
-        f"{config.api_url}/students/{roll}",
-        headers={"Authorization": f"Bearer {config.api_token}"},
+        f"{config.API_URL}/students/{roll}",
+        headers={"Authorization": f"Bearer {config.API_TOKEN}"},
     ) as resp:
         if resp.status == 200:
             student_dict = (await resp.json())["data"]

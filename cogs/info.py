@@ -31,7 +31,7 @@ class Info(HyperlinkCog):
             self.emojis = json.load(f)["utility"]
 
     async def cog_load(self):
-        async with self.bot.session.get(f"{config.api_url}/hostels") as resp:
+        async with self.bot.session.get(f"{config.API_URL}/hostels") as resp:
             assert resp.status == 200
             data = await resp.json()
         self.hostels = {hostel.pop("id"): hostel for hostel in data["data"]}
@@ -50,7 +50,7 @@ class Info(HyperlinkCog):
     async def course(
         self, interaction: discord.Interaction, code: str, only_content: bool = True
     ):
-        async with self.bot.session.get(f"{config.api_url}/courses/{code}") as resp:
+        async with self.bot.session.get(f"{config.API_URL}/courses/{code}") as resp:
             # TODO: Make a global fetcher util
             if resp.status != 200:
                 raise UnhandledError
@@ -100,8 +100,8 @@ class Info(HyperlinkCog):
     async def get_profile_embed(self, guild: bool, member) -> discord.Embed:
         """Return the details of the given user in an embed"""
         async with self.bot.session.get(
-            f"{config.api_url}/discord/users/{member.id}",
-            headers={"Authorization": f"Bearer {config.api_token}"},
+            f"{config.API_URL}/discord/users/{member.id}",
+            headers={"Authorization": f"Bearer {config.API_TOKEN}"},
         ) as resp:
             if resp.status == 200:
                 student = (await resp.json())["data"]
@@ -142,9 +142,7 @@ class Info(HyperlinkCog):
         if student["mobile"]["Valid"]:
             fields["mob"] = student["mobile"]["String"]
         if student["birth_date"]["Valid"]:
-            birth_date = datetime.strptime(
-                student["birth_date"]["Time"][:10], "%Y-%m-%d"
-            )
+            birth_date = datetime.strptime(student["birth_date"]["Time"][:10], "%Y-%m-%d")
             fields["bday"] = discord.utils.format_dt(birth_date, style="D")
 
         for name, value in fields.items():
@@ -238,7 +236,7 @@ class Info(HyperlinkCog):
             If left blank, the member defaults to the author of the command.
         """
         member = member or interaction.user
-        if member.id in config.owner_ids:
+        if member.id in config.OWNER_IDS:
             pass
         elif member != interaction.user:
             if not interaction.user.guild_permissions.manage_nicknames:

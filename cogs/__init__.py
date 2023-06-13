@@ -16,7 +16,7 @@ ALL_EXTENSIONS = [
     "cogs.verification",
 ]
 
-if config.dev is True:
+if config.TESTING_MODE is True:
     INITIAL_EXTENSIONS = [
         "cogs.owner",
         # "cogs.",

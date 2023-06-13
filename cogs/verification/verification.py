@@ -93,8 +93,8 @@ class EntryPoint(HyperlinkCog):
             return
 
         async with self.bot.session.get(
-            f"{config.api_url}/discord/users/{member.id}",
-            headers={"Authorization": f"Bearer {config.api_token}"},
+            f"{config.API_URL}/discord/users/{member.id}",
+            headers={"Authorization": f"Bearer {config.API_TOKEN}"},
         ) as resp:
             if resp.status == 200:
                 student_dict = (await resp.json())["data"]
@@ -194,7 +194,9 @@ class EntryPoint(HyperlinkCog):
                     },
                 )
             )
-            message = f"{member.mention} was kicked from `{guild.name}` due to incorrect guild"
+            message = (
+                f"{member.mention} was kicked from `{guild.name}` due to incorrect guild"
+            )
             await member.kick(reason=message)
             self.bot.logger.info(message)
 

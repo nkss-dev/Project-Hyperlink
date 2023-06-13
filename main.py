@@ -44,7 +44,7 @@ class ProjectHyperlink(commands.Bot):
             **kwargs,
             command_prefix=self._prefix_callable,
             intents=intents,
-            owner_ids=config.owner_ids,
+            owner_ids=config.OWNER_IDS,
         )
         self._l10n_path = "l10n/{locale}"
         self._l10n: dict[str, FluentLocalization] = {}
@@ -61,7 +61,7 @@ class ProjectHyperlink(commands.Bot):
         """Return the bot's prefix for a guild or a DM"""
         await bot.wait_until_ready()
 
-        if config.dev is True:
+        if config.TESTING_MODE is True:
             DEFAULT_PREFIX = "!"
         else:
             DEFAULT_PREFIX = "%"
@@ -111,7 +111,7 @@ class ProjectHyperlink(commands.Bot):
         self.logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def setup_hook(self) -> None:
-        if config.dev is False:
+        if config.TESTING_MODE is False:
             self.logger.addHandler(ErrorHandler(self.loop, self.session))
 
         results = await asyncio.gather(
@@ -150,7 +150,7 @@ async def main():
     discord.utils.setup_logging(level=logging.INFO, root=False)
 
     pool = asyncpg.create_pool(
-        dsn=config.DB().dsn, command_timeout=60, max_inactive_connection_lifetime=0
+        dsn=config.DB().DSN, command_timeout=60, max_inactive_connection_lifetime=0
     )
     session = ClientSession()
     bot = ProjectHyperlink(
@@ -160,10 +160,12 @@ async def main():
     )
 
     async with session, pool, bot:
-        if config.dev is True:
-            await bot.start(config.dev_bot_token)
+        if config.TESTING_MODE is True:
+            assert config.TESTING_BOT_TOKEN is not None
+            await bot.start(config.TESTING_BOT_TOKEN)
         else:
-            await bot.start(config.bot_token)
+            assert config.BOT_TOKEN is not None
+            await bot.start(config.BOT_TOKEN)
 
 
 if __name__ == "__main__":

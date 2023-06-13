@@ -34,8 +34,8 @@ Nevertheless, here are the installation steps:
    BOT_TOKEN=""
 
    # Developer options
-   DEV=1
-   DEV_BOT_TOKEN=""
+   TESTING_MODE=1
+   TESTING_BOT_TOKEN=""
    LOG_URL="https://discord.com/api/webhooks/.../..."
 
    # API

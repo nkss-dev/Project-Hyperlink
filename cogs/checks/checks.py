@@ -24,7 +24,7 @@ async def _is_verified(
 
     verified = False
     async with bot.session.get(
-        f"{config.api_url}/status/student/discord", params=dict(id=author.id)
+        f"{config.API_URL}/status/student/discord", params=dict(id=author.id)
     ) as resp:
         if resp.status in range(500, 600):
             bot.logger.exception("API returned an error")
@@ -69,7 +69,7 @@ def _is_dev_guild(
         else (instance.guild.id, app.NotInDevGuild)
     )
 
-    if guild_id not in config.dev_guild_ids:
+    if guild_id not in config.DEV_GUILD_IDS:
         if suppress:
             return False
         raise error
