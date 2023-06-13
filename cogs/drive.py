@@ -1,8 +1,8 @@
-import json
 import mimetypes
 import os
 import re
 
+import config
 import discord
 from discord.ext import commands
 
@@ -124,9 +124,6 @@ class Drive(commands.Cog):
         self.bot = bot
         self.drive = GoogleDrive()
 
-        with open("db/emojis.json") as f:
-            self.emojis = json.load(f)["utility"]
-
     @staticmethod
     def get_query_str(args: tuple, mode: str = "default") -> tuple[str, list]:
         """Return a compatible search query for the Drive API"""
@@ -170,7 +167,7 @@ class Drive(commands.Cog):
             Each keyword must be space separated and any multi-word keyword \
             must be enclosed inside "double quotes".
         """
-        await ctx.message.add_reaction(self.emojis["loading"])
+        await ctx.message.add_reaction(config.emojis["loading"])
 
         search_query, ignored_args = self.get_query_str(query)
         if search_query:
@@ -210,13 +207,13 @@ class Drive(commands.Cog):
 
             if len(ignored_args) == len(query):
                 await ctx.reply(embed=ignored_embed)
-                await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
+                await ctx.message.remove_reaction(config.emojis["loading"], self.bot.user)
                 return
 
         # Exit if no results were found for the given query
         if not files:
             await ctx.reply(self.l10n.format_value("result-notfound"))
-            await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
+            await ctx.message.remove_reaction(config.emojis["loading"], self.bot.user)
             return
 
         # Add the links to the final embed(s)
@@ -247,7 +244,7 @@ class Drive(commands.Cog):
         except discord.errors.HTTPException:
             await ctx.reply(self.l10n.format_value("body-too-long"))
 
-        await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
+        await ctx.message.remove_reaction(config.emojis["loading"], self.bot.user)
 
     @commands.group()
     async def driveAdmin(self, ctx):
@@ -287,7 +284,7 @@ class Drive(commands.Cog):
             return
 
         try:
-            await ctx.message.add_reaction(self.emojis["loading"])
+            await ctx.message.add_reaction(config.emojis["loading"])
         except discord.Forbidden:
             pass
 
@@ -315,7 +312,7 @@ class Drive(commands.Cog):
                     else:
                         await ctx.send("upload-cancelled")
                         await ctx.message.remove_reaction(
-                            self.emojis["loading"], self.bot.user
+                            config.emojis["loading"], self.bot.user
                         )
                         return
                 else:
@@ -344,16 +341,14 @@ class Drive(commands.Cog):
 
                 def check(message: discord.Message) -> bool:
                     """Check if the message sent is by the command author in the right channel"""
-                    return (
-                        message.author == ctx.author and message.channel == ctx.channel
-                    )
+                    return message.author == ctx.author and message.channel == ctx.channel
 
                 # Wait for the user to give a name for the course folder
                 message = await self.bot.wait_for("message", check=check)
                 if message.content.lower() == "cancel":
                     await ctx.send("upload-cancelled")
                     await ctx.message.remove_reaction(
-                        self.emojis["loading"], self.bot.user
+                        config.emojis["loading"], self.bot.user
                     )
                     return
                 await question.delete()
@@ -386,7 +381,7 @@ class Drive(commands.Cog):
                 "command": ctx.command.qualified_name,
             }
             await ctx.reply(self.l10n.format_value("invalid-option", vars))
-            await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
+            await ctx.message.remove_reaction(config.emojis["loading"], self.bot.user)
             return
 
         # Download the attachment
@@ -418,7 +413,7 @@ class Drive(commands.Cog):
             color=discord.Color.blurple(),
         )
         await ctx.reply(embed=embed)
-        await ctx.message.remove_reaction(self.emojis["loading"], self.bot.user)
+        await ctx.message.remove_reaction(config.emojis["loading"], self.bot.user)
 
         # Cleanup
         os.remove(f"temp/{filename}")

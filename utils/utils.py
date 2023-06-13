@@ -1,9 +1,9 @@
-import json
 import re
 from math import floor
 from random import random
 from typing import Union
 
+import config
 import discord
 from discord.ext.commands import BotMissingPermissions
 
@@ -106,9 +106,7 @@ async def is_alone(channel, author, bot) -> bool:
 
 async def yesOrNo(ctx, message: discord.Message) -> bool:
     """Return true or false based on the user's reaction"""
-    with open("db/emojis.json") as f:
-        emojis = json.load(f)["utility"]
-    reactions = (emojis["yes"], emojis["no"])
+    reactions = (config.emojis["yes"], config.emojis["no"])
 
     for reaction in reactions:
         await message.add_reaction(reaction)

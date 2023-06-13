@@ -1,5 +1,4 @@
 import contextlib
-import json
 import re
 from asyncio import TimeoutError
 from dataclasses import dataclass
@@ -44,9 +43,6 @@ class Verify(commands.Cog):
 
     def __init__(self, bot: ProjectHyperlink):
         self.bot = bot
-
-        with open("db/emojis.json") as emojis:
-            self.emojis = json.load(emojis)["utility"]
 
     async def cog_load(self):
         sections = await self.bot.pool.fetch(
@@ -355,7 +351,7 @@ class Verify(commands.Cog):
         if not authenticated:
             return
 
-        await ctx.reply(self.fmv("email-success", {"emoji": self.emojis["verified"]}))
+        await ctx.reply(self.fmv("email-success", {"emoji": config.emojis["verified"]}))
         await assign_student_roles(
             ctx.author,
             (

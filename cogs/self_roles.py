@@ -2,6 +2,7 @@ import json
 import sqlite3
 from asyncio import TimeoutError
 
+import config
 import discord
 from discord.ext import commands
 
@@ -46,9 +47,6 @@ class ButtonRoles(HyperlinkCog):
         super().__init__(bot)
         self.views = {}
 
-        with open('db/emojis.json') as f:
-            self.emojis = json.load(f)['games']
-
         self.conn = sqlite3.connect('db/self_roles.db')
         self.c = self.conn.cursor()
 
@@ -89,7 +87,7 @@ class ButtonRoles(HyperlinkCog):
             await ctx.reply(self.fmv('message-author-not-self'))
             return
 
-        if not (reaction := self.emojis.get(name, None)):
+        if not (reaction := config.emojis.get(name, None)):
             msg = await ctx.reply(self.fmv('react-message'))
 
             def check(reaction, user):
@@ -230,8 +228,6 @@ class ReactionRoles(HyperlinkCog):
 
         with open('db/self_roles.json') as f:
             self.reactions = json.load(f)
-        with open('db/emojis.json') as f:
-            self.emojis = json.load(f)['games']
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -318,7 +314,7 @@ class ReactionRoles(HyperlinkCog):
             to select a reaction emoji manually.
         """
         if game:
-            if not (reaction := self.emojis.get(game, None)):
+            if not (reaction := config.emojis.get(game, None)):
                 await ctx.reply(self.fmv('invalid-game', {'game': game}))
                 return
         else:
@@ -385,9 +381,9 @@ class ReactionRoles(HyperlinkCog):
                 message = await channel.fetch_message(reaction_role['message_id'])
 
                 if isinstance(emoji := reaction_role['emoji'], int):
-                    for game in self.emojis:
-                        if str(emoji) in self.emojis[game]:
-                            emoji = self.emojis[game]
+                    for game in config.emojis:
+                        if str(emoji) in config.emojis[game]:
+                            emoji = config.emojis[game]
                             break
 
                 await message.remove_reaction(emoji, self.bot.user)

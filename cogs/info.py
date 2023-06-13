@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from typing import Optional
 
@@ -26,9 +25,6 @@ class Info(HyperlinkCog):
             callback=self.profile,
         )
         self.bot.tree.add_command(self.ctx_menu)
-
-        with open("db/emojis.json") as f:
-            self.emojis = json.load(f)["utility"]
 
     async def cog_load(self):
         async with self.bot.session.get(f"{config.API_URL}/hostels") as resp:
@@ -119,7 +115,7 @@ class Info(HyperlinkCog):
 
         # Generating the embed
         embed = discord.Embed(
-            title=f"{student['name']} {self.emojis[status]}", color=color
+            title=f"{student['name']} {config.emojis[status]}", color=color
         )
         embed.set_author(
             name=self.l10n.format_value("profile-name", {"member": str(member)}),
