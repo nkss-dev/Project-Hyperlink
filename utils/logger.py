@@ -1,3 +1,4 @@
+import io
 import aiohttp
 import asyncio
 import logging
@@ -52,6 +53,7 @@ class ErrorHandler(logging.Handler):
                 description=record.msg,
                 color=self.colors[record.levelname],
             )
+            files = []
 
             fields: dict[str, str] | None = record.__dict__.get("fields")
             if fields:
@@ -63,7 +65,11 @@ class ErrorHandler(logging.Handler):
                 tb = "".join(
                     traceback.format_exception(exc_type, exc_value, exc_traceback)
                 )
-                embed.add_field(name="Traceback", value=f"```{tb}```", inline=False)
+                if len(f"```{tb}```") > 1024:
+                    fp = io.BytesIO(tb.encode("utf-8"))
+                    files.append(discord.File(fp, "traceback.txt"))
+                else:
+                    embed.add_field(name="Traceback", value=f"```{tb}```", inline=False)
 
             user: discord.Member | discord.User | None = record.__dict__.get("user")
             if user is not None:
