@@ -63,6 +63,9 @@ def _is_dev_guild(
     *,
     suppress: bool = False,
 ):
+    if instance.guild is None:
+        return True
+
     guild_id, error = (
         (instance.guild.id, commands.CheckFailure("NotInDevGuild"))
         if isinstance(instance, commands.Context)
