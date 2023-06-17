@@ -5,6 +5,7 @@ import traceback
 
 import config
 import discord
+from discord.ext import tasks
 
 # TODO: Add handler for debug which posts into a file.
 # Ref: https://github.com/Rapptz/discord.py/blob/master/examples/advanced_startup.py#L67-L72
@@ -30,6 +31,8 @@ class ErrorHandler(logging.Handler):
 
         assert config.LOG_URL is not None
         self.webhook = discord.Webhook.from_url(config.LOG_URL, session=session)
+        self.log_queue = asyncio.Queue()
+        self.digest_log_queue.start()
 
         self.colors = {
             "WARNING": discord.Color.orange(),
@@ -66,14 +69,23 @@ class ErrorHandler(logging.Handler):
             if user is not None:
                 embed.add_field(name="Invoked by", value=f"{user.mention}: {user.id}")
 
-            asyncio.run_coroutine_threadsafe(
-                self.webhook.send(
-                    content=self.cc if record.levelno > logging.WARNING else "",
-                    embed=embed,
-                    silent=record.levelno < logging.CRITICAL,
-                    username="Hyperlink Status",
-                ),
-                self.loop,
+            self.log_queue.put_nowait(
+                (
+                    record,
+                    embed,
+                    files,
+                )
             )
         except:
             raise
+
+    @tasks.loop(seconds=0)
+    async def digest_log_queue(self):
+        record, embed, files = await self.log_queue.get()
+        await self.webhook.send(
+            content=self.cc if record.levelno > logging.WARNING else "",
+            embed=embed,
+            files=files,
+            silent=record.levelno < logging.CRITICAL,
+            username="Hyperlink Status",
+        )
