@@ -67,9 +67,6 @@ class EntryPoint(HyperlinkCog):
         """Send a verification button"""
         assert ctx.guild is not None
 
-        if ctx.guild.id not in GUILD_IDS:
-            return
-
         l10n = await self.bot.get_l10n(ctx.guild.id)
         view = VerificationView(l10n.format_value("verify-button-label"))
 
