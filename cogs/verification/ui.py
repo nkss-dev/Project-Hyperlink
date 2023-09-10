@@ -54,7 +54,7 @@ class VerificationModal(discord.ui.Modal, title="Verification"):
     roll = discord.ui.TextInput(
         label="Roll Number",
         placeholder="12022005",
-        max_length=8,
+        max_length=9,
         min_length=8,
     )
 
