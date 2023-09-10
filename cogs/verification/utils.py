@@ -156,7 +156,11 @@ async def kick_old(
     old_member = guild.get_member(user_id)
     if old_member is not None:
         message = l10n.format_value("old-member-kick")
-        await old_member.kick(reason=message)
+        try:
+            await old_member.kick(reason=message)
+        except discord.errors.Forbidden:
+            # TODO: Use logger
+            print(f"Missing Permissions: Could not kick {old_member} from {guild}")
 
 
 async def verify(
