@@ -14,12 +14,17 @@ class ClubVerification(HyperlinkCog):
         club_guild_dicts = await self.bot.pool.fetch(
             """
             SELECT
-                club_name,
-                guild_id,
-                guest_role,
-                member_role
+                cd.club_name,
+                c.alias,
+                cd.guild_id,
+                cd.guest_role,
+                cd.member_role
             FROM
-                club_discord
+                club_discord AS cd
+            JOIN
+                club AS c
+            ON
+                c.name = cd.club_name
             """
         )
         self.club_guilds = [
@@ -39,7 +44,7 @@ class ClubVerification(HyperlinkCog):
             self.bot.dispatch("club_guest_join", club_guild, member)
             return
 
-        if club_guild.club_name in student.clubs:
+        if club_guild.club_name in student.clubs or club_guild.alias in student.clubs:
             self.bot.dispatch("club_member_join", club_guild, member, student)
         else:
             self.bot.dispatch("club_guest_join", club_guild, member, student)
