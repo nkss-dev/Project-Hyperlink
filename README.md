@@ -8,25 +8,28 @@ Ideally, you'd invite [my instance](https://discord.com/oauth2/authorize?client_
 
 Nevertheless, here are the installation steps:
 
-1. **Ensure that you have Python 3.10 or higher.**
+1. **Clone the repository:** `git clone git@github.com:NIT-KKR-Student-Support-System/Project-Hyperlink.git`
 
-2. **Clone the repository:** `git clone git@github.com:NIT-KKR-Student-Support-System/Project-Hyperlink.git`
+2. **Installation:**
 
-3. **Set up the virtual environment:** `python3 -m venv hyperlink-env`
+   - Install [nix: the package manager](https://nixos.org/download) if you haven't already.
+   - Run `nix develop` to enter the shell environment which will auto-magically install all our required dependencies (including Python!).
+   - If you prefer, we also support [`direnv`](https://github.com/direnv/direnv) for setting up the shell environment.
 
+   **NOTE:** The above process only works on **non-Windows systems** (Windows as well IF you use WSL2). If you want to install this on Windows (please don't), refer the steps in the closed summary below:
    <details>
-      <summary>Activation Instructions</summary>
+      <summary>Windows install without WSL2</summary>
 
-      - On Unix or MacOS, using the bash shell: `source hyperlink-env/bin/activate`
-      - On Unix or MacOS, using the csh shell: `source hyperlink-env/bin/activate.csh`
-      - On Unix or MacOS, using the fish shell: `source hyperlink-env/bin/activate.fish`
-      - On Windows using the Command Prompt: `hyperlink-env\Scripts\activate.bat`
-      - On Windows using PowerShell: `hyperlink-env\Scripts\Activate.ps1`
+      - Ensure that you have Python 3.10 or higher.
+      - **Set up the virtual environment:** `python3 -m venv hyperlink-env`
+         <br>
+         To activate this environment:
+         - using Command Prompt, run: `hyperlink-env\Scripts\activate.bat`
+         - using PowerShell, run: `hyperlink-env\Scripts\Activate.ps1`
+      - **Install the dependencies:** `pip install -U -r requirements.txt`
    </details>
 
-4. **Install the dependencies:** `pip install -U -r requirements.txt`
-
-5. **Configuration:**
+3. **Configuration:**
 
    Following are the environment variables needed for this project. You can paste these into an `.env` file and it will auto-load.
    ```properties
@@ -57,5 +60,5 @@ Nevertheless, here are the installation steps:
 
    Note: Some of these are optional, but may break the bot's functionality, if left empty.
 
-6. **For [drive.py](cogs/drive.py 'Queries a linked Google Drive'):**<br>
+4. **For [drive.py](cogs/drive.py 'Queries a linked Google Drive'):**<br>
    Follow the instructions given [here](https://developers.google.com/drive/api/v3/quickstart/python 'Setup instructions for the Google Drive API in Python') and store the resultant `.json` file in the `db` folder (generated automatically after the bot is run at least once) and rename it to `credentials.json`

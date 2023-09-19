@@ -1,0 +1,60 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1694422566,
+        "narHash": "sha256-lHJ+A9esOz9vln/3CJG23FV6Wd2OoOFbDeEs4cMGMqc=",
+        "path": "/nix/store/zb2695k9v4hmjdki97p0yhd4mys270fs-source",
+        "rev": "3a2786eea085f040a66ecde1bc3ddc7099f6dbeb",
+        "type": "path"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs-fluent": {
+      "locked": {
+        "lastModified": 1695058819,
+        "narHash": "sha256-Pz2u2bYsBOYbzFfuhw16NwJZsK5gYDgG8OdbAZPYKQk=",
+        "owner": "getpsyched",
+        "repo": "nixpkgs",
+        "rev": "6747a9226061fe49ebc021b311a75fc9e2c9c9d2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "getpsyched",
+        "ref": "python-fluent",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "python-env": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "narHash": "sha256-F/00jF6Gah02U2+sgtZPuuNgEv1fyGmCuOcFfZ+AeVk=",
+        "rev": "6b0314abd617cdc3b552f907e85bfe25405dac3a",
+        "revCount": 23,
+        "type": "tarball",
+        "url": "https://api.flakehub.com/f/pinned/GetPsyched/python-env/0.1.0/018aac97-0776-78b3-831c-8917e11e7e1f/source.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://flakehub.com/f/GetPsyched/python-env/0.x.x.tar.gz"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "nixpkgs-fluent": "nixpkgs-fluent",
+        "python-env": "python-env"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
