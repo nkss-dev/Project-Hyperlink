@@ -90,7 +90,7 @@ class EntryPoint(HyperlinkCog):
             return
 
         async with self.bot.session.get(
-            f"{config.API_URL}/discord/users/{member.id}",
+            f"{config.API_URL}/students/{member.id}",
             headers={"Authorization": f"Bearer {config.API_TOKEN}"},
         ) as resp:
             if resp.status == 200:

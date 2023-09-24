@@ -96,7 +96,7 @@ class Info(HyperlinkCog):
     async def get_profile_embed(self, guild: bool, member) -> discord.Embed:
         """Return the details of the given user in an embed"""
         async with self.bot.session.get(
-            f"{config.API_URL}/discord/users/{member.id}",
+            f"{config.API_URL}/students/{member.id}",
             headers={"Authorization": f"Bearer {config.API_TOKEN}"},
         ) as resp:
             if resp.status == 200:
