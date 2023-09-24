@@ -132,7 +132,7 @@ class Info(HyperlinkCog):
             "sec": student["section"],
             "email": student["email"],
             "hostel": hostel,
-            "groups": ", ".join(student["clubs"].keys())
+            "groups": ", ".join([club["alias"] or club["name"] for club in student["clubs"]])
             or self.l10n.format_value("no-group"),
         }
         if student["mobile"]["Valid"]:
@@ -151,7 +151,7 @@ class Info(HyperlinkCog):
                 student["section"][:4],
                 student["section"][:3] + student["section"][4:].zfill(2),
                 student["hostel_id"],
-                *student["clubs"].keys(),
+                *[club["alias"] or club["name"] for club in student["clubs"]],
                 "@everyone",
             ]
             for role in member.roles:

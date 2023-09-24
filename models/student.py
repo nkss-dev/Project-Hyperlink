@@ -16,7 +16,7 @@ class Student:
     room_id: str | None
     discord_id: int | None
     is_verified: bool
-    clubs: dict[str, str]
+    clubs: list[dict[str, str]]
 
 
 def parse_student(student: dict[str, Any]) -> Student:

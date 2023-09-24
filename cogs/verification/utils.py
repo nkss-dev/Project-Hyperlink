@@ -37,7 +37,7 @@ async def assign_student_roles(
         student.section[:3] + student.section[4:].zfill(2),
         student.batch,
         student.hostel_id,
-        *student.clubs.keys(),
+        *[club["alias"] or club["name"] for club in student.clubs],
         "verified",
     )
 
