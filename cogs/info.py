@@ -208,7 +208,7 @@ class Info(HyperlinkCog):
     @app_commands.describe(member="The user whose profile will be displayed")
     async def command_profile(
         self,
-        interaction: discord.Interaction,
+        interaction: discord.Interaction[ProjectHyperlink],
         member: Optional[discord.Member | discord.User],
     ):
         await self.profile(interaction, member or interaction.user)
@@ -219,7 +219,10 @@ class Info(HyperlinkCog):
     @commands.bot_has_permissions(manage_nicknames=True)
     @app_commands.guild_only()
     async def nick(
-        self, interaction: discord.Interaction, *, member: Optional[discord.Member]
+        self,
+        interaction: discord.Interaction[ProjectHyperlink],
+        *,
+        member: Optional[discord.Member],
     ):
         """Change your or someone else's nick to their first name."""
         """
