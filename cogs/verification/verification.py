@@ -13,7 +13,7 @@ from base.context import HyperlinkContext
 from cogs.errors.app import UserAlreadyVerified
 from cogs.verification.ui import VerificationView
 from cogs.verification.utils import assign_student_roles, kick_old, verify
-from models.student import Student, parse_student
+from models.student import Student
 
 if TYPE_CHECKING:
     from main import ProjectHyperlink
@@ -98,7 +98,7 @@ class EntryPoint(HyperlinkCog):
             else:
                 student_dict = {}
 
-        student = parse_student(student_dict) if student_dict else None
+        student = Student(**student_dict) if student_dict else None
 
         if member.guild.id in GUILD_IDS:
             self.bot.dispatch("member_join_nit", member, student)

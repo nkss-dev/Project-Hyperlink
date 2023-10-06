@@ -11,7 +11,7 @@ import discord
 from fluent.runtime import FluentLocalization
 
 from cogs.errors.app import IncorrectGuildBatch, OTPTimeout, RollNotFound
-from models.student import Student, parse_student
+from models.student import Student
 from utils.utils import generateID
 
 if TYPE_CHECKING:
@@ -184,7 +184,7 @@ async def verify(
         else:
             raise RollNotFound(roll_number=roll)
 
-    student = parse_student(student_dict)
+    student = Student(**student_dict)
 
     if member.guild.id not in GUILD_IDS:
         pass
