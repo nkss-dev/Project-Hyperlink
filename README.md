@@ -1,6 +1,6 @@
 # Project Hyperlink
 
-A personal moderation bot made as a part of the NKSSS project
+A personal moderation bot made as a part of the NKSS project
 
 ## Running a local instance
 

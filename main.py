@@ -19,7 +19,7 @@ from utils.logger import ErrorHandler, InfoHandler
 
 
 class ProjectHyperlink(commands.Bot):
-    """A personal moderation bot made as a part of the NKSSS project"""
+    """A personal moderation bot made as a part of the NKSS project"""
 
     def __init__(
         self,
