@@ -13,12 +13,14 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
       pkgs-fluent = inputs.nixpkgs-fluent.legacyPackages.${system};
+      python-env-pkgs = python-env.outputs.packages.${system};
     in
     {
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
-          python-env.outputs.packages.${system}.default
-          python-env.outputs.packages.${system}.vscode
+          python-env-pkgs.default
+          python-env-pkgs.vscode
+
           railway
           pkgs-fluent.python311Packages.fluent-runtime
           (python311.withPackages (p: with p; [
