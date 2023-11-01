@@ -135,10 +135,10 @@ class Info(HyperlinkCog):
             "groups": ", ".join([club["alias"] or club["name"] for club in student["clubs"]])
             or self.l10n.format_value("no-group"),
         }
-        if student["mobile"]["Valid"]:
-            fields["mob"] = student["mobile"]["String"]
-        if student["birth_date"]["Valid"]:
-            birth_date = datetime.strptime(student["birth_date"]["Time"][:10], "%Y-%m-%d")
+        if student["mobile"]:
+            fields["mob"] = student["mobile"]
+        if student["birth_date"]:
+            birth_date = datetime.strptime(student["birth_date"][:10], "%Y-%m-%d")
             fields["bday"] = discord.utils.format_dt(birth_date, style="D")
 
         for name, value in fields.items():
