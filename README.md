@@ -8,7 +8,7 @@ Ideally, you'd invite [my instance](https://discord.com/oauth2/authorize?client_
 
 Nevertheless, here are the installation steps:
 
-1. **Clone the repository:** `git clone git@github.com:NIT-KKR-Student-Support-System/Project-Hyperlink.git`
+1. **Clone the repository:** `git clone https://github.com/nkss-dev/Project-Hyperlink.git`
 
 2. **Installation:**
 
