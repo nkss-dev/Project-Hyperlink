@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class ClubDiscord:
     club_name: str
+    alias: str | None
     guild_id: int
     guest_role: int | None
     member_role: int | None
