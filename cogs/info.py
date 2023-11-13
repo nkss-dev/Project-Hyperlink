@@ -20,6 +20,8 @@ class Info(HyperlinkCog):
     def __init__(self, bot: ProjectHyperlink):
         super().__init__(bot)
 
+        # TODO: l10n not available for context menu since local
+        # `interaction_check` is not called for global features.
         self.ctx_menu = app_commands.ContextMenu(
             name="Profile",
             callback=self.profile,
