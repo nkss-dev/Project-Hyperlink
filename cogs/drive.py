@@ -1,3 +1,4 @@
+import json
 import mimetypes
 import os
 import re
@@ -25,22 +26,29 @@ class GoogleDrive:
         self.root = "1U2taK5kEhOiUJi70ZkU2aBWY83uVuMmD"
         self.past_papers = "13dMpIfa1FPiAdNThWdkSXfhXLK3BL-kn"
 
-        SCOPES = ["https://www.googleapis.com/auth/drive"]
-        creds = None
-        if os.path.exists("db/token.json"):
-            creds = Credentials.from_authorized_user_file("db/token.json", SCOPES)
-        # If there are no (valid) credentials available, let the user log in.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    "db/credentials.json", SCOPES
-                )
-                creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
-            with open("db/token.json", "w") as token:
-                token.write(creds.to_json())
+        SCOPES = ("https://www.googleapis.com/auth/drive",)
+
+        if not config.GOOGLE_REFRESH_TOKEN:
+            flow = InstalledAppFlow.from_client_config(
+                config.google_client_config, SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+            print(
+                "Set the environment variable GOOGLE_REFRESH_TOKEN to",
+                json.loads(creds.to_json())["refresh_token"],
+                "and run this program again.",
+            )
+            exit(1)
+
+        creds = Credentials.from_authorized_user_info(
+            {
+                "client_id": config.GOOGLE_CLIENT_ID,
+                "client_secret": config.GOOGLE_CLIENT_SECRET,
+                "refresh_token": config.GOOGLE_REFRESH_TOKEN,
+            },
+            SCOPES,
+        )
+        creds.refresh(Request())
 
         self.service = build("drive", "v3", credentials=creds)
 

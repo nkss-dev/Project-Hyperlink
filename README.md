@@ -57,6 +57,11 @@ Nevertheless, here are the installation steps:
    PGPASSWORD=""
    PGPORT=""
    PGUSER=""
+
+   # Google Drive API
+   GOOGLE_CLIENT_ID="<id>.apps.googleusercontent.com"
+   GOOGLE_CLIENT_SECRET="GOCSPX-..."
+   GOOGLE_REFRESH_TOKEN="" # the app will tell you what to put here
    ```
 
    Additionally, there are some non-secret configuration options in [config.py](/config.py), you may want to look at those too.

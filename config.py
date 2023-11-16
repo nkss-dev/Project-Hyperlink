@@ -53,6 +53,20 @@ class DB:
         return f"postgresql://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DATABASE}"
 
 
+# Google Drive API
+GOOGLE_REFRESH_TOKEN = os.getenv("GOOGLE_REFRESH_TOKEN")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+
+google_client_config = {
+    "installed": {
+        "client_id": GOOGLE_CLIENT_ID,
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "client_secret": GOOGLE_CLIENT_SECRET,
+    }
+}
+
 emojis = {
     # Utility
     "loading": "<a:loading:888054519160770621>",
