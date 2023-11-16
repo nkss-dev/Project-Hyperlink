@@ -8,7 +8,6 @@ ALL_EXTENSIONS = [
     "cogs.ign",
     "cogs.info",
     "cogs.logger",
-    "cogs.mod",
     "cogs.owner",
     "cogs.prefix",
     "cogs.self_roles",
