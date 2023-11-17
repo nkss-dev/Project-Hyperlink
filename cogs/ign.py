@@ -9,7 +9,7 @@ from main import ProjectHyperlink
 
 
 class IGN(commands.Cog):
-    """[depreciated] Store IGNs for games"""
+    """[deprecated] Store IGNs for games"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -18,13 +18,13 @@ class IGN(commands.Cog):
     def get_IGNs(self, author_id: int) -> sqlite3.Cursor:
         """Return the IGNs of the given user"""
         cursor = self.bot.c.execute(
-            'select * from ign where Discord_UID = ?', (author_id,)
+            "select * from ign where Discord_UID = ?", (author_id,)
         )
         return cursor
 
     async def exists(self, ctx, game) -> str:
         """Check if entered game exists in the database"""
-        result: str = ''
+        result: str = ""
         for _game in self.games:
             if game.lower() == _game[0].lower():
                 result = _game[0]
@@ -51,7 +51,7 @@ class IGN(commands.Cog):
         to any of the user's IGNs.
         """
         self.games = self.bot.c.execute(
-            'select * from ign where Discord_UID = null'
+            "select * from ign where Discord_UID = null"
         ).description[1:]
         if not self.games:
             await ctx.reply(self.fmv("game-list-notfound"))
@@ -94,13 +94,19 @@ class IGN(commands.Cog):
         exists = self.get_IGNs(ctx.author.id).fetchone()
         if not exists:
             self.bot.c.execute(
-                f'insert into ign (Discord_UID, {game}) values(?,?)',
-                (ctx.author.id, ign,)
+                f"insert into ign (Discord_UID, {game}) values(?,?)",
+                (
+                    ctx.author.id,
+                    ign,
+                ),
             )
         else:
             self.bot.c.execute(
-                f'update ign set {game} = ? where Discord_UID = ?',
-                (ign, ctx.author.id,)
+                f"update ign set {game} = ? where Discord_UID = ?",
+                (
+                    ign,
+                    ctx.author.id,
+                ),
             )
         self.bot.db.commit()
 
@@ -153,8 +159,7 @@ class IGN(commands.Cog):
         if game:
             try:
                 ign = self.bot.c.execute(
-                    f'select `{game}` from ign where Discord_UID = ?',
-                    (member.id,)
+                    f"select `{game}` from ign where Discord_UID = ?", (member.id,)
                 ).fetchone()
             except sqlite3.OperationalError:
                 content = self.fmv(
@@ -181,7 +186,7 @@ class IGN(commands.Cog):
         user_igns = []
         for game, ign in zip(cursor.description[1:], igns[1:]):
             if ign:
-                user_igns.append(f'**{game[0]}:** {ign}')
+                user_igns.append(f"**{game[0]}:** {ign}")
 
         embed = discord.Embed(
             title=self.fmv("igns-title", {"member": f"{member}"}),
@@ -197,7 +202,7 @@ class IGN(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @ign.command(aliases=['del', 'remove', 'rm'])
+    @ign.command(aliases=["del", "remove", "rm"])
     async def delete(self, ctx, *, game: str = None):
         """Delete an IGN for the given game or all games.
 
@@ -221,7 +226,7 @@ class IGN(commands.Cog):
 
         if not game:
             self.bot.c.execute(
-                'delete from ign where Discord_UID = ?', (ctx.author.id,)
+                "delete from ign where Discord_UID = ?", (ctx.author.id,)
             )
             self.bot.db.commit()
             await ctx.reply(self.fmv("remove-all-success"))
@@ -231,33 +236,33 @@ class IGN(commands.Cog):
             return
 
         ign = self.bot.c.execute(
-            f'select `{game}` from ign where Discord_UID = ?', (ctx.author.id,)
+            f"select `{game}` from ign where Discord_UID = ?", (ctx.author.id,)
         ).fetchone()
         if ign:
             igns = [ign for ign in igns[1:] if ign]
             if len(igns) > 1:
                 self.bot.c.execute(
-                    f'update ign set `{game}` = null where Discord_UID = ?',
-                    (ctx.author.id,)
+                    f"update ign set `{game}` = null where Discord_UID = ?",
+                    (ctx.author.id,),
                 )
             else:
                 self.bot.c.execute(
-                    'delete from ign where Discord_UID = ?', (ctx.author.id,)
+                    "delete from ign where Discord_UID = ?", (ctx.author.id,)
                 )
             self.bot.db.commit()
             await ctx.reply(self.fmv("remove-success", {"game": game}))
         else:
             await ctx.reply(self.fmv("self-ign-notfound", {"game": game}))
 
-    @ign.command(name='for')
+    @ign.command(name="for")
     async def igns(self, ctx, *, game: str = None):
         if not (game := await self.exists(ctx, game)):
             return
 
         igns = self.bot.c.execute(
-            f'''select main.Discord_UID, ign.`{game}` from ign
+            f"""select main.Discord_UID, ign.`{game}` from ign
             join main on main.Discord_UID = ign.Discord_UID
-            where ign.`{game}` not null'''
+            where ign.`{game}` not null"""
         ).fetchall()
         if not igns:
             await ctx.reply(self.fmv("ign-notfound", {"game": game}))
@@ -265,7 +270,7 @@ class IGN(commands.Cog):
         formatted_igns = []
         for id, ign in igns:
             if member := ctx.guild.get_member(id):
-                formatted_igns.append(f'{member.mention}: {ign}')
+                formatted_igns.append(f"{member.mention}: {ign}")
 
         embed = discord.Embed(
             title=self.fmv("igns-for", {"game": game}),
