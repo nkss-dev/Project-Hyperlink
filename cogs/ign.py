@@ -31,9 +31,9 @@ class IGN(commands.Cog):
                 break
 
         if not result:
-            content = self.l10n.format_value(
-                'game-notfound',
-                {'game': game, 'cmd': f'{ctx.clean_prefix}{ctx.command.parent}'}
+            content = self.fmv(
+                "game-notfound",
+                {"game": game, "cmd": f"{ctx.clean_prefix}{ctx.command.parent}"},
             )
             await ctx.reply(content)
         return result
@@ -54,16 +54,16 @@ class IGN(commands.Cog):
             'select * from ign where Discord_UID = null'
         ).description[1:]
         if not self.games:
-            await ctx.reply(self.l10n.format_value('game-list-notfound'))
+            await ctx.reply(self.fmv("game-list-notfound"))
             return
 
         if ctx.invoked_subcommand:
             return
 
         embed = discord.Embed(
-            title=self.l10n.format_value('game-list'),
-            description='\n'.join([game[0] for game in self.games]),
-            color=discord.Color.blurple()
+            title=self.fmv("game-list"),
+            description="\n".join([game[0] for game in self.games]),
+            color=discord.Color.blurple(),
         )
         await ctx.send(embed=embed)
 
@@ -88,7 +88,7 @@ class IGN(commands.Cog):
             return
 
         if ctx.message.mentions:
-            await ctx.reply(self.l10n.format_value('mentions-not-allowed'))
+            await ctx.reply(self.fmv("mentions-not-allowed"))
             return
 
         exists = self.get_IGNs(ctx.author.id).fetchone()
@@ -104,7 +104,7 @@ class IGN(commands.Cog):
             )
         self.bot.db.commit()
 
-        await ctx.reply(self.l10n.format_value('add-success', {'game': game}))
+        await ctx.reply(self.fmv("add-success", {"game": game}))
 
     @ign.command()
     async def show(self, ctx, user: Optional[discord.Member], *, game: str = None):
@@ -134,14 +134,18 @@ class IGN(commands.Cog):
         cursor = self.get_IGNs(member.id)
         if not (igns := cursor.fetchone()):
             if oneself:
-                await ctx.reply(self.l10n.format_value(
-                        'self-igns-notfound',
-                        {'cmd': ctx.clean_prefix + ctx.command.parent.name}))
+                await ctx.reply(
+                    self.fmv(
+                        "self-igns-notfound",
+                        {"cmd": ctx.clean_prefix + ctx.command.parent.name},
+                    )
+                )
             else:
                 embed = discord.Embed(
-                    description=self.l10n.format_value(
-                        'other-igns-notfound', {'member': member.mention}),
-                    color=color
+                    description=self.fmv(
+                        "other-igns-notfound", {"member": member.mention}
+                    ),
+                    color=color,
                 )
                 await ctx.reply(embed=embed)
             return
@@ -153,9 +157,9 @@ class IGN(commands.Cog):
                     (member.id,)
                 ).fetchone()
             except sqlite3.OperationalError:
-                content = self.l10n.format_value(
-                    'game-notfound',
-                    {'game': game, 'cmd': f'{ctx.clean_prefix}{ctx.command.parent}'}
+                content = self.fmv(
+                    "game-notfound",
+                    {"game": game, "cmd": f"{ctx.clean_prefix}{ctx.command.parent}"},
                 )
                 await ctx.reply(content)
                 return
@@ -163,15 +167,13 @@ class IGN(commands.Cog):
                 embed = discord.Embed(description=ign, color=color)
                 await ctx.reply(embed=embed)
             elif oneself:
-                await ctx.reply(self.l10n.format_value(
-                        'self-ign-notfound', {'game': game}))
+                await ctx.reply(self.fmv("self-ign-notfound", {"game": game}))
             else:
                 embed = discord.Embed(
-                    description=self.l10n.format_value(
-                        'other-ign-notfound',
-                        {'member': member.mention, 'game': game}
+                    description=self.fmv(
+                        "other-ign-notfound", {"member": member.mention, "game": game}
                     ),
-                    color=color
+                    color=color,
                 )
                 await ctx.reply(embed=embed)
             return
@@ -182,19 +184,15 @@ class IGN(commands.Cog):
                 user_igns.append(f'**{game[0]}:** {ign}')
 
         embed = discord.Embed(
-            title=self.l10n.format_value(
-                'igns-title', {'member': f'{member}'}
-            ),
-            description='\n'.join(user_igns),
-            color=color
+            title=self.fmv("igns-title", {"member": f"{member}"}),
+            description="\n".join(user_igns),
+            color=color,
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         if not oneself:
             embed.set_footer(
-                text=self.l10n.format_value(
-                    'request', {'author': f'{ctx.author}'}
-                ),
-                icon_url=ctx.author.avatar.url
+                text=self.fmv("request", {"author": f"{ctx.author}"}),
+                icon_url=ctx.author.avatar.url,
             )
 
         await ctx.send(embed=embed)
@@ -213,9 +211,12 @@ class IGN(commands.Cog):
         """
         cursor = self.get_IGNs(ctx.author.id)
         if not (igns := cursor.fetchone()):
-            await ctx.reply(self.l10n.format_value(
-                    'self-igns-notfound',
-                    {'cmd': f'{ctx.clean_prefix}{ctx.command.parent}'}))
+            await ctx.reply(
+                self.fmv(
+                    "self-igns-notfound",
+                    {"cmd": f"{ctx.clean_prefix}{ctx.command.parent}"},
+                )
+            )
             return
 
         if not game:
@@ -223,7 +224,7 @@ class IGN(commands.Cog):
                 'delete from ign where Discord_UID = ?', (ctx.author.id,)
             )
             self.bot.db.commit()
-            await ctx.reply(self.l10n.format_value('remove-all-success'))
+            await ctx.reply(self.fmv("remove-all-success"))
             return
 
         if not (game := await self.exists(ctx, game)):
@@ -244,13 +245,9 @@ class IGN(commands.Cog):
                     'delete from ign where Discord_UID = ?', (ctx.author.id,)
                 )
             self.bot.db.commit()
-            await ctx.reply(
-                self.l10n.format_value('remove-success', {'game': game})
-            )
+            await ctx.reply(self.fmv("remove-success", {"game": game}))
         else:
-            await ctx.reply(
-                self.l10n.format_value('self-ign-notfound', {'game': game})
-            )
+            await ctx.reply(self.fmv("self-ign-notfound", {"game": game}))
 
     @ign.command(name='for')
     async def igns(self, ctx, *, game: str = None):
@@ -263,7 +260,7 @@ class IGN(commands.Cog):
             where ign.`{game}` not null'''
         ).fetchall()
         if not igns:
-            await ctx.reply(self.l10n.format_value('ign-notfound', {'game': game}))
+            await ctx.reply(self.fmv("ign-notfound", {"game": game}))
 
         formatted_igns = []
         for id, ign in igns:
@@ -271,9 +268,9 @@ class IGN(commands.Cog):
                 formatted_igns.append(f'{member.mention}: {ign}')
 
         embed = discord.Embed(
-            title=self.l10n.format_value('igns-for', {'game': game}),
-            description='\n'.join(formatted_igns),
-            color=discord.Color.blurple()
+            title=self.fmv("igns-for", {"game": game}),
+            description="\n".join(formatted_igns),
+            color=discord.Color.blurple(),
         )
         await ctx.send(embed=embed)
 
