@@ -187,7 +187,9 @@ async def verify(
 
     if member.guild.id not in GUILD_IDS:
         pass
-    elif GUILD_IDS[member.guild.id] != 0 and GUILD_IDS[member.guild.id] != student.batch:
+    elif (
+        GUILD_IDS[member.guild.id] != 0 and GUILD_IDS[member.guild.id] != student.batch
+    ):
         raise IncorrectGuildBatch(
             roll_number=student.roll_number,
             server_batch=GUILD_IDS[member.guild.id],

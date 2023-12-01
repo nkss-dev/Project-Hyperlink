@@ -190,14 +190,14 @@ class EntryPoint(HyperlinkCog):
                     },
                 )
             )
-            message = (
-                f"{member.mention} was kicked from `{guild.name}` due to incorrect guild"
-            )
+            message = f"{member.mention} was kicked from `{guild.name}` due to incorrect guild"
             try:
                 await member.kick(reason=message)
                 self.bot.logger.info(message)
             except discord.errors.Forbidden:
-                self.bot.logger.warning(f"Missing Permissions: Could not kick {member} from {guild}")
+                self.bot.logger.warning(
+                    f"Missing Permissions: Could not kick {member} from {guild}"
+                )
 
         if student.clubs:
             self.bot.dispatch("club_member_change", student, old_user_id)
