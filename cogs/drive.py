@@ -215,7 +215,9 @@ class Drive(commands.Cog):
 
             if len(ignored_args) == len(query):
                 await ctx.reply(embed=ignored_embed)
-                await ctx.message.remove_reaction(config.emojis["loading"], self.bot.user)
+                await ctx.message.remove_reaction(
+                    config.emojis["loading"], self.bot.user
+                )
                 return
 
         # Exit if no results were found for the given query
@@ -349,7 +351,9 @@ class Drive(commands.Cog):
 
                 def check(message: discord.Message) -> bool:
                     """Check if the message sent is by the command author in the right channel"""
-                    return message.author == ctx.author and message.channel == ctx.channel
+                    return (
+                        message.author == ctx.author and message.channel == ctx.channel
+                    )
 
                 # Wait for the user to give a name for the course folder
                 message = await self.bot.wait_for("message", check=check)
