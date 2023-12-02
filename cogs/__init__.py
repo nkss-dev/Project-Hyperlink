@@ -10,7 +10,6 @@ ALL_EXTENSIONS = [
     "cogs.logger",
     "cogs.owner",
     "cogs.prefix",
-    "cogs.self_roles",
     "cogs.tag",
     "cogs.verification",
 ]

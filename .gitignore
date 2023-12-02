@@ -1,6 +1,5 @@
 # secrets
 .env
-db/
 
 # cache
 __pycache__/
