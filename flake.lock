@@ -7,12 +7,12 @@
         ]
       },
       "locked": {
-        "lastModified": 1699896538,
-        "narHash": "sha256-vZTVYvclV79CIi4n7ICctjXJtlXuvu65nMA6LTRcH2E=",
-        "rev": "f80e6677f8ae9fb7fd8535710c11f3c407af0279",
-        "revCount": 78,
+        "lastModified": 1700319945,
+        "narHash": "sha256-mUBGvC0mooA3Y8KbhKk3qNummWn7t3xMimiUp0Ra/qU=",
+        "rev": "850e844dafaa5dfe574d60af92f78ddc225a196a",
+        "revCount": 80,
         "type": "tarball",
-        "url": "https://api.flakehub.com/f/pinned/GetPsyched/not-so-flakey-devshells/0.2.3/018bc9bb-4ada-7fb0-b669-bcb1c34d7c1b/source.tar.gz"
+        "url": "https://api.flakehub.com/f/pinned/GetPsyched/not-so-flakey-devshells/0.2.5/018be2fc-1207-7a24-a54e-1acd8558b29e/source.tar.gz"
       },
       "original": {
         "type": "tarball",
