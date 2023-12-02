@@ -1,7 +1,6 @@
 UnhandledError = Something went wrong on our end! We're looking into it. Sorry for the inconvenience :(
 
 BadRequest-otp = `{$OTP}` is incorrect. Please try again with the correct OTP.
-IncorrectGuildBatch = This server is only for the { NUMBER($server_batch, useGrouping: 0) } batch. Since you're of the { NUMBER($student_batch, useGrouping: 0) } batch, you're (`{$roll}`) not allowed access on this server.
 
 BatchNotFound = No data was found for the `{ NUMBER($batch, useGrouping: 0) }` batch.
 RollNotFound = `{$roll_number}` was not found in our database. Please try again with a correct roll number. If you think this was a mistake, contact a moderator.

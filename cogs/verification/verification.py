@@ -18,10 +18,7 @@ from models.student import Student
 if TYPE_CHECKING:
     from main import ProjectHyperlink
 
-GUILD_IDS = {
-    904633974306005033: 0,
-    783215699707166760: 2024,
-}
+NITKKR_GUILD_ID = 904633974306005033
 
 
 class EntryPoint(HyperlinkCog):
@@ -99,13 +96,10 @@ class EntryPoint(HyperlinkCog):
 
         student = Student(**student_dict) if student_dict else None
 
-        if member.guild.id in GUILD_IDS:
+        if member.guild.id == NITKKR_GUILD_ID:
             self.bot.dispatch("member_join_nit", member, student)
-            return
-
         elif member.guild.id in self.club_guild_ids:
             self.bot.dispatch("member_join_club", member, student)
-
         elif member.guild.id in self.affiliate_guild_ids:
             self.bot.dispatch("member_join_affiliate", member, student)
 
@@ -122,22 +116,6 @@ class EntryPoint(HyperlinkCog):
             return
 
         if student and student.is_verified:
-            if GUILD_IDS[guild.id] != 0 and GUILD_IDS[guild.id] != student.batch:
-                await member.send(
-                    l10n.format_value(
-                        "IncorrectGuildBatch",
-                        {
-                            "roll": student.roll_number,
-                            "server_batch": GUILD_IDS[guild.id],
-                            "student_batch": student.batch,
-                        },
-                    )
-                )
-                message = f"{member.mention} was kicked from `{guild.name}` due to incorrect guild"
-                await member.kick(reason=message)
-                self.bot.logger.info(message)
-                return
-
             await assign_student_roles(student, member.guild)
             self.bot.logger.info(
                 f"{member.mention} was provided direct access to `{guild.name}`"
@@ -164,40 +142,13 @@ class EntryPoint(HyperlinkCog):
 
     @commands.Cog.listener()
     async def on_user_verify(self, student: Student, old_user_id: int | None):
-        for guild_id in GUILD_IDS:
-            guild = self.bot.get_guild(guild_id)
-            assert guild is not None
+        guild = self.bot.get_guild(NITKKR_GUILD_ID)
+        assert guild is not None
 
-            l10n = await self.bot.get_l10n(guild.id)
-            await kick_old(guild, old_user_id, l10n)
+        l10n = await self.bot.get_l10n(guild.id)
+        await kick_old(guild, old_user_id, l10n)
 
-            if GUILD_IDS[guild_id] == 0 or GUILD_IDS[guild_id] == student.batch:
-                await assign_student_roles(student, guild)
-                continue
-
-            assert student.discord_id is not None
-            member = guild.get_member(student.discord_id)
-            if member is None:
-                continue
-
-            await member.send(
-                l10n.format_value(
-                    "IncorrectGuildBatch",
-                    {
-                        "roll": student.roll_number,
-                        "server_batch": GUILD_IDS[guild.id],
-                        "student_batch": student.batch,
-                    },
-                )
-            )
-            message = f"{member.mention} was kicked from `{guild.name}` due to incorrect guild"
-            try:
-                await member.kick(reason=message)
-                self.bot.logger.info(message)
-            except discord.errors.Forbidden:
-                self.bot.logger.warning(
-                    f"Missing Permissions: Could not kick {member} from {guild}"
-                )
+        await assign_student_roles(student, guild)
 
         if student.clubs:
             self.bot.dispatch("club_member_change", student, old_user_id)

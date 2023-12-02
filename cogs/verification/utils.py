@@ -10,17 +10,12 @@ import config
 import discord
 from fluent.runtime import FluentLocalization
 
-from cogs.errors.app import IncorrectGuildBatch, OTPTimeout, RollNotFound
+from cogs.errors.app import OTPTimeout, RollNotFound
 from models.student import Student
 from utils.utils import generateID
 
 if TYPE_CHECKING:
     from main import ProjectHyperlink
-
-GUILD_IDS = {
-    904633974306005033: 0,
-    783215699707166760: 2024,
-}
 
 
 async def assign_student_roles(
@@ -184,17 +179,6 @@ async def verify(
             raise RollNotFound(roll_number=roll)
 
     student = Student(**student_dict)
-
-    if member.guild.id not in GUILD_IDS:
-        pass
-    elif (
-        GUILD_IDS[member.guild.id] != 0 and GUILD_IDS[member.guild.id] != student.batch
-    ):
-        raise IncorrectGuildBatch(
-            roll_number=student.roll_number,
-            server_batch=GUILD_IDS[member.guild.id],
-            student_batch=student.batch,
-        )
 
     verified = await authenticate(
         student.name, student.email, bot, member, interaction, l10n

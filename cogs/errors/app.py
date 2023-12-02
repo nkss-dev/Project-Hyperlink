@@ -7,20 +7,13 @@ class BatchNotFound(CheckFailure):
         self.batch = batch
 
 
-class IncorrectGuildBatch(CheckFailure):
-    def __init__(
-        self, *, roll_number: str, server_batch: int, student_batch: int
-    ) -> None:
-        self.roll_number = roll_number
-        self.server_batch = server_batch
-        self.student_batch = student_batch
-
-
 class NotForBot(CheckFailure):
     pass
 
+
 class NotInDevGuild(CheckFailure):
     pass
+
 
 class NotOwner(CheckFailure):
     def __init__(self, message: str | None = None) -> None:
