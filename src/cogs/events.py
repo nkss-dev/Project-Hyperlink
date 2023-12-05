@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 from base.cog import HyperlinkCog
+from models.guild import GuildEvent
 
 
 class Events(HyperlinkCog):
@@ -58,32 +59,29 @@ class Events(HyperlinkCog):
         await message.channel.send(embed=embed)
         await ping.delete()
 
-    async def join_handler(self, events, member: discord.Member):
-        # Send a welcome message to a guild channel and/or the member
-        guild = member.guild
+    async def join_handler(self, events: list[GuildEvent], member: discord.Member):
+        """Send a welcome message to a guild channel and/or the member"""
         for event in events:
-            event_type = event["event_type"]
-            if message := event["message"]:
-                message = message.replace("{$user}", member.mention)
-                message = message.replace("{$guild}", guild.name)
+            if event.message:
+                event.message = event.message.replace("{$user}", member.mention)
+                event.message = event.message.replace("{$guild}", member.guild.name)
 
-            channel_id = event["channel_id"]
-            if event_type == "welcome":
-                await member.send(message)
+            if event.event_type == "welcome":
+                await member.send(event.message)
             else:
-                if channel := guild.get_channel(channel_id):
+                if channel := member.guild.get_channel(event.channel_id):
                     assert isinstance(channel, discord.abc.Messageable)
-                    await channel.send(message)
+                    await channel.send(event.message)
                 else:
-                    logging.warning(f"guild_event -> Channel ID {channel_id} not found")
+                    logging.warning(f"guild_event -> Channel {event.channel_id} 404")
 
         role_ids = await self.bot.pool.fetch(
-            "SELECT role_id FROM join_role WHERE guild_id = $1", guild.id
+            "SELECT role_id FROM join_role WHERE guild_id = $1", member.guild.id
         )
         valid_roles: list[discord.Role] = []
         broken_ids = []
         for role_id in role_ids:
-            if role := guild.get_role(role_id["role"]):
+            if role := member.guild.get_role(role_id["role"]):
                 valid_roles.append(role)
             else:
                 broken_ids.append(role)
@@ -110,7 +108,7 @@ class Events(HyperlinkCog):
             return
 
         # Handle all generic events
-        event = await self.bot.pool.fetch(
+        events: list[GuildEvent] = await self.bot.pool.fetch(
             """
             SELECT
                 event_type,
@@ -124,8 +122,8 @@ class Events(HyperlinkCog):
             """,
             guild.id,
         )
-        if event:
-            await self.join_handler(event, member)
+        if events:
+            await self.join_handler(events, member)
 
     async def on_remove_event(
         self,
