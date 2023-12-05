@@ -68,18 +68,14 @@ class Events(HyperlinkCog):
                 message = message.replace("{$guild}", guild.name)
 
             channel_id = event["channel_id"]
-            if not (channel := guild.get_channel(channel_id)):
-                logging.warning(f"(table: event) -> Channel ID {channel_id} not found")
-                # The only event possible without a channel ID, is a DM; for
-                # which, a message is needed. If that is also absent, continue.
-                if not message:
-                    continue
-
-            if event_type == "join" and channel:
-                assert isinstance(channel, discord.abc.Messageable)
-                await channel.send(message)
-            if event_type == "welcome" and message:
+            if event_type == "welcome":
                 await member.send(message)
+            else:
+                if channel := guild.get_channel(channel_id):
+                    assert isinstance(channel, discord.abc.Messageable)
+                    await channel.send(message)
+                else:
+                    logging.warning(f"guild_event -> Channel ID {channel_id} not found")
 
         role_ids = await self.bot.pool.fetch(
             "SELECT role_id FROM join_role WHERE guild_id = $1", guild.id
