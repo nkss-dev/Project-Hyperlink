@@ -65,10 +65,6 @@ class Events(HyperlinkCog):
             if message := event["message"]:
                 message = message.replace("{$user}", member.mention)
                 message = message.replace("{$guild}", guild.name)
-            else:
-                message = self.l10n.format_value(
-                    "welcome-message", {"user": member.mention}
-                )
 
             channel_id = event["channel_id"]
             if not (channel := guild.get_channel(channel_id)):
