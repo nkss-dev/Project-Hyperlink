@@ -16,6 +16,7 @@ class Events(HyperlinkCog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """Called when a message is sent"""
+        assert self.bot.user is not None
         if not re.fullmatch(f"<@!?{self.bot.user.id}>", message.content):
             return
 
@@ -75,6 +76,7 @@ class Events(HyperlinkCog):
                     continue
 
             if event_type == "join" and channel:
+                assert isinstance(channel, discord.abc.Messageable)
                 await channel.send(message)
             if event_type == "welcome" and message:
                 await member.send(message)
