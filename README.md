@@ -64,9 +64,11 @@ Nevertheless, here are the installation steps:
    GOOGLE_REFRESH_TOKEN="" # the app will tell you what to put here
    ```
 
-   Additionally, there are some non-secret configuration options in [config.py](/config.py), you may want to look at those too.
+   Additionally, there are some non-secret configuration options in [config.py](/src/config.py), you may want to look at those too.
 
    Note: Some of these are optional, but may break the bot's functionality, if left empty.
 
-4. **For [drive.py](cogs/drive.py 'Queries a linked Google Drive'):**<br>
+4. **For [drive.py](/src/cogs/drive.py 'Queries a linked Google Drive'):**<br>
    Follow the instructions given [here](https://developers.google.com/drive/api/v3/quickstart/python 'Setup instructions for the Google Drive API in Python') and store the resultant `.json` file in the `db` folder (generated automatically after the bot is run at least once) and rename it to `credentials.json`
+
+5. Run `python src/main.py`

@@ -91,7 +91,7 @@ async def authenticate(
     }
 
     # TODO: Parse HTML using html.parser.HTML instead of RegEx
-    with open("utils/verification.html") as f:
+    with open("src/utils/verification.html") as f:
         html = f.read()
     html = re.sub(r"({\$\w+})", lambda x: variables[x.group(0)], html)
     msg.set_content(html, subtype="html")
