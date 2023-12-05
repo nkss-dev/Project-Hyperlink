@@ -1,11 +1,186 @@
+import re
+import requests
 import sqlite3
 from typing import Optional
+from urllib.parse import quote_plus
 
+import config
 import discord
 from discord.ext import commands
 
 import cogs.checks as checks
 from main import ProjectHyperlink
+
+
+class Details(discord.ui.View):
+    def __init__(self, l10n, user, game, id):
+        super().__init__()
+        self.id = id
+        self.game = game
+        self.l10n = l10n
+        self.user = user
+
+    async def interaction_check(self, interaction) -> bool:
+        if interaction.user != self.user:
+            await interaction.response.send_message(
+                content=self.fmv("incorrect-user"), ephemeral=True
+            )
+            return False
+        return True
+
+    @discord.ui.button(label="More details")
+    async def expand(self, button: discord.ui.Button, interaction: discord.Interaction):
+        embed = games[self.game].parse(self.user, self.id)
+        await interaction.response.edit_message(embed=embed, view=None)
+
+
+class Clash_of_Clans:
+    def __init__(self):
+        link = "https://cdn.discordapp.com/attachments/932880404250255381"
+        self.league_images = {
+            "Unranked": f"{link}/932880626070220800/Unranked_League.webp",
+            "Bronze": f"{link}/932880624375709746/Bronze_League.webp",
+            "Silver": f"{link}/932880625646587954/Silver_League.webp",
+            "Gold": f"{link}/932880625042616350/Gold_League.webp",
+            "Crystal": f"{link}/932880624824508416/Crystal_League.webp",
+            "Master": f"{link}/932880625411698688/Master_League.webp",
+            "Champion": f"{link}/932880624547672144/Champion_League.webp",
+            "Titan": f"{link}/932880625852096542/Titan_League.webp",
+            "Legend": f"{link}/932880625227169833/Legend_League.webp",
+        }
+        self.headers = {
+            "Accept": "application/json",
+            "authorization": f"Bearer {config.coc_api_token}",
+        }
+        self.status_codes = 400, 403, 404, 429, 500, 503
+
+        self.cache = {}
+
+    def parse(self, member, id) -> discord.Embed:
+        if self.cache.get(id):
+            return self.cache[id]
+
+        if id.startswith("#"):
+            id = quote_plus(id)
+        else:
+            id = quote_plus(f"#{id}")
+
+        src = requests.get(
+            f"https://api.clashofclans.com/v1/players/{id}", headers=self.headers
+        )
+        if src.status_code in self.status_codes:
+            print(src.json())
+            return discord.Embed(description="Error 404: Not found")
+
+        details = src.json()
+        link = "https://link.clashofclans.com/?action="
+
+        # Setting variables for the embed
+        player = f"[Go to player profile]({link}OpenPlayerProfile&tag={id})"
+        if clan := details.get("clan"):
+            clan = f"[{clan['name']}]({link}OpenClanProfile&tag={clan['tag']})"
+        else:
+            clan = "No clan joined"
+        league = f"\U0001f3c6 {details['trophies']}/{details['bestTrophies']} - {details['league']['name']}"
+        townHallLevel = details["townHallLevel"]
+        if subLevel := details.get("townHallWeaponLevel"):
+            townHallLevel += subLevel / 10
+        builderHallLevel = details["builderHallLevel"]
+
+        if member.color == discord.Color.default():
+            color = discord.Color.blurple()
+        else:
+            color = member.color
+
+        embed = discord.Embed(
+            title=f"{details['name']} - Level {details['expLevel']}",
+            description=player,
+            color=color,
+        )
+        embed.set_footer(text=str(member), icon_url=member.display_avatar)
+
+        embed.add_field(
+            name="Halls",
+            value=f"Town hall: {townHallLevel}\nBuilder hall: {builderHallLevel}",
+            inline=False,
+        )
+        embed.add_field(name="League", value=league, inline=False)
+        embed.add_field(name="Clan", value=clan, inline=False)
+
+        league = re.search(r"\w+ League ", details["league"]["name"]).group(0)
+        embed.set_thumbnail(url=self.league_images[league.split(" ", 1)[0]])
+
+        self.cache[id] = embed
+        return embed
+
+
+class Valorant:
+    def __init__(self):
+        link = "https://cdn.discordapp.com/attachments/932515398996357130"
+        self.profile = "https://tracker.gg/valorant/profile/riot"
+        self.rank_images = {
+            "Unranked": f"{link}/932872767928430662/unranked.png",
+            "Iron 1": f"{link}/932515684213203014/Iron_1.webp",
+            "Iron 2": f"{link}/932515684460687410/Iron_2.webp",
+            "Iron 3": f"{link}/932515684733321256/Iron_3.webp",
+            "Bronze 1": f"{link}/932526669204422656/Bronze_1.webp",
+            "Bronze 2": f"{link}/932526669409951795/Bronze_2.webp",
+            "Bronze 3": f"{link}/932526669665816677/Bronze_3.webp",
+            "Silver 1": f"{link}/932526702792413254/Silver_1.webp",
+            "Silver 2": f"{link}/932526702985355294/Silver_2.webp",
+            "Silver 3": f"{link}/932526703186702356/Silver_3.webp",
+            "Gold 1": f"{link}/932526729271083038/Gold_1.webp",
+            "Gold 2": f"{link}/932526729455624212/Gold_2.webp",
+            "Gold 3": f"{link}/932526729669513306/Gold_3.webp",
+            "Platinum 1": f"{link}/932526761030328350/Platinum_1.webp",
+            "Platinum 2": f"{link}/932526761231667200/Platinum_2.webp",
+            "Platinum 3": f"{link}/932526761453944902/Platinum_3.webp",
+            "Diamond 1": f"{link}/932872681311834142/Diamond_1.webp",
+            "Diamond 2": f"{link}/932872681513156608/Diamond_2.webp",
+            "Diamond 3": f"{link}/932872681773223946/Diamond_3.webp",
+            "Immortal 1": f"{link}",
+            "Immortal 2": f"{link}",
+            "Immortal 3": f"{link}/932872719198982144/Immortal_3.webp",
+            "Radiant": f"{link}/932872741609152603/Radiant.webp",
+        }
+
+        self.cache = {}
+
+    def parse(self, member, id) -> discord.Embed:
+        if self.cache.get(id):
+            return self.cache[id]
+
+        region = "ap"
+        name, tag = id.split("#")
+        name, tag = quote_plus(name), quote_plus(tag)
+        print(f"https://api.kyroskoh.xyz/valorant/v1/mmr/{region}/{name}/{tag}")
+        src = requests.get(
+            f"https://api.kyroskoh.xyz/valorant/v1/mmr/{region}/{name}/{tag}"
+        )
+
+        text = "Go to player profile"
+        profile = f"[{text}]({self.profile}/{quote_plus(id)}/overview)"
+        if member.color == discord.Color.default():
+            color = discord.Color.blurple()
+        else:
+            color = member.color
+
+        embed = discord.Embed(title=id, description=profile, color=color)
+        embed.set_footer(text=str(member), icon_url=member.display_avatar)
+
+        if src.status_code != 200:
+            print(src, id)
+            return discord.Embed(description="An error occured")
+        else:
+            rank = re.search(r"^\[\w+ \d\]", src.json()).group(0)[1:-1]
+        embed.add_field(name="Rank", value=rank)
+        embed.set_thumbnail(url=self.rank_images[rank])
+
+        self.cache[id] = embed
+        return embed
+
+
+games = {"clash of clans": Clash_of_Clans(), "valorant": Valorant()}
 
 
 class IGN(commands.Cog):
@@ -170,7 +345,11 @@ class IGN(commands.Cog):
                 return
             if ign:
                 embed = discord.Embed(description=ign, color=color)
-                await ctx.reply(embed=embed)
+                if games.get(game.lower()):
+                    view = Details(self.l10n, ctx.author, game.lower(), ign)
+                else:
+                    view = None
+                await ctx.send(embed=embed, view=view)
             elif oneself:
                 await ctx.reply(self.fmv("self-ign-notfound", {"game": game}))
             else:

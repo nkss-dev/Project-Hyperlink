@@ -5,7 +5,6 @@ ALL_EXTENSIONS = [
     "cogs.errors.handler",
     "cogs.events",
     "cogs.help",
-    "cogs.ign",
     "cogs.info",
     "cogs.logger",
     "cogs.owner",
