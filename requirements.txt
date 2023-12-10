@@ -1,6 +1,5 @@
 asyncpg
 black
-config
 discord.py
 fluent.runtime
 google-api-python-client
