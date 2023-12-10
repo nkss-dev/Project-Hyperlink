@@ -25,7 +25,6 @@
           pkgs-fluent.python311Packages.fluent-runtime
           (python311.withPackages (p: with p; [
             asyncpg
-            black
             discordpy
             google-api-python-client
             google-auth-httplib2
