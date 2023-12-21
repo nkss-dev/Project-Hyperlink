@@ -44,7 +44,8 @@ class ClubVerification(HyperlinkCog):
             self.bot.dispatch("club_guest_join", club_guild, member)
             return
 
-        if club_guild.club_name in student.clubs or club_guild.alias in student.clubs:
+        student_clubs = [club["name"] for club in student.clubs]
+        if club_guild.club_name in student_clubs:
             self.bot.dispatch("club_member_join", club_guild, member, student)
         else:
             self.bot.dispatch("club_guest_join", club_guild, member, student)
