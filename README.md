@@ -5,6 +5,10 @@
 
 A personal moderation bot made as a part of the NKSS project
 
+## NOTE
+
+**This repository is now in maintenance mode; meaning, new features will not be added but bug fixes will be released as detected.**
+
 ## Running a local instance
 
 Ideally, you'd invite [my instance](https://discord.com/oauth2/authorize?client_id=789474485555953694&scope=bot+applications.commands&permissions=284407639234 "Bot's invite link") of the bot. This allows it to always stay online and receive updates as they roll out.
