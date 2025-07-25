@@ -10,11 +10,11 @@ import tabula
 class Student:
     roll_number: str
     section: str
-    name: str
     email: str
     batch: int
-    hostel_id: str
     is_verified: bool
+    hostel_id: str
+    name: str
 
 
 BATCH = int(sys.argv[1])
