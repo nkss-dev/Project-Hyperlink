@@ -4,6 +4,7 @@
 
 pkgs.mkShellNoCC {
   nativeBuildInputs = with pkgs; [
+    postgresql
     railway
     (python3.withPackages (
       py-pkgs: with py-pkgs; [
