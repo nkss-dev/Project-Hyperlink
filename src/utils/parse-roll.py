@@ -41,8 +41,8 @@ def parse_roll():
             name = row["DATE (DD.MM.YYYY)"].title()
             section, subsection = row["Unnamed: 3"].split(" ")
 
-        # if "repeat" in name.lower():
-        #     continue
+        if "repeat" in name.lower():
+            continue
 
         if "(" in name:
             name = name.split("(")[0]
