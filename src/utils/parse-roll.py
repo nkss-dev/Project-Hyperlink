@@ -1,3 +1,4 @@
+import asyncio
 import asyncpg
 import os
 import sys
@@ -10,11 +11,11 @@ import tabula
 class Student:
     roll_number: str
     section: str
-    name: str
     email: str
     batch: int
-    hostel_id: str
     is_verified: bool
+    hostel_id: str
+    name: str
 
 
 BATCH = int(sys.argv[1])
@@ -31,15 +32,18 @@ def parse_roll():
         except:
             continue
 
-        if isinstance(row["Unnamed: 3"], float):
+        if isinstance(row["Unnamed: 3"], float) or row["Unnamed: 3"] == "N":
             *names, section, subsection = row["DATE (DD.MM.YYYY)"].split(" ")
+            if len(section.split("-")[0]) > 2:
+                last_name, section = section[:-4], section[-4:]
+                names.append(last_name)
             name = " ".join(names).title()
         else:
             name = row["DATE (DD.MM.YYYY)"].title()
             section, subsection = row["Unnamed: 3"].split(" ")
 
-        # if "repeat" in name.lower():
-        #     continue
+        if "repeat" in name.lower():
+            continue
 
         if "(" in name:
             name = name.split("(")[0]
@@ -73,13 +77,16 @@ def to_csv(students: list[Student]):
 
 async def add_to_db(students: list[Student]):
     pool = asyncpg.create_pool(
-        dsn=os.getenv("PGDSN"), command_timeout=60, max_inactive_connection_lifetime=0
+        database=os.getenv("PGDATABASE"),
+        host=os.getenv("PGHOST"),
+        password=os.getenv("PGPASSWORD"),
+        user=os.getenv("PGUSER"),
+        command_timeout=60,
+        max_inactive_connection_lifetime=0
     )
 
     insert_str = "INSERT INTO student (roll_number, section, email, batch, hostel_id, name) VALUES "
     for student in students:
-        if student.roll_number == "123102002":
-            continue
         insert_str += f"('{student.roll_number}', '{student.section}', '{student.email}', {student.batch}, '{student.hostel_id}', '{student.name}'),\n"
     insert_str = insert_str[:-2] + ";"
 
@@ -88,7 +95,9 @@ async def add_to_db(students: list[Student]):
 
 
 students = parse_roll()
+sections = set()
+for student in students:
+    sections.add(student.section[:2])
+print(f"{len(students)} joined in {BATCH - 4} within these sections: {", ".join(sorted(sections))}")
 # asyncio.run(add_to_db(students))
-to_csv(students)
-# for student in students:
-#     print(student)
+# to_csv(students)
