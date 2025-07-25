@@ -1,3 +1,4 @@
+import asyncio
 import asyncpg
 import os
 import sys
@@ -76,13 +77,16 @@ def to_csv(students: list[Student]):
 
 async def add_to_db(students: list[Student]):
     pool = asyncpg.create_pool(
-        dsn=os.getenv("PGDSN"), command_timeout=60, max_inactive_connection_lifetime=0
+        database=os.getenv("PGDATABASE"),
+        host=os.getenv("PGHOST"),
+        password=os.getenv("PGPASSWORD"),
+        user=os.getenv("PGUSER"),
+        command_timeout=60,
+        max_inactive_connection_lifetime=0
     )
 
     insert_str = "INSERT INTO student (roll_number, section, email, batch, hostel_id, name) VALUES "
     for student in students:
-        if student.roll_number == "123102002":
-            continue
         insert_str += f"('{student.roll_number}', '{student.section}', '{student.email}', {student.batch}, '{student.hostel_id}', '{student.name}'),\n"
     insert_str = insert_str[:-2] + ";"
 
