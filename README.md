@@ -1,6 +1,6 @@
 # Project Hyperlink
 
-[![Python 3.11](https://img.shields.io/badge/python-3.11-teal?logo=python)](https://www.python.org/downloads/release/python-3110/)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-teal?logo=python)](https://www.python.org/downloads/release/python-3130/)
 [![Built with Nix](https://img.shields.io/badge/built%20with-nix-blue?logo=nixos)](https://builtwithnix.org)
 
 A personal moderation bot made as a part of the NKSS project
