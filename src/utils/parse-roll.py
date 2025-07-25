@@ -33,6 +33,9 @@ def parse_roll():
 
         if isinstance(row["Unnamed: 3"], float) or row["Unnamed: 3"] == "N":
             *names, section, subsection = row["DATE (DD.MM.YYYY)"].split(" ")
+            if len(section.split("-")[0]) > 2:
+                last_name, section = section[:-4], section[-4:]
+                names.append(last_name)
             name = " ".join(names).title()
         else:
             name = row["DATE (DD.MM.YYYY)"].title()
