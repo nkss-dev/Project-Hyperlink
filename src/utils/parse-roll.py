@@ -31,7 +31,7 @@ def parse_roll():
         except:
             continue
 
-        if isinstance(row["Unnamed: 3"], float):
+        if isinstance(row["Unnamed: 3"], float) or row["Unnamed: 3"] == "N":
             *names, section, subsection = row["DATE (DD.MM.YYYY)"].split(" ")
             name = " ".join(names).title()
         else:
@@ -88,7 +88,7 @@ async def add_to_db(students: list[Student]):
 
 
 students = parse_roll()
+for student in students:
+    print(student)
 # asyncio.run(add_to_db(students))
-to_csv(students)
-# for student in students:
-#     print(student)
+# to_csv(students)
