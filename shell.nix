@@ -4,6 +4,7 @@
 
 pkgs.mkShellNoCC {
   nativeBuildInputs = with pkgs; [
+    openjdk # https://github.com/NixOS/nixpkgs/issues/428214
     postgresql
     railway
     (python3.withPackages (
@@ -17,6 +18,7 @@ pkgs.mkShellNoCC {
         google-auth-oauthlib
         python-dotenv
         pytz
+        tabula-py
         tabulate
       ]
     ))
