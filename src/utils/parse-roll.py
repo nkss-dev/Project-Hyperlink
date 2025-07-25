@@ -91,7 +91,9 @@ async def add_to_db(students: list[Student]):
 
 
 students = parse_roll()
+sections = set()
 for student in students:
-    print(student)
+    sections.add(student.section[:2])
+print(f"{len(students)} joined in {BATCH - 4} within these sections: {", ".join(sorted(sections))}")
 # asyncio.run(add_to_db(students))
 # to_csv(students)
